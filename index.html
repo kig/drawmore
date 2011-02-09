@@ -389,6 +389,7 @@
             self.setHue(h*360);
             var c = self.colorAt(self.ctx, self.cursor.x-rect.left, self.cursor.y-rect.top);
             self.callback(c);
+            ev.preventDefault();
           }, false);
           cc.addEventListener('mousedown', function(ev) {
             this.down = true;
@@ -398,6 +399,7 @@
             var c = self.colorAt(self.ctx, x, y);
             self.cursor.moveTo(rect.left+x, rect.top+y);
             self.callback(c);
+            ev.preventDefault();
           }, false);
           window.addEventListener('mousemove', function(ev) {
             if (hc.down) {
@@ -406,6 +408,7 @@
               self.setHue(h*360);
               var c = self.colorAt(self.ctx, self.cursor.x-rect.left, self.cursor.y-rect.top);
               self.callback(c);
+              ev.preventDefault();
             } else if (cc.down) {
               var xy = Mouse.getRelativeCoords(cc, ev);
               var x = Math.clamp(xy.x, 0, width-1);
@@ -413,6 +416,7 @@
               var c = self.colorAt(self.ctx, x, y);
               self.cursor.moveTo(rect.left+x, rect.top+y);
               self.callback(c);
+              ev.preventDefault();
             }
           }, false);
           window.addEventListener('mouseup', function(ev) {
