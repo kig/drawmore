@@ -265,16 +265,16 @@
           ctx.arc(w/2, w/2, diameter/2, 0, Math.PI*2);
           ctx.strokeStyle = '#000000';
           ctx.stroke();
-          if (diameter < 6) {
+          if (diameter < 4.5) {
             ctx.beginPath();
-            ctx.moveTo(w/2+4, w/2);
-            ctx.lineTo(w/2+9, w/2);
-            ctx.moveTo(w/2-4, w/2);
-            ctx.lineTo(w/2-9, w/2);
-            ctx.moveTo(w/2, w/2-4);
-            ctx.lineTo(w/2, w/2-9);
-            ctx.moveTo(w/2, w/2+4);
-            ctx.lineTo(w/2, w/2+9);
+            ctx.moveTo(w/2+2, w/2);
+            ctx.lineTo(w/2+4, w/2);
+            ctx.moveTo(w/2-2, w/2);
+            ctx.lineTo(w/2-4, w/2);
+            ctx.moveTo(w/2, w/2-2);
+            ctx.lineTo(w/2, w/2-4);
+            ctx.moveTo(w/2, w/2+2);
+            ctx.lineTo(w/2, w/2+4);
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1.5;
             ctx.stroke();
