@@ -298,13 +298,13 @@
             if (c.length == 9)
               a = parseInt(c.substring(7,9), 16) / 255;
           } else if (/^rgba/.test(c)) {
-            rgba = c.substring(1,c.length-1).split(",").map(parseFloat);
+            rgba = c.substring(5,c.length-1).split(",").map(parseFloat);
             r = rgba[0] / 255;
             g = rgba[1] / 255;
             b = rgba[2] / 255;
             a = rgba[3];
           } else if (/^rgb/.test(c)) {
-            rgb = c.substring(1,c.length-1).split(",").map(parseFloat);
+            rgb = c.substring(4,c.length-1).split(",").map(parseFloat);
             r = rgb[0] / 255;
             g = rgb[1] / 255;
             b = rgb[2] / 255;
@@ -560,15 +560,17 @@
               draw.mousedown = true;
               draw.drawPoint(draw.current);
               draw.prev = draw.current;
+              ev.preventDefault();
             }
-            Event.stop(ev);
           }
           this.listeners['mouseup'] = function(ev) {
             draw.stopResizingBrush();
+            if (draw.mousedown)
+              ev.preventDefault();
+            draw.mousedown = false;
             if (!Mouse.state[Mouse.LEFT]) {
               draw.prev = null;
             }
-            Event.stop(ev);
           };
           this.listeners['keydown'] = function(ev) {
             if (Key.match(ev, ['f'])) {
@@ -594,11 +596,7 @@
               //draw.setOpacity(draw.opacity + 0.25);
             } else if (Key.match(ev, ['1','2','3','4','5','6','7','8','9'])) {
               var tgt = byClass('paletteColor')[ev.which - 49];
-              if (ev.shiftKey) {
-                tgt.setColor(draw.colorToStyle(draw.color));
-              } else {
-                tgt.onclick();
-              }
+              draw.setColor(tgt.getAttribute('color'));
             }
           };
         },
@@ -736,6 +734,14 @@
         new ColorPicker(picker, 128, 128, function(c) {
           draw.setColor(c);
         });
+        var fg = byId('foregroundColor');
+        fg.setAttribute('draggable', 'true');
+        fg.addEventListener('dragstart', function(ev) {
+          ev.dataTransfer.effectAllowed = 'copy';
+          ev.dataTransfer.dropEffect = 'copy';
+          ev.dataTransfer.setData('text/plain', this.style.backgroundColor);
+          ev.dataTransfer.setDragImage(ev.target, 5, 5);
+        }, false);
 
         var ps = byClass('paletteColor');
         for (var i=0; i<ps.length; i++) {
@@ -744,11 +750,19 @@
             this.setAttribute('color', s);
             this.style.backgroundColor = s;
           }
-          ps[i].onclick = function(ev){
+          ps[i].addEventListener('dragover', function(ev) {
+            ev.preventDefault();
+          }, false);
+          ps[i].addEventListener('drop', function(ev) {
+            if (ev.dataTransfer.getData('text/plain'))
+              this.setColor(ev.dataTransfer.getData('text/plain'));
+            ev.preventDefault();
+          }, false);
+          ps[i].addEventListener('click', function(ev){
             draw.setColor(this.getAttribute('color'));
             if (ev)
               Event.stop(ev);
-          };
+          }, false);
         }
         var ps = byClass('brushWidth');
         for (var i=0; i<ps.length; i++) {
@@ -783,7 +797,7 @@
       <div class="paletteColor" color="#c0c0c0"></div>
       <div class="paletteColor" color="#f4f4f4"></div>
 
-      <div class="brushWidth" value="15"></div>
+      <div class="brushWidth" value="9"></div>
       <div class="brushWidth" value="5"></div>
       <div class="brushWidth" value="3"></div>
       <div class="brushWidth" value="2"></div>
@@ -792,8 +806,8 @@
       <div id="helpToggle" onclick="toggleHelp()">?</div>
       <div id="help">
         <p>Use the Keyboard, Luke!</p>
+        <p>drag current color to palette</p>
         <p>1-5 choose colors from palette</p>
-        <p>shift + 1-5 set palette entry to color</p>
         <p>shift-click palette entry to change it</p>
         <p>r picks color under cursor</p>
         <p>f + move mouse to resize brush</p>
