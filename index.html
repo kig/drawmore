@@ -12,7 +12,7 @@
         left: 10px;
         z-index: 10;
       }
-      #replay {
+      #save {
         margin-bottom: 20px;
       }
       #foregroundColor {
@@ -87,6 +87,92 @@
     </style>
     <script src="magi.js"></script>
     <script>
+
+      DrawHistorySerializer = Klass({
+        commands : [
+          'drawPoint',
+          'drawLine',
+          'clear',
+          'setColor',
+          'setBackground',
+          'setLineCap',
+          'setLineWidth',
+          'setOpacity'
+        ],
+        collapsible : {
+          'clear' : true,
+          'setColor' : true,
+          'setBackground' : true,
+          'setLineCap' : true,
+          'setLineWidth' : true,
+          'setOpacity' : true
+        },
+        majorVersion: 0,
+        minorVersion: 1,
+
+        initialize : function() {
+          this.commandCodes = {};
+          for (var i=0; i<this.commands.length; i++) {
+            this.commandCodes[this.commands[i]] = i;
+          }
+        },
+
+        serialize : function(history) {
+          var output = [];
+          for (var i=0; i<history.length; i++) {
+            var e = history[i];
+            if (this.collapsible[e.methodName] && history[i+1]
+                && history[i+1].methodName == e.methodName) {
+              // only the last element matters in a string of collapsible actions
+              // (a = 1; a = 2; a = 3; a = 4) <=> (a = 4)
+              continue;
+            }
+            var cmd = this.commandCodes[e.methodName];
+            if (e.methodName == 'drawLine') {
+              // delta-encode a string of drawLine actions
+              var coords = [e.args[0], e.args[1]];
+              e = history[i+1];
+              while (e && e.methodName == 'drawLine') {
+                if (this.canDeltaEncode(coords, e.args))
+                  coords.push(e.args[1]);
+                else
+                  break;
+                i++;
+                e = history[i+1];
+              }
+              var deltaString = this.deltaEncode(coords);
+              output.push(cmd + this.encodeNumber(deltaString.length) + deltaString);
+              continue;
+            } else {
+              var args = this.encodeArgs(e.args);
+              output.push(cmd + args);
+            }
+          }
+          return output.join("");
+        },
+
+        deserialize : function(string) {
+          var output = [];
+          var obj = {};
+          for (var i=0; i<string.length;) {
+            i += this.readCommand(string, obj);
+            if (obj.methodName == 'drawLine') {
+              var coords = this.decodeDeltas(obj.args);
+              for (var j=0; j<coords.length; j++)
+                output.push({methodName: 'drawLine', args: coords[j]});
+            } else {
+              var o = {methodName: obj.methodName, args: obj.args};
+              if (this.breakpointMethod[obj.methodName])
+                o.breakpoint = true;
+              output.push(o);
+            }
+          }
+          return o;
+        }
+
+      });
+
+
       Undoable = Klass({
         historySnapshotEventCount : 3500,
         playbackRate : 5, // events per millisecond
@@ -232,6 +318,7 @@
         x : 0,
         y : 0,
         sz : 64,
+        minSz : 64,
 
         initialize : function() {
           this.cursorCanvas = E.canvas(this.sz, this.sz);
@@ -244,14 +331,16 @@
         update : function(diameter) {
           var ctx = this.cursorCanvas.getContext('2d');
           var w = this.sz;
-          if (w > 64 && w > diameter*2) {
-            while (w > 64 && w > diameter*2)
+          if (w > this.minSz && (w > diameter*4 || (w > 512 && w > diameter*2))) {
+            while (w > this.minSz && (w > diameter*4 || (w > 512 && w > diameter*2)))
               w /= 2;
             this.cursorCanvas.width = this.cursorCanvas.height = w;
-          } else if (w < diameter*2) {
-            while (w < diameter*2)
+            console.log('scale down to '+w);
+          } else if (w < diameter+2) {
+            while (w < diameter+2)
               w *= 2
             this.cursorCanvas.width = this.cursorCanvas.height = w;
+            console.log('scale up to '+w);
           }
           this.sz = w;
           ctx.clearRect(0,0,w,w);
@@ -715,6 +804,11 @@
             var c = this.colorAt(this.ctx, xy.x, xy.y, radius);
             this.setBackground(c);
           }
+        },
+
+        save : function() {
+          var dataURL = this.canvas.toDataURL('image/png');
+          window.open(dataURL);
         }
 
       });
@@ -745,6 +839,9 @@
 
         byId('replay').onclick = function(){
           draw.playbackHistory();
+        };
+        byId('save').onclick = function(){
+          draw.save();
         };
         /*
         byId('clear').onclick = function(){
@@ -811,6 +908,7 @@
   <body>
     <div id="palette">
       <button id="replay">Replay</button>
+      <button id="save">Save</button>
 
       <div id="colorPicker"></div>
 
@@ -839,7 +937,6 @@
         <p>z is undo</p>
         <p>shift-z is redo</p>
         <p>delete clears the canvas</p>
-        <p>there's no save, buu-huu-huu</p>
         <p>to ditch undo history, reload page</p>
       </div>
 
