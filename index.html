@@ -257,7 +257,7 @@
           ctx.clearRect(0,0,w,w);
           ctx.beginPath();
           ctx.lineWidth = 0.75;
-          ctx.arc(w/2, w/2, diameter/2+1, 0, Math.PI*2);
+          ctx.arc(w/2, w/2, diameter/2+0.25, 0, Math.PI*2);
           ctx.strokeStyle = '#ffffff';
           ctx.stroke();
           ctx.beginPath();
@@ -265,6 +265,23 @@
           ctx.arc(w/2, w/2, diameter/2, 0, Math.PI*2);
           ctx.strokeStyle = '#000000';
           ctx.stroke();
+          if (diameter < 6) {
+            ctx.beginPath();
+            ctx.moveTo(w/2+4, w/2);
+            ctx.lineTo(w/2+9, w/2);
+            ctx.moveTo(w/2-4, w/2);
+            ctx.lineTo(w/2-9, w/2);
+            ctx.moveTo(w/2, w/2-4);
+            ctx.lineTo(w/2, w/2-9);
+            ctx.moveTo(w/2, w/2+4);
+            ctx.lineTo(w/2, w/2+9);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
           this.moveTo(this.x, this.y);
         },
 
@@ -470,7 +487,7 @@
         initialize : function(canvas) {
           this.canvas = canvas;
           this.ctx = canvas.getContext('2d');
-          this.canvas.style.cursor = 'url('+E.canvas(1,1).toDataURL()+')';
+          this.canvas.style.cursor = 'url('+E.canvas(1,1).toDataURL()+'),crosshair';
           Undoable.initialize.call(this);
           this.current = {x:0,y:0};
           this.cursor = new RoundBrushCursor();
@@ -711,6 +728,11 @@
           draw.canvas.width = window.innerWidth;
           draw.canvas.height = window.innerHeight;
           draw.ctx.putImageData(id, 0,0);
+          var s = draw.getState();
+          var rh = draw.recordHistory;
+          draw.recordHistory = false;
+          draw.applyState(s);
+          draw.recordHistory = rh;
         }
       }, false);
 
