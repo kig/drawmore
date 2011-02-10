@@ -734,6 +734,19 @@
             }
             if (Mouse.state[Mouse.LEFT] && draw.mousedown) {
               if (draw.prev != null) {
+                if (!ev.shiftKey)
+                  draw.constraint = null;
+                if (ev.shiftKey && !draw.constraint) {
+                  var dx = draw.current.x - draw.prev.x;
+                  var dy = draw.current.y - draw.prev.y;
+                  if (Math.abs(dx) > Math.abs(dy))
+                    draw.constraint = {y: draw.prev.y};
+                  else
+                    draw.constraint = {x: draw.prev.x};
+                }
+                if (draw.constraint) {
+                  Object.extend(draw.current, draw.constraint);
+                }
                 draw.drawLine(draw.prev, draw.current);
               }
               draw.prev = draw.current;
@@ -746,8 +759,14 @@
             draw.stopResizingBrush();
             if (Mouse.state[Mouse.LEFT] && ev.target == draw.canvas) {
               draw.mousedown = true;
-              draw.drawPoint(draw.current);
-              draw.prev = draw.current;
+              if (ev.shiftKey && draw.mouseup) {
+                draw.constraint = null;
+                draw.drawLine(draw.mouseup, draw.current);
+                draw.prev = null;
+              } else {
+                draw.drawPoint(draw.current);
+                draw.prev = draw.current;
+              }
               ev.preventDefault();
             }
           }
@@ -756,6 +775,7 @@
             if (draw.mousedown)
               ev.preventDefault();
             draw.mousedown = false;
+            draw.mouseup = Mouse.getRelativeCoords(draw.canvas, ev);
             if (!Mouse.state[Mouse.LEFT]) {
               draw.prev = null;
             }
@@ -1020,10 +1040,11 @@
         <p>1-5 choose colors from palette</p>
         <p>r picks color under cursor</p>
         <p>f + move mouse to resize brush</p>
+        <p>shift draws with constraints</p>
+        <p>shift-click to do straight lines</p>
         <p>z is undo</p>
         <p>shift-z is redo</p>
         <p>delete clears the canvas</p>
-        <p>to ditch undo history, reload page</p>
       </div>
     </div>
     <div id="palette">
