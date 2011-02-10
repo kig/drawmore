@@ -413,7 +413,7 @@
           ctx.arc(w/2, w/2, diameter/2, 0, Math.PI*2);
           ctx.strokeStyle = '#000000';
           ctx.stroke();
-          if (diameter < 4.5) {
+          if (diameter < 3) {
             ctx.beginPath();
             ctx.moveTo(w/2+2, w/2);
             ctx.lineTo(w/2+4, w/2);
@@ -761,7 +761,7 @@
               draw.mousedown = true;
               if (ev.shiftKey && draw.mouseup) {
                 draw.constraint = null;
-                draw.drawLine(draw.mouseup, draw.current);
+                draw.drawLine(draw.mouseup, draw.current, true);
                 draw.prev = null;
               } else {
                 draw.drawPoint(draw.current);
@@ -817,14 +817,16 @@
 
         keepResizingBrush : function() {
           if (!this.resizingBrush) return;
-          var dx = Math.max(0.75, this.current.x - this.brushResizeX);
+          var d = Math.max(this.current.x - this.brushResizeX, 0);
+          var dx = Math.max(0.75, d);
           this.setLineWidth(dx);
         },
 
         stopResizingBrush : function() {
           if (!this.resizingBrush) return;
           this.resizingBrush = false;
-          var dx = Math.max(0.75, this.current.x - this.brushResizeX);
+          var d = Math.max(this.current.x - this.brushResizeX, 0);
+          var dx = Math.max(0.75, d);
           this.setLineWidth(dx);
         },
 
@@ -842,12 +844,17 @@
           this.addHistoryState({methodName: 'drawPoint', args:[xy], breakpoint: true});
         },
 
-        drawLine : function(prev, current) {
+        drawLine : function(prev, current, breakpoint) {
           this.ctx.beginPath();
           this.ctx.moveTo(prev.x, prev.y);
           this.ctx.lineTo(current.x, current.y);
           this.ctx.stroke();
-          this.addHistoryState({methodName: 'drawLine', args:[prev, current]});
+          var s = {methodName: 'drawLine', args:[prev, current]}
+          if (breakpoint) {
+            s.breakpoint = true;
+            s.args.push(true);
+          }
+          this.addHistoryState(s);
         },
 
         setColor : function(color) {
@@ -887,7 +894,12 @@
           this.ctx.lineWidth = w;
           this.lineWidth = this.ctx.lineWidth;
           this.cursor.update(this.lineWidth);
-          this.addHistoryState({methodName: 'setLineWidth', args:[this.lineWidth]});
+          // collapse multiple setLineWidth calls into a single history event
+          var last = this.history.last();
+          if (last && last.methodName == 'setLineWidth')
+            last.args[0] = this.lineWidth;
+          else
+            this.addHistoryState({methodName: 'setLineWidth', args:[this.lineWidth]});
         },
 
         pickColor : function(xy, radius) {
