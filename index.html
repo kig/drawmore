@@ -6,20 +6,17 @@
         font-family: Ubuntu, sans-serif;
       }
       #palette {
-        width: 0px;
         position: absolute;
-        top: 10px;
-        left: 10px;
+        bottom: 4px;
+        left: 4px;
         z-index: 10;
-      }
-      #replay {
-        margin-bottom: 20px;
+        vertical-align: bottom;
       }
       #fileIO {
         text-align: right;
         z-index: 10;
-        top: 10px;
-        right: 10px;
+        bottom: 4px;
+        right: 4px;
         position: absolute;
       }
       #foregroundColor {
@@ -27,11 +24,13 @@
         display: block;*/
         display: inline-block;
         width: 40px;
-        height: 30px;
-        margin-bottom: 20px;
+        height: 20px;
+        margin-bottom: 0px;
+        margin-right: 8px;
         border: 1px solid gray;
         z-index: 1;
         cursor: pointer;
+        vertical-align: bottom;
       }
       #backgroundColor {
         width: 40px;
@@ -44,16 +43,18 @@
         z-index: 0;
       }
       #colorPicker {
-        margin-bottom: 20px;
+        margin-bottom: 0px;
+        display: inline-block;
+        width: 128px;
+        vertical-align: bottom;
       }
       .paletteColor {
         width: 20px;
         height: 20px;
         border: 1px solid gray;
         display: inline-block;
-        margin-bottom: 2px;
-        margin-right: 2px;
         cursor: pointer;
+        vertical-align: bottom;
       }
       .paletteColor + .brushWidth {
         margin-top: 10px;
@@ -64,25 +65,29 @@
         display: block;
         margin-bottom: 10px;
         cursor: pointer;
+        display: none;
       }
       #helpToggle {
         font-size: 17px;
         cursor: pointer;
         position: absolute;
-        right: 0px;
-        top: 30px;
+        left: 8px;
+        top: 10px;
+        z-index: 10;
         text-shadow: 0px 0px 5px white;
         width: 22px;
         text-align: center;
       }
       #help {
+        z-index: 10;
         display: none;
         position: absolute;
-        right: 34px;
-        top: 34px;
-        padding: 10px;
-        padding-top: 4px;
-        padding-right: 14px;
+        left: 36px;
+        top: 8px;
+        text-align: left;
+        padding: 14px;
+        padding-top: 6px;
+        padding-bottom: 8px;
         border-radius: 10px;
         background-color: rgba(255,255,255,0.8);
       }
@@ -716,13 +721,14 @@
           var self = this;
           this.callback = callback;
           this.canvas = E.canvas(width, height);
-          this.ctx = this.canvas.getContext('2d');
           container.appendChild(this.canvas);
+          this.ctx = this.canvas.getContext('2d');
+          this.hueCanvas = E.canvas(width, 15);
+          container.appendChild(this.hueCanvas);
+          this.hueCtx = this.hueCanvas.getContext('2d');
           this.cursor = new RoundBrushCursor();
           this.cursor.cursorCanvas.style.zIndex = 11;
           this.cursor.update(8);
-          this.hueCanvas = E.canvas(width, 15);
-          this.hueCtx = this.hueCanvas.getContext('2d');
           for (var i=0; i<width; i++) {
             var rgb = this.hsv2rgb(i/width*360, 1,1);
             rgb[3] = 1;
@@ -776,7 +782,6 @@
             hc.down = false;
             cc.down = false;
           }, false);
-          container.appendChild(this.hueCanvas);
           var w = this.ctx.createLinearGradient(0,0,width-1,height-1);
           w.addColorStop(0, 'rgba(255,255,255,1)');
           w.addColorStop(0.5000, 'rgba(255,255,255,0)');
@@ -1240,19 +1245,6 @@
       <button id="save">Save</button>
       <button id="export">Export Image</button>
       <button id="replay">Replay</button>
-      <div id="helpToggle" onclick="toggleHelp()">?</div>
-      <div id="help">
-        <p>Use the Keyboard, Luke!</p>
-        <p>drag current color to palette</p>
-        <p>1-5 choose colors from palette</p>
-        <p>r picks color under cursor</p>
-        <p>f + move mouse to resize brush</p>
-        <p>shift draws with constraints</p>
-        <p>shift-click to do straight lines</p>
-        <p>z is undo</p>
-        <p>shift-z is redo</p>
-        <p>delete clears the canvas</p>
-      </div>
     </div>
     <div id="palette">
       <div id="colorPicker"></div>
@@ -1271,6 +1263,19 @@
       <div class="brushWidth" value="3"></div>
       <div class="brushWidth" value="2"></div>
       <div class="brushWidth" value="1"></div>
+    </div>
+    <div id="helpToggle" onclick="toggleHelp()">?</div>
+    <div id="help">
+      <p>Use the Keyboard, Luke!</p>
+      <p>drag current color to palette</p>
+      <p>1-5 choose colors from palette</p>
+      <p>r picks color under cursor</p>
+      <p>f + move mouse to resize brush</p>
+      <p>shift draws with constraints</p>
+      <p>shift-click to do straight lines</p>
+      <p>z is undo</p>
+      <p>shift-z is redo</p>
+      <p>delete clears the canvas</p>
     </div>
   </body>
 </html>
