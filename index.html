@@ -12,8 +12,15 @@
         left: 10px;
         z-index: 10;
       }
-      #save {
+      #replay {
         margin-bottom: 20px;
+      }
+      #fileIO {
+        text-align: right;
+        z-index: 10;
+        top: 10px;
+        right: 10px;
+        position: absolute;
       }
       #foregroundColor {
 /*        position: absolute;
@@ -42,9 +49,10 @@
       .paletteColor {
         width: 20px;
         height: 20px;
+        border: 1px solid gray;
         display: inline-block;
-        margin-bottom: 10px;
-        margin-right: 20px;
+        margin-bottom: 2px;
+        margin-right: 2px;
         cursor: pointer;
       }
       .paletteColor + .brushWidth {
@@ -58,23 +66,23 @@
         cursor: pointer;
       }
       #helpToggle {
-        font-size: 15px;
+        font-size: 17px;
         cursor: pointer;
         position: absolute;
-        left: 70px;
-        top: 1px;
+        right: 0px;
+        top: 30px;
         background-color: rgba(0,0,0,0.8);
+        font-weight: bold;
         color: white;
         border-radius: 50%;
         width: 24px;
-        padding-bottom: 4px;
         text-align: center;
       }
       #help {
         display: none;
         position: absolute;
-        left: 100px;
-        top: 4px;
+        right: 34px;
+        top: 34px;
         width: 200px;
         padding-left: 10px;
         background-color: rgba(255,255,255,0.8);
@@ -89,6 +97,37 @@
     <script>
 
       DrawHistorySerializer = Klass({
+        magic: 'SRBL',
+        majorVersion: 0,
+        minorVersion: 0,
+
+        initialize : function() {},
+
+        getVersionTag : function() {
+          return [this.magic, this.majorVersion, this.minorVersion, ''].join(",")
+        },
+
+        serialize : function(history) {
+          return [this.getVersionTag(), this.serializeBody(history)].join("");
+        },
+
+        deserialize : function(string) {
+          var t = this.getVersionTag();
+          if (string.substring(0, t.length) != t)
+            throw (new Error("Unknown version tag"))
+          return this.deserializeBody(string.substring(t.length));
+        },
+
+        serializeBody : function(history) {
+          return JSON.stringify(history);
+        },
+
+        deserializeBody : function(history) {
+          return JSON.parse(history);
+        }
+      });
+
+      CompressedDrawHistorySerializer = Klass(DrawHistorySerializer, {
         commands : [
           'drawPoint',
           'drawLine',
@@ -107,8 +146,8 @@
           'setLineWidth' : true,
           'setOpacity' : true
         },
-        majorVersion: 0,
-        minorVersion: 1,
+        majorVersion: 1,
+        minorVersion: 0,
 
         initialize : function() {
           this.commandCodes = {};
@@ -117,7 +156,7 @@
           }
         },
 
-        serialize : function(history) {
+        serializeBody : function(history) {
           var output = [];
           for (var i=0; i<history.length; i++) {
             var e = history[i];
@@ -141,7 +180,7 @@
                 e = history[i+1];
               }
               var deltaString = this.deltaEncode(coords);
-              output.push(cmd + this.encodeNumber(deltaString.length) + deltaString);
+              output.push(cmd + this.encodeInt16(deltaString.length) + deltaString);
               continue;
             } else {
               var args = this.encodeArgs(e.args);
@@ -151,7 +190,7 @@
           return output.join("");
         },
 
-        deserialize : function(string) {
+        deserializeBody : function(string) {
           var output = [];
           var obj = {};
           for (var i=0; i<string.length;) {
@@ -167,9 +206,29 @@
               output.push(o);
             }
           }
-          return o;
-        }
+          return output;
+        },
 
+        canDeltaEncode : function(coords, args) {
+          var l = coords.last();
+          return (
+            coords.length < 30000 &&
+            (l.x == args[0].x && l.y == args[0].y) &&
+            (Math.abs(l.x-args[1].x) < 127 && Math.abs(l.y-args[1].y) < 127)
+          );
+        },
+
+        deltaEncode : function(coords) {
+          var base = coords[0];
+          var deltas = [this.encodeInt16(base.x),this.encodeInt16(base.y)];
+          for (var i=1; i<coords.length-1; i++) {
+            var prev = coords[i-1];
+            var cur = coords[i];
+            // these could be entropy-encoded
+            deltas.push(this.encodeInt8(cur.x-prev.x), this.encodeInt8(cur.y-prev.y));
+          }
+          return deltas.join("");
+        }
       });
 
 
@@ -628,6 +687,25 @@
           this[state.methodName].apply(this, state.args);
         },
 
+        createSaveObject : function() {
+          return {
+            history: this.history,
+            historyIndex : this.historyIndex,
+            width: this.canvas.width,
+            height: this.canvas.height
+          };
+        },
+
+        applySaveObject : function(obj) {
+          this.clear();
+          this.clearHistory();
+          this.canvas.width = obj.width;
+          this.canvas.height = obj.height;
+          for (var i=0; i<obj.history.length; i++) {
+            this.applyHistoryState(obj.history[i]);
+          }
+          this.gotoHistoryState(obj.historyIndex);
+        },
 
         addListeners : function() {
           for (var i in this.listeners) {
@@ -719,14 +797,14 @@
 
         keepResizingBrush : function() {
           if (!this.resizingBrush) return;
-          var dx = Math.max(1, this.current.x - this.brushResizeX);
+          var dx = Math.max(0.75, this.current.x - this.brushResizeX);
           this.setLineWidth(dx);
         },
 
         stopResizingBrush : function() {
           if (!this.resizingBrush) return;
           this.resizingBrush = false;
-          var dx = Math.max(1, this.current.x - this.brushResizeX);
+          var dx = Math.max(0.75, this.current.x - this.brushResizeX);
           this.setLineWidth(dx);
         },
 
@@ -806,9 +884,20 @@
           }
         },
 
-        save : function() {
+        export : function() {
           var dataURL = this.canvas.toDataURL('image/png');
           window.open(dataURL);
+        },
+
+        load : function(string) {
+          var obj = new DrawHistorySerializer().deserialize(string);
+          this.applySaveObject(obj);
+        },
+
+        save : function() {
+          var string = new DrawHistorySerializer().serialize(this.createSaveObject());
+          var b64 = btoa(string);
+          window.open('data:image/x-scribble;base64,'+b64);
         }
 
       });
@@ -843,15 +932,27 @@
         byId('save').onclick = function(){
           draw.save();
         };
+        byId('load').onchange = function(){
+          if (this.files.length > 0) {
+            var reader = new FileReader();
+            reader.onloadend = function(res) {
+              draw.load(this.result);
+            };
+            reader.readAsBinaryString(this.files[0]);
+          }
+        };
+        byId('export').onclick = function(){
+          draw.export();
+        };
         /*
         byId('clear').onclick = function(){
           draw.clear();
         };
+        */
         byId('new').onclick = function(){
           draw.clearHistory();
           draw.clear();
         };
-        */
 
         var picker = byId('colorPicker');
         new ColorPicker(picker, 128, 128, function(c) {
@@ -906,27 +1007,12 @@
     </script>
   </head>
   <body>
-    <div id="palette">
-      <button id="replay">Replay</button>
+    <div id="fileIO">
+      <button id="new">New</button>
+      <input type="file" id="load" value=""></input>
       <button id="save">Save</button>
-
-      <div id="colorPicker"></div>
-
-      <div id="foregroundColor"></div>
-      <div id="backgroundColor"></div>
-
-      <div class="paletteColor" color="#000000"></div>
-      <div class="paletteColor" color="#404040"></div>
-      <div class="paletteColor" color="#808080"></div>
-      <div class="paletteColor" color="#c0c0c0"></div>
-      <div class="paletteColor" color="#f4f4f4"></div>
-
-      <div class="brushWidth" value="9"></div>
-      <div class="brushWidth" value="5"></div>
-      <div class="brushWidth" value="3"></div>
-      <div class="brushWidth" value="2"></div>
-      <div class="brushWidth" value="1"></div>
-
+      <button id="export">Export Image</button>
+      <button id="replay">Replay</button>
       <div id="helpToggle" onclick="toggleHelp()">?</div>
       <div id="help">
         <p>Use the Keyboard, Luke!</p>
@@ -939,7 +1025,24 @@
         <p>delete clears the canvas</p>
         <p>to ditch undo history, reload page</p>
       </div>
+    </div>
+    <div id="palette">
+      <div id="colorPicker"></div>
 
+      <div id="foregroundColor"></div>
+      <div id="backgroundColor"></div>
+
+      <div class="paletteColor" color="#000000"></div>
+      <div class="paletteColor" color="#ffffff"></div>
+      <div class="paletteColor" color="#c02008"></div>
+      <div class="paletteColor" color="#08c010"></div>
+      <div class="paletteColor" color="#3040f0"></div>
+
+      <div class="brushWidth" value="9"></div>
+      <div class="brushWidth" value="5"></div>
+      <div class="brushWidth" value="3"></div>
+      <div class="brushWidth" value="2"></div>
+      <div class="brushWidth" value="1"></div>
     </div>
   </body>
 </html>
