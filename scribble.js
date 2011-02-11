@@ -158,27 +158,27 @@ Scribble = Klass(Undoable, ColorUtils, {
       }
     };
     this.listeners['keydown'] = function(ev) {
-      if (Key.match(ev, ['f'])) {
+      if (Key.match(ev, ['f','j'])) {
         draw.startResizingBrush();
-      } else if (Key.match(ev, ['z'])) {
+      } else if (Key.match(ev, ['z','n'])) {
         if (ev.shiftKey)
           draw.redo();
         else
           draw.undo();
-      } else if (Key.match(ev, ['r'])) {
+      } else if (Key.match(ev, ['r','u'])) {
         draw.pickColor(draw.current, draw.pickRadius);
       }
     };
     this.listeners['keyup'] = function(ev) {
       draw.stopResizingBrush();
-      if (Key.match(ev, Key.DELETE)) {
+      if (Key.match(ev, [Key.DELETE, Key.BACKSPACE])) {
         draw.clear();
-      } else if (Key.match(ev, ['f'])) {
+      } else if (Key.match(ev, ['f','j'])) {
         // stopped resize above
-      } else if (Key.match(ev, ['c'])) {
-        //draw.setOpacity(draw.opacity - 0.25);
-      } else if (Key.match(ev, ['v'])) {
-        //draw.setOpacity(draw.opacity + 0.25);
+      } else if (Key.match(ev, ['d','k'])) {
+        draw.setLineWidth(draw.lineWidth/1.5);
+      } else if (Key.match(ev, ['e','i'])) {
+        draw.setLineWidth(draw.lineWidth*1.5);
       } else if (Key.match(ev, ['1','2','3','4','5','6','7','8','9'])) {
         var tgt = byClass('paletteColor')[ev.which - 49];
         draw.setColor(tgt.getAttribute('color'));
