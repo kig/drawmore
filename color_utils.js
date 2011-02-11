@@ -159,6 +159,7 @@ ColorPicker = Klass(ColorUtils, {
     this.hueCtx = this.hueCanvas.getContext('2d');
     this.cursor = new RoundBrushCursor();
     this.cursor.cursorCanvas.style.zIndex = 11;
+    container.appendChild(this.cursor.cursorCanvas);
     this.cursor.update(8);
     for (var i=0; i<width; i++) {
       var rgb = this.hsv2rgb(i/width*360, 1,1);
@@ -170,14 +171,12 @@ ColorPicker = Klass(ColorUtils, {
     this.hueCtx.fillRect(0,0,width,3);
     var hc = this.hueCanvas;
     var cc = this.canvas;
-    var rect = this.canvas.getBoundingClientRect();
-    this.cursor.moveTo(rect.left, rect.top);
     hc.addEventListener('mousedown', function(ev) {
       this.down = true;
       var xy = Mouse.getRelativeCoords(hc, ev);
       var h = Math.clamp(xy.x/width, 0, (width-1)/width);
       self.setHue(h*360);
-      var c = self.colorAt(self.ctx, self.cursor.x-rect.left, self.cursor.y-rect.top);
+      var c = self.colorAt(self.ctx, self.cursor.x, self.cursor.y);
       self.callback(c);
       ev.preventDefault();
     }, false);
@@ -187,7 +186,7 @@ ColorPicker = Klass(ColorUtils, {
       var x = Math.clamp(xy.x, 0, width-1);
       var y = Math.clamp(xy.y, 0, height-1);
       var c = self.colorAt(self.ctx, x, y);
-      self.cursor.moveTo(rect.left+x, rect.top+y);
+      self.cursor.moveTo(x, y);
       self.callback(c);
       ev.preventDefault();
     }, false);
@@ -196,7 +195,7 @@ ColorPicker = Klass(ColorUtils, {
         var xy = Mouse.getRelativeCoords(hc, ev);
         var h = Math.clamp(xy.x/width, 0, (width-1)/width);
         self.setHue(h*360);
-        var c = self.colorAt(self.ctx, self.cursor.x-rect.left, self.cursor.y-rect.top);
+        var c = self.colorAt(self.ctx, self.cursor.x, self.cursor.y);
         self.callback(c);
         ev.preventDefault();
       } else if (cc.down) {
@@ -204,7 +203,8 @@ ColorPicker = Klass(ColorUtils, {
         var x = Math.clamp(xy.x, 0, width-1);
         var y = Math.clamp(xy.y, 0, height-1);
         var c = self.colorAt(self.ctx, x, y);
-        self.cursor.moveTo(rect.left+x, rect.top+y);
+        var rect = self.canvas.getBoundingClientRect();
+        self.cursor.moveTo(x, y);
         self.callback(c);
         ev.preventDefault();
       }
