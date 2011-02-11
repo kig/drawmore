@@ -180,14 +180,17 @@ Scribble = Klass(Undoable, ColorUtils, {
           draw.undo();
       } else if (Key.match(ev, ['r','u'])) {
         draw.pickColor(draw.current, draw.pickRadius);
+      } else if (Key.match(ev, [Key.TAB, '0'])) {
+        Event.stop(ev);
       }
     };
     this.listeners['keyup'] = function(ev) {
       draw.stopResizingBrush();
       if (Key.match(ev, [Key.DELETE, Key.BACKSPACE])) {
         draw.clear();
-      } else if (Key.match(ev, [Key.TAB])) {
+      } else if (Key.match(ev, [Key.TAB, '0'])) {
         draw.toggleUI();
+        Event.stop(ev);
       } else if (Key.match(ev, ['f','j'])) {
         // stopped resize above
       } else if (Key.match(ev, ['d','k'])) {
@@ -198,6 +201,10 @@ Scribble = Klass(Undoable, ColorUtils, {
         draw.setColor(draw.palette[ev.which - 49]);
       }
     };
+  },
+
+  toggleUI : function() {
+    // overwrite with a version that does something
   },
 
   startResizingBrush : function() {

@@ -207,6 +207,15 @@
         }
 
         draw = new Scribble(c);
+        draw.toggleUI = function(){
+          var f = byId('fileIO');
+          var p = byId('palette');
+          if (f.style.display != 'none') {
+            f.style.display = p.style.display = 'none';
+          } else {
+            f.style.display = p.style.display = 'block';
+          }
+        };
         var prefs = localStorage.savedScribbleState;
         if (prefs) {
           try {
@@ -265,6 +274,7 @@
       <p>shift-click does straight lines</p>
       <p>z is undo (n)</p>
       <p>shift-z is redo (shift-n)</p>
+      <p>tab hides the GUI (0)</p>
       <p>delete clears the canvas</p>
       <hr>
       <p>left-handed keys parenthesized</p>
