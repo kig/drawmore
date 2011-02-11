@@ -1,7 +1,8 @@
 <html>
   <head>
+    <title>Scribble!</title>
     <style>
-      body {
+      html {
         overflow: hidden;
         font-family: Ubuntu, sans-serif;
       }
@@ -26,7 +27,7 @@
         width: 40px;
         height: 20px;
         margin-bottom: 0px;
-        margin-left: 8px;
+        margin-left: 0px;
         margin-right: 8px;
         border: 1px solid gray;
         z-index: 1;
@@ -48,6 +49,7 @@
         display: inline-block;
         width: 128px;
         vertical-align: bottom;
+        margin-right: 8px;
         height: 0px;
         position: relative;
         top: -143px;
@@ -151,11 +153,6 @@
         byId('export').onclick = function(){
           draw.export();
         };
-        /*
-        byId('clear').onclick = function(){
-          draw.clear();
-        };
-        */
         byId('new').onclick = function(){
           draw.clearHistory();
           draw.clear();
@@ -171,7 +168,7 @@
           ev.dataTransfer.effectAllowed = 'copy';
           ev.dataTransfer.dropEffect = 'copy';
           ev.dataTransfer.setData('text/plain', this.style.backgroundColor);
-          ev.dataTransfer.setDragImage(ev.target, 5, 5);
+          ev.dataTransfer.setDragImage(ev.target, 20, 20);
         }, false);
 
         var ps = byClass('paletteColor');
@@ -209,12 +206,20 @@
         draw = new Scribble(c);
         draw.toggleUI = function(){
           var f = byId('fileIO');
-          var p = byId('palette');
+          var p = byId('colorPicker');
           if (f.style.display != 'none') {
             f.style.display = p.style.display = 'none';
+            // semi-hide the palette? no?
+            //byId('palette').style.bottom = '-15px'
           } else {
-            f.style.display = p.style.display = 'block';
+            f.style.display = 'block';
+            p.style.display = 'inline-block';
+            //byId('palette').style.bottom = '4px'
           }
+        };
+        draw.toggleHelp = function() {
+          var h = byId('help');
+          h.style.display = h.style.display == 'block' ? 'none' : 'block';
         };
         var prefs = localStorage.savedScribbleState;
         if (prefs) {
@@ -224,12 +229,13 @@
             console.log("Failed to load saved Scribble state", e);
           }
         }
+
+        byId('helpToggle').onclick = function(ev){
+          draw.toggleHelp();
+          Event.stop(ev);
+        };
       }, false);
 
-      toggleHelp = function() {
-        var h = byId('help');
-        h.style.display = h.style.display == 'block' ? 'none' : 'block';
-      }
     </script>
   </head>
   <body>
@@ -262,7 +268,7 @@
       <div class="brushWidth" value="2"></div>
       <div class="brushWidth" value="1"></div>
     </div>
-    <div id="helpToggle" onclick="toggleHelp()">?</div>
+    <div id="helpToggle">?</div>
     <div id="help">
       <p>Use the Keyboard, Luke!</p>
       <p>drag current color to palette</p>

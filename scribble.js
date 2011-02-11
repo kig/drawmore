@@ -8,6 +8,9 @@ Scribble = Klass(Undoable, ColorUtils, {
   current : null,
   prev : null,
 
+  minimumBrushSize : 0.75,
+  maximumBrushSize : 1000,
+
   initialize : function(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
@@ -211,12 +214,14 @@ Scribble = Klass(Undoable, ColorUtils, {
       } else if (Key.match(ev, [Key.TAB, '0'])) {
         draw.toggleUI();
         Event.stop(ev);
+      } else if (Key.match(ev, [191])) {
+        draw.toggleHelp();
       } else if (Key.match(ev, ['f','j'])) {
         // stopped resize above
       } else if (Key.match(ev, ['d','k'])) {
-        draw.setLineWidth(draw.lineWidth/1.5);
+        draw.setLineWidth(Math.clamp(draw.lineWidth/1.5, draw.minimumBrushSize, draw.maximumBrushSize));
       } else if (Key.match(ev, ['e','i'])) {
-        draw.setLineWidth(draw.lineWidth*1.5);
+        draw.setLineWidth(Math.clamp(draw.lineWidth*1.5, draw.minimumBrushSize, draw.maximumBrushSize));
       } else if (Key.match(ev, ['1','2','3','4','5','6','7','8','9'])) {
         draw.setColor(draw.palette[ev.which - 49]);
       }
@@ -224,6 +229,10 @@ Scribble = Klass(Undoable, ColorUtils, {
   },
 
   toggleUI : function() {
+    // overwrite with a version that does something
+  },
+
+  toggleHelp : function() {
     // overwrite with a version that does something
   },
 
@@ -236,7 +245,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   keepResizingBrush : function() {
     if (!this.resizingBrush) return;
     var d = Math.max(this.current.x - this.brushResizeX, 0);
-    var dx = Math.max(0.75, d);
+    var dx = Math.clamp(d, this.minimumBrushSize, this.maximumBrushSize)
     this.setLineWidth(dx);
   },
 
@@ -244,7 +253,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     if (!this.resizingBrush) return;
     this.resizingBrush = false;
     var d = Math.max(this.current.x - this.brushResizeX, 0);
-    var dx = Math.max(0.75, d);
+    var dx = Math.clamp(d, this.minimumBrushSize, this.maximumBrushSize)
     this.setLineWidth(dx);
   },
 
