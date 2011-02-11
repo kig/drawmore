@@ -31,9 +31,9 @@ JSONDrawHistorySerializer = Klass({
   },
 
   deserialize : function(string) {
-    var t = this.getVersionTag();
-    if (string.substring(0, t.length) != t)
+    if (!this.canDeserialize(string))
       throw (new Error("Unknown version tag"));
+    var t = this.getVersionTag();
     return this.deserializeBody(string.substring(t.length));
   },
 
@@ -89,18 +89,20 @@ OldJSONDrawHistorySerializer = Klass(JSONDrawHistorySerializer, {
      5 setLineCap
      6 setLineWidth
      7 setOpacity
+     8 setPaletteColor
 
   Arguments are stored differently for each command:
 
-  Method name   Argument format     Argument length in bytes
-  drawPoint     [int16 x, int16 y]  8
-  drawLine      [delta_encoded]     variable
-  clear         []                  0
-  setColor      [color]             16
-  setBackground [color]             16
-  setLineCap    [lineCap]           1
-  setLineWidth  [float32]           4
-  setOpacity    [color_component]   4
+  Method name     Argument format     Argument length in bytes
+  drawPoint       [int16 x, int16 y]  8
+  drawLine        [delta_encoded]     variable
+  clear           []                  0
+  setColor        [color]             16
+  setBackground   [color]             16
+  setLineCap      [lineCap]           1
+  setLineWidth    [float32]           4
+  setOpacity      [color_component]   4
+  setPaletteColor [uint16 idx, color] 18
 
   Color components are stored as 32-bit floats with 0..1 range.
   Colors are stored as four color components in RGBA order.
@@ -159,7 +161,8 @@ BinaryDrawHistorySerializer = Klass(JSONDrawHistorySerializer, {
     'setBackground',
     'setLineCap',
     'setLineWidth',
-    'setOpacity'
+    'setOpacity',
+    'setPaletteColor'
   ],
   lineCaps : [
     'round',
@@ -168,10 +171,24 @@ BinaryDrawHistorySerializer = Klass(JSONDrawHistorySerializer, {
   ],
   breakpointMethod : {
     'drawPoint' : true,
-    'clear' : true
+    'clear' : true,
+    'setPaletteColor' : true
   },
   majorVersion: 1,
-  minorVersion: 1,
+  minorVersion: 2,
+
+  canDeserialize : function(string) {
+    var t = this.getVersionTag();
+    var head = string.substring(0, t.length);
+    var ok = (head == t);
+    var mv = this.minorVersion;
+    while (!ok && this.minorVersion > 1) {
+      this.minorVersion--;
+      ok = (head == this.getVersionTag());
+    }
+    this.minorVersion = mv;
+    return ok;
+  },
 
   initialize : function() {
     this.commandCodes = {};
@@ -260,6 +277,8 @@ BinaryDrawHistorySerializer = Klass(JSONDrawHistorySerializer, {
       case 'setColor':
       case 'setBackground':
         return this.encodeColor(args[0]);
+      case 'setPaletteColor':
+        return [this.encodeUInt16(args[0]), this.encodeColor(args[1])].join('');
       case 'setLineWidth':
         return this.encodeFloat32(args[0]);
       case 'setLineCap':
@@ -284,6 +303,10 @@ BinaryDrawHistorySerializer = Klass(JSONDrawHistorySerializer, {
       case 'setBackground':
         args.push(this.readColor(string, offset));
         return 16;
+      case 'setPaletteColor':
+        args.push(this.readUInt16(string, offset));
+        args.push(this.readColor(string, offset+2));
+        return 18;
       case 'setLineWidth':
         args.push(this.readFloat32(string, offset));
         return 4;

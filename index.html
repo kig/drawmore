@@ -131,15 +131,7 @@
         c.style.position = 'absolute';
         c.style.left = c.style.top = '0px';
         document.body.appendChild(c);
-        draw = new Scribble(c);
-        var prefs = localStorage.savedScribbleState;
-        if (prefs) {
-          try {
-            draw.load(prefs);
-          } catch(e) {
-            console.log("Failed to load saved Scribble state", e);
-          }
-        }
+        draw = null;
 
         byId('replay').onclick = function(){
           draw.playbackHistory();
@@ -184,6 +176,7 @@
 
         var ps = byClass('paletteColor');
         for (var i=0; i<ps.length; i++) {
+          ps[i].index = i;
           ps[i].style.backgroundColor = ps[i].getAttribute('color');
           ps[i].setColor = function(s) {
             this.setAttribute('color', s);
@@ -194,7 +187,7 @@
           }, false);
           ps[i].addEventListener('drop', function(ev) {
             if (ev.dataTransfer.getData('text/plain'))
-              this.setColor(ev.dataTransfer.getData('text/plain'));
+              draw.setPaletteColor(this.index, ev.dataTransfer.getData('text/plain'));
             ev.preventDefault();
           }, false);
           ps[i].addEventListener('click', function(ev){
@@ -213,6 +206,15 @@
           };
         }
 
+        draw = new Scribble(c);
+        var prefs = localStorage.savedScribbleState;
+        if (prefs) {
+          try {
+            draw.load(prefs);
+          } catch(e) {
+            console.log("Failed to load saved Scribble state", e);
+          }
+        }
       }, false);
 
       toggleHelp = function() {

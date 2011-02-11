@@ -17,6 +17,8 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.cursor = new RoundBrushCursor();
     this.cursor.update(this.lineWidth);
     this.cursor.moveTo(this.current.x, this.current.y);
+    this.palette = [];
+    this.setupPalette();
     this.setColor(this.color);
     this.setBackground(this.background);
     this.setLineCap(this.lineCap);
@@ -34,7 +36,8 @@ Scribble = Klass(Undoable, ColorUtils, {
       background : this.background,
       lineWidth : this.lineWidth,
       opacity : this.opacity,
-      lineCap : this.lineCap
+      lineCap : this.lineCap,
+      palette : this.palette.slice(0)
     };
   },
 
@@ -45,6 +48,9 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.setLineCap(state.lineCap);
     this.setLineWidth(state.lineWidth);
     this.setOpacity(state.opacity);
+    for (var i=0; i<state.palette.length; i++)
+      this.setPaletteColor(i, state.palette[i]);
+    this.palette.splice(state.palette.length, this.palette.length);
   },
 
   createSnapshot : function() {
@@ -97,6 +103,13 @@ Scribble = Klass(Undoable, ColorUtils, {
       if (this.listeners.hasOwnProperty(i)) {
         window.removeEventListener(i, this.listeners[i], false);
       }
+    }
+  },
+
+  setupPalette : function() {
+    var cc = byClass('paletteColor');
+    for (var i=0; i<cc.length; i++) {
+      this.setPaletteColor(i, cc[i].getAttribute('color'));
     }
   },
 
@@ -173,6 +186,8 @@ Scribble = Klass(Undoable, ColorUtils, {
       draw.stopResizingBrush();
       if (Key.match(ev, [Key.DELETE, Key.BACKSPACE])) {
         draw.clear();
+      } else if (Key.match(ev, [Key.TAB])) {
+        draw.toggleUI();
       } else if (Key.match(ev, ['f','j'])) {
         // stopped resize above
       } else if (Key.match(ev, ['d','k'])) {
@@ -180,8 +195,7 @@ Scribble = Klass(Undoable, ColorUtils, {
       } else if (Key.match(ev, ['e','i'])) {
         draw.setLineWidth(draw.lineWidth*1.5);
       } else if (Key.match(ev, ['1','2','3','4','5','6','7','8','9'])) {
-        var tgt = byClass('paletteColor')[ev.which - 49];
-        draw.setColor(tgt.getAttribute('color'));
+        draw.setColor(draw.palette[ev.which - 49]);
       }
     };
   },
@@ -277,6 +291,15 @@ Scribble = Klass(Undoable, ColorUtils, {
       last.args[0] = this.lineWidth;
     else
       this.addHistoryState({methodName: 'setLineWidth', args:[this.lineWidth]});
+  },
+
+  setPaletteColor : function(idx, color) {
+    var c = color;
+    if (typeof color == 'string')
+      c = this.styleToColor(color);
+    byClass('paletteColor')[idx].style.backgroundColor = this.colorToStyle(c);
+    this.palette[idx] = c;
+    this.addHistoryState({methodName: 'setPaletteColor', args:[idx, c], breakpoint: true});
   },
 
   pickColor : function(xy, radius) {
