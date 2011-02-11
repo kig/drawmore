@@ -19,6 +19,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.cursor.moveTo(this.current.x, this.current.y);
     this.palette = [];
     this.setupPalette();
+    this.constraints = [];
     this.setColor(this.color);
     this.setBackground(this.background);
     this.setLineCap(this.lineCap);
@@ -113,6 +114,21 @@ Scribble = Klass(Undoable, ColorUtils, {
     }
   },
 
+  addConstraint : function(c) {
+    this.constraints.push(c);
+  },
+
+  removeConstraint : function(c) {
+    this.constraints.deleteFirst(c);
+  },
+
+  applyConstraints : function(p) {
+    for (var i=0; i<this.constraints.length; i++) {
+      this.constraints[i].applyTo(p);
+    }
+    return p;
+  },
+
   createListeners : function() {
     var draw = this;
     this.listeners['mousemove'] = function(ev) {
@@ -124,19 +140,20 @@ Scribble = Klass(Undoable, ColorUtils, {
       }
       if (Mouse.state[Mouse.LEFT] && draw.mousedown) {
         if (draw.prev != null) {
-          if (!ev.shiftKey)
+          if (!ev.shiftKey && draw.constraint != null) {
+            draw.removeConstraint(draw.constraint);
             draw.constraint = null;
-          if (ev.shiftKey && !draw.constraint) {
+          }
+          if (ev.shiftKey && draw.constraint == null) {
             var dx = draw.current.x - draw.prev.x;
             var dy = draw.current.y - draw.prev.y;
             if (Math.abs(dx) > Math.abs(dy))
-              draw.constraint = {y: draw.prev.y};
+              draw.constraint = new Constraints.ConstantY(draw.prev.y);
             else
-              draw.constraint = {x: draw.prev.x};
+              draw.constraint = new Constraints.ConstantX(draw.prev.x);
+            draw.addConstraint(draw.constraint);
           }
-          if (draw.constraint) {
-            Object.extend(draw.current, draw.constraint);
-          }
+          draw.applyConstraints(draw.current);
           draw.drawLine(draw.prev, draw.current);
         }
         draw.prev = draw.current;
@@ -150,7 +167,10 @@ Scribble = Klass(Undoable, ColorUtils, {
       if (Mouse.state[Mouse.LEFT] && ev.target == draw.canvas) {
         draw.mousedown = true;
         if (ev.shiftKey && draw.mouseup) {
-          draw.constraint = null;
+          if (draw.constraint != null) {
+            draw.removeConstraint(draw.constraint);
+            draw.constraint = null;
+          }
           draw.drawLine(draw.mouseup, draw.current, true);
           draw.prev = null;
         } else {
@@ -344,3 +364,47 @@ Scribble = Klass(Undoable, ColorUtils, {
   }
 
 });
+
+
+Constraint = Klass({
+  initialize: function() {},
+
+  withinRange : function(point) {
+    return true;
+  },
+
+  edit : function(point) {
+    return point;
+  },
+
+  applyTo : function(point) {
+    if (this.withinRange(point))
+      this.edit(point);
+    return point;
+  }
+});
+
+Constraints = {};
+
+Constraints.ConstantX = Klass(Constraint, {
+  initialize : function(x) {
+    this.x = x;
+  },
+
+  edit : function(point) {
+    point.x = this.x;
+    return point;
+  }
+});
+
+Constraints.ConstantY = Klass(Constraint, {
+  initialize : function(y) {
+    this.y = y;
+  },
+
+  edit : function(point) {
+    point.y = this.y;
+    return point;
+  }
+});
+
