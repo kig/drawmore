@@ -1,118 +1,19 @@
 <html>
   <head>
     <title>Scribble!</title>
-    <style>
-      html {
-        overflow: hidden;
-        font-family: Ubuntu, sans-serif;
-      }
-      #palette {
-        position: absolute;
-        bottom: 4px;
-        left: 4px;
-        z-index: 10;
-        vertical-align: bottom;
-      }
-      #fileIO {
-        text-align: right;
-        z-index: 10;
-        bottom: 4px;
-        right: 4px;
-        position: absolute;
-      }
-      #foregroundColor {
-/*        position: absolute;
-        display: block;*/
-        display: inline-block;
-        width: 40px;
-        height: 20px;
-        margin-bottom: 0px;
-        margin-left: 0px;
-        margin-right: 8px;
-        border: 1px solid gray;
-        z-index: 1;
-        cursor: pointer;
-        vertical-align: bottom;
-      }
-      #backgroundColor {
-        width: 40px;
-        height: 20px;
-        display: none;
-        margin-top: 3px;
-        margin-left: 3px;
-        margin-bottom: 20px;
-        border: 1px solid gray;
-        z-index: 0;
-      }
-      #colorPicker {
-        margin-bottom: 0px;
-        display: inline-block;
-        width: 128px;
-        vertical-align: bottom;
-        margin-right: 8px;
-        height: 0px;
-        position: relative;
-        top: -143px;
-      }
-      .paletteColor {
-        width: 20px;
-        height: 20px;
-        border: 1px solid gray;
-        display: inline-block;
-        cursor: pointer;
-        vertical-align: bottom;
-      }
-      .paletteColor + .brushWidth {
-        margin-top: 10px;
-      }
-      .brushWidth {
-        width: 20px;
-        height: 15px;
-        display: block;
-        margin-bottom: 10px;
-        cursor: pointer;
-        display: none;
-      }
-      #helpToggle {
-        font-size: 17px;
-        cursor: pointer;
-        position: absolute;
-        left: 8px;
-        top: 10px;
-        z-index: 10;
-        text-shadow: 0px 0px 5px white;
-        width: 22px;
-        text-align: center;
-      }
-      #help {
-        z-index: 10;
-        display: none;
-        position: absolute;
-        left: 36px;
-        top: 8px;
-        text-align: left;
-        padding: 14px;
-        padding-top: 6px;
-        padding-bottom: 8px;
-        border-radius: 10px;
-        background-color: rgba(255,255,255,0.8);
-      }
-      #help p {
-        font-size: 12px;
-        margin-bottom: 4px;
-        margin-top: 0px;
-      }
-    </style>
     <script src="magi.js"></script>
     <script src="file_format.js"></script>
     <script src="undo.js"></script>
     <script src="color_utils.js"></script>
+    <script src="layers.js"></script>
+    <script src="constraints.js"></script>
     <script src="scribble.js"></script>
     <script>
 
       window.addEventListener('resize', function() {
         if (draw.canvas.width < window.innerWidth || draw.canvas.height < window.innerHeight) {
           var id = draw.ctx.getImageData(0,0,draw.canvas.width,draw.canvas.height);
+          draw.resize(window.innerWidth, window.innerHeight);
           draw.canvas.width = window.innerWidth;
           draw.canvas.height = window.innerHeight;
           draw.ctx.putImageData(id, 0,0);
@@ -237,6 +138,111 @@
       }, false);
 
     </script>
+    <style>
+      html {
+        overflow: hidden;
+        font-family: Ubuntu, sans-serif;
+      }
+      #palette {
+        position: absolute;
+        bottom: 4px;
+        left: 4px;
+        z-index: 10;
+        vertical-align: bottom;
+      }
+      #fileIO {
+        text-align: right;
+        z-index: 10;
+        bottom: 4px;
+        right: 4px;
+        position: absolute;
+      }
+      #foregroundColor {
+/*        position: absolute;
+        display: block;*/
+        display: inline-block;
+        width: 40px;
+        height: 20px;
+        margin-bottom: 0px;
+        margin-left: 0px;
+        margin-right: 8px;
+        border: 1px solid gray;
+        z-index: 1;
+        cursor: pointer;
+        vertical-align: bottom;
+        text-indent: 2px;
+        font-size: 9px;
+        text-shadow: 1px 1px 0px white;
+      }
+      #backgroundColor {
+        width: 40px;
+        height: 20px;
+        display: none;
+        margin-top: 3px;
+        margin-left: 3px;
+        margin-bottom: 20px;
+        border: 1px solid gray;
+        z-index: 0;
+      }
+      #colorPicker {
+        margin-bottom: 0px;
+        display: inline-block;
+        width: 128px;
+        vertical-align: bottom;
+        margin-right: 8px;
+        height: 0px;
+        position: relative;
+        top: -143px;
+      }
+      .paletteColor {
+        width: 20px;
+        height: 20px;
+        border: 1px solid gray;
+        display: inline-block;
+        cursor: pointer;
+        vertical-align: bottom;
+      }
+      .paletteColor + .brushWidth {
+        margin-top: 10px;
+      }
+      .brushWidth {
+        width: 20px;
+        height: 15px;
+        display: block;
+        margin-bottom: 10px;
+        cursor: pointer;
+        display: none;
+      }
+      #helpToggle {
+        font-size: 17px;
+        cursor: pointer;
+        position: absolute;
+        left: 8px;
+        top: 10px;
+        z-index: 10;
+        text-shadow: 0px 0px 5px white;
+        width: 22px;
+        text-align: center;
+      }
+      #help {
+        z-index: 10;
+        display: none;
+        position: absolute;
+        left: 36px;
+        top: 8px;
+        text-align: left;
+        padding: 14px;
+        padding-top: 6px;
+        padding-bottom: 8px;
+        border-radius: 10px;
+        background-color: rgba(255,255,255,0.8);
+      }
+      #help p {
+        font-size: 12px;
+        margin-bottom: 4px;
+        margin-top: 0px;
+      }
+    </style>
   </head>
   <body>
     <div id="fileIO">
@@ -276,6 +282,7 @@
       <p>r picks color under cursor (u)</p>
       <p>f + move mouse to resize brush (j)</p>
       <p>e and d change brush size (i and k)</p>
+      <p>w and s change brush opacity (o and l)</p>
       <p>shift draws with constraints</p>
       <p>shift-click does straight lines</p>
       <p>z is undo (n)</p>
@@ -284,7 +291,7 @@
       <p>delete clears the canvas</p>
       <hr>
       <p>left-handed keys parenthesized</p>
-      <p>unused good keys: qw t as g xcv SPACE</p>
+      <p>unused good keys: q t a g xcv SPACE</p>
       <p>as well as RMB and MMB</p>
       <hr>
       <p>feedback to <a href="http://twitter.com/ilmarihei">twitter</a></p>

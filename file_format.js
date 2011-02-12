@@ -739,7 +739,7 @@ ScribbleFile = {
     OldJSONDrawHistorySerializer
   ],
 
-  defaultSerializer : BinaryDrawHistorySerializer,
+  defaultSerializer : JSONDrawHistorySerializer,
 
   stringify: function(saveObj) {
     var s = new this.defaultSerializer();
