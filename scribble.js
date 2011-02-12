@@ -351,10 +351,10 @@ Scribble = Klass(Undoable, ColorUtils, {
         draw.opacityDown();
 
       } else if (Key.match(ev,  draw.keyBindings.brushSizeUp)) {
-        draw.setLineWidth(Math.clamp(draw.lineWidth*1.5, draw.minimumBrushSize, draw.maximumBrushSize));
+        draw.brushSizeUp();
 
       } else if (Key.match(ev,  draw.keyBindings.brushSizeDown)) {
-        draw.setLineWidth(Math.clamp(draw.lineWidth/1.5, draw.minimumBrushSize, draw.maximumBrushSize));
+        draw.brushSizeDown();
 
       } else if (Key.match(ev, draw.keyBindings.paletteKeys)) {
         for (var i=0; i<draw.keyBindings.paletteKeys.length; i++) {
@@ -389,6 +389,14 @@ Scribble = Klass(Undoable, ColorUtils, {
     var d = Math.max(this.current.x - this.brushResizeX, 0);
     var dx = Math.clamp(d, this.minimumBrushSize, this.maximumBrushSize)
     this.setLineWidth(dx);
+  },
+
+  brushSizeUp : function() {
+    this.setLineWidth(Math.clamp(this.lineWidth*1.5, this.minimumBrushSize, this.maximumBrushSize));
+  },
+
+  brushSizeDown : function() {
+    this.setLineWidth(Math.clamp(this.lineWidth/1.5, this.minimumBrushSize, this.maximumBrushSize));
   },
 
 
