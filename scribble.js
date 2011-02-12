@@ -8,7 +8,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     opacityDown: ['s','l'],
     clear : [Key.DELETE, Key.BACKSPACE],
     undo: ['z', 'n'],
-    flip: ['x', '.'],
+    flip: ['x'],
     pickColor: ['r', 'u'],
     paletteKeys: ['1','2','3','4','5','6','7','8','9'],
     toggleUI: [Key.TAB, '0'],
@@ -426,6 +426,9 @@ Scribble = Klass(Undoable, ColorUtils, {
       } else if (Key.match(ev,  draw.keyBindings.brushSizeDown)) {
         draw.brushSizeDown();
 
+      } else if (Key.match(ev, draw.keyBindings.flip)) {
+        draw.flip();
+
       } else if (Key.match(ev, draw.keyBindings.paletteKeys)) {
         for (var i=0; i<draw.keyBindings.paletteKeys.length; i++) {
           if (Key.match(ev, draw.keyBindings.paletteKeys[i])) {
@@ -553,6 +556,12 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.currentLayer.clear();
     this.addHistoryState({methodName: 'clear', args: [], breakpoint: true});
     this.requestRedraw();
+  },
+
+  flip : function() {
+    this.layers.forEach(function(l) { l.flip(); });
+    this.requestRedraw();
+    this.addHistoryState({methodName: 'flip', args: [], breakpoint: true});
   },
 
 

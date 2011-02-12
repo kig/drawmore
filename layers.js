@@ -14,6 +14,8 @@ Layer = Klass({
   copyProperties : function(tgt) {
   },
 
+  flip : function() {},
+
   applyTo : function(ctx, w, h){
     if (this.display) {
       ctx.save();
@@ -51,6 +53,16 @@ CanvasLayer = Klass(Layer, {
 
   compositeTo : function(ctx, w, h) {
     ctx.drawImage(this.canvas, 0, 0);
+  },
+
+  flip : function() {
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = 'copy';
+    this.ctx.translate(this.canvas.width,0);
+    this.ctx.scale(-1,1);
+    this.ctx.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.globalCompositeOperation = 'source-over';
+    this.ctx.restore();
   },
 
   clear : function() {
