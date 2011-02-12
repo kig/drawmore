@@ -8,6 +8,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     opacityDown: ['s','l'],
     clear : [Key.DELETE, Key.BACKSPACE],
     undo: ['z', 'n'],
+    flip: ['x', '.'],
     pickColor: ['r', 'u'],
     paletteKeys: ['1','2','3','4','5','6','7','8','9'],
     toggleUI: [Key.TAB, '0'],
@@ -100,7 +101,7 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   // File IO
 
-  export : function() {
+  exportImage : function() {
     var dataURL = this.canvas.toDataURL('image/png');
     window.open(dataURL);
   },
@@ -247,6 +248,7 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   createListeners : function() {
     var draw = this;
+
     this.listeners['mousemove'] = function(ev) {
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
       if (draw.resizingBrush) {
@@ -309,6 +311,74 @@ Scribble = Klass(Undoable, ColorUtils, {
         draw.prev = null;
       }
       draw.endStroke();
+    };
+
+    this.listeners['touchmove'] = function(ev) {
+      if (ev.touches.length == 1) {
+        draw.current = Mouse.getRelativeCoords(draw.canvas, ev.touches[0]);
+        if (draw.resizingBrush) {
+          draw.keepResizingBrush();
+        } else {
+          draw.cursor.moveTo(draw.current.x, draw.current.y);
+        }
+        if (draw.mousedown) {
+          if (draw.prev != null) {
+            if (!ev.shiftKey && draw.constraint != null) {
+              draw.removeTemporaryConstraint(draw.constraint);
+              draw.constraint = null;
+            }
+            if (ev.shiftKey && draw.constraint == null) {
+              var dx = draw.current.x - draw.prev.x;
+              var dy = draw.current.y - draw.prev.y;
+              if (Math.abs(dx) > Math.abs(dy))
+                draw.constraint = new Constraints.ConstantY(draw.prev.y);
+              else
+                draw.constraint = new Constraints.ConstantX(draw.prev.x);
+              draw.addTemporaryConstraint(draw.constraint);
+            }
+            draw.applyConstraints(draw.current);
+            draw.drawLine(draw.prev, draw.current);
+          }
+          draw.prev = draw.current;
+          Event.stop(ev);
+        }
+      }
+    };
+
+    this.listeners['touchstart'] = function(ev) {
+      if (ev.touches.length == 1) {
+        draw.current = Mouse.getRelativeCoords(draw.canvas, ev.touches[0]);
+        draw.cursor.moveTo(draw.current.x, draw.current.y);
+        draw.stopResizingBrush();
+        if (ev.target == draw.canvas) {
+          draw.mousedown = true;
+          draw.beginStroke();
+          if (ev.shiftKey && draw.mouseup) {
+            if (draw.constraint != null) {
+              draw.removeTemporaryConstraint(draw.constraint);
+              draw.constraint = null;
+            }
+            draw.drawLine(draw.mouseup, draw.current);
+            draw.prev = null;
+          } else {
+            draw.drawPoint(draw.current);
+            draw.prev = draw.current;
+          }
+          ev.preventDefault();
+        }
+      }
+    };
+
+    this.listeners['touchend'] = function(ev) {
+      if (ev.touches.length == 1) {
+        draw.stopResizingBrush();
+        if (draw.mousedown)
+          ev.preventDefault();
+        draw.mousedown = false;
+        draw.mouseup = Mouse.getRelativeCoords(draw.canvas, ev.touches[0]);
+        draw.prev = null;
+        draw.endStroke();
+      }
     };
 
     this.listeners['keydown'] = function(ev) {

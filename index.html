@@ -1,5 +1,7 @@
 <html>
   <head>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width; initial-scale=1.0; user-scalable=no;">
     <title>Scribble!</title>
     <script src="magi.js"></script>
     <script src="file_format.js"></script>
@@ -10,26 +12,34 @@
     <script src="scribble.js"></script>
     <script>
 
-      window.addEventListener('resize', function() {
-        if (draw.canvas.width < window.innerWidth || draw.canvas.height < window.innerHeight) {
-          var id = draw.ctx.getImageData(0,0,draw.canvas.width,draw.canvas.height);
-          draw.resize(window.innerWidth, window.innerHeight);
-          draw.canvas.width = window.innerWidth;
-          draw.canvas.height = window.innerHeight;
-          draw.ctx.putImageData(id, 0,0);
-          var s = draw.getState();
-          var rh = draw.recordHistory;
-          draw.recordHistory = false;
-          draw.applyState(s);
-          draw.recordHistory = rh;
-        }
-      }, false);
-
-      window.addEventListener('unload', function() {
-        localStorage.savedScribbleState = draw.getSaveString();
-      }, false);
-
       window.addEventListener('load', function() {
+        window.addEventListener('resize', function() {
+          if (draw.canvas.width < window.innerWidth || draw.canvas.height < window.innerHeight) {
+            var id = draw.ctx.getImageData(0,0,draw.canvas.width,draw.canvas.height);
+            draw.resize(window.innerWidth, window.innerHeight);
+            draw.canvas.width = window.innerWidth;
+            draw.canvas.height = window.innerHeight;
+            draw.ctx.putImageData(id, 0,0);
+            var s = draw.getState();
+            var rh = draw.recordHistory;
+            draw.recordHistory = false;
+            draw.applyState(s);
+            draw.recordHistory = rh;
+          }
+        }, false);
+
+        window.addEventListener('unload', function() {
+          localStorage.savedScribbleState = draw.getSaveString();
+        }, false);
+
+        document.ontouchstart = function(ev){
+        };
+        document.ontouchmove = function(ev){
+        };
+        document.ontouchend = function(ev){
+        };
+
+
         var c = E.canvas(window.innerWidth,window.innerHeight);
         c.style.position = 'absolute';
         c.style.left = c.style.top = '0px';
@@ -52,7 +62,7 @@
           }
         };
         byId('export').onclick = function(){
-          draw.export();
+          draw.exportImage();
         };
         byId('new').onclick = function(){
           draw.clearHistory();
@@ -247,7 +257,7 @@
   <body>
     <div id="fileIO">
       <button id="new">New</button>
-      <input type="file" id="load" value=""></input>
+      <input type="file" id="load" value="" />
       <button id="save">Save</button>
       <button id="export">Export Image</button>
       <button id="replay">Replay</button>
