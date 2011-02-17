@@ -85,3 +85,69 @@ ColorLayer = Klass(Layer, {
     ctx.fillRect(0,0,w,h);
   }
 });
+
+TiledLayer = Klass(Layer, {
+
+  tileSize: 64,
+
+  initialize: function() {
+    this.tiles = {};
+  },
+
+  drawImage: function(img, x, y) {
+    x += 0x8000, y += 0x8000;
+    var tx = Math.floor(x / this.tileSize);
+    var ty = Math.floor(y / this.tileSize);
+    var ltx = Math.floor((x+img.width) / this.tileSize);
+    var lty = Math.floor((y+img.height) / this.tileSize);
+    var ox = x - tx*this.tileSize;
+    var oy = y - ty*this.tileSize;
+    while (tx <= ltx) {
+      while (ty <= lty) {
+        // optimize: skip if img is transparent here
+        this.getTileCtx(tx,ty).drawImage(img,ox,oy);
+        ty++;
+        oy -= this.tileSize;
+      }
+      tx++;
+      ox -= this.tileSize;
+    }
+  },
+
+  getTileCtx : function(x,y) {
+    if (y<0 || x<0 || y>0xffff || x>0xffff)
+      throw('bad coords');
+    var p=x+y*0x10000;
+    var t=this.tiles;
+    var c=t[p];
+    if (c == null || c.snapshotted) {
+      c = E.canvas(this.tileSize, this.tileSize);
+      if (t[p].snapshotted) {
+        var ctx = c.getContext('2d');
+        ctx.globalCompositeOperation = 'copy';
+        ctx.drawImage(t[p],0,0);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      t[p] = c;
+    }
+    return c.getContext('2d');
+  },
+
+  clear : function(){
+    this.tiles = {};
+  },
+
+  composite : function(ctx) {
+    for (var f in this.tiles) {
+      var x = f & 0xffff;
+      var y = f >> 16;
+      ctx.drawImage(this.tiles[f], x, y);
+    }
+  },
+
+  drawLine : function(x1, y1, x2, y2, brush) {
+    // to optimize drawImage
+  }
+
+});
+
