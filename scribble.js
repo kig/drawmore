@@ -24,6 +24,8 @@ Scribble = Klass(Undoable, ColorUtils, {
   current : null,
   prev : null,
 
+  brushIndex : 0,
+  
   minimumBrushSize : 0.75,
   maximumBrushSize : 1000,
 
@@ -133,6 +135,8 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.layers = [];
     this.palette = [];
     this.constraints = [];
+    this.brushes = [new RoundBrush(), new PolygonBrush([{x:-0.5, y:0}, {x:0.5, y:0}])];
+    this.setBrush(0);
     this.setupPalette();
     this.resize(this.canvas.width, this.canvas.height);
     this.newLayer(0);
@@ -160,6 +164,8 @@ Scribble = Klass(Undoable, ColorUtils, {
     cs.deleteFirst(this.constraint);
     return {
       pickRadius : this.pickRadius,
+      brushIndex : this.brushIndex,
+      brushes : this.brushes.map(function(l){ return l.copy(); }),
       color : this.color,
       background : this.background,
       lineWidth : this.lineWidth,
@@ -178,6 +184,9 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.constraints = state.constraints;
     this.strokeInProgress = state.strokeInProgress;
     this.pickRadius = state.pickRadius;
+    this.brushIndex = state.brushIndex;
+    this.brushes = state.brushes.map(function(l){ return l.copy(); });
+    this.brush = this.brushes[state.brushIndex];
     this.layers = state.layers.map(function(l){ return l.copy(); });
     this.setCurrentLayer(state.currentLayerIndex);
     this.strokeLayer = this.layers[state.strokeLayerIndex];
@@ -587,19 +596,21 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   drawPoint : function(xy) {
     if (!this.strokeInProgress) return;
-    this.strokeLayer.ctx.beginPath();
-    this.strokeLayer.ctx.arc(xy.x, xy.y, this.lineWidth/2, 0, Math.PI*2);
-    this.strokeLayer.ctx.fill();
+    this.brush.drawPoint(
+      this.strokeLayer.ctx, this.strokeLayer.ctx.strokeStyle,
+      xy.x, xy.y, this.lineWidth/2
+    );
     this.addHistoryState({methodName: 'drawPoint', args:[xy]});
     this.requestRedraw();
   },
 
   drawLine : function(prev, current) {
     if (!this.strokeInProgress) return;
-    this.strokeLayer.ctx.beginPath();
-    this.strokeLayer.ctx.moveTo(prev.x, prev.y);
-    this.strokeLayer.ctx.lineTo(current.x, current.y);
-    this.strokeLayer.ctx.stroke();
+    this.brush.drawLine(
+      this.strokeLayer.ctx, this.strokeLayer.ctx.strokeStyle, 
+      prev.x, prev.y, this.lineWidth/2,
+      current.x, current.y, this.lineWidth/2
+    );
     var s = {methodName: 'drawLine', args:[prev, current]}
     this.addHistoryState(s);
     this.requestRedraw();
@@ -608,6 +619,11 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   // Brush state
 
+  setBrush : function(idx) {
+    this.brushIndex = idx;
+    this.brush = this.brushes[idx];
+  },
+  
   setColor : function(color) {
     if (typeof color == 'string')
       this.color = this.styleToColor(color);
