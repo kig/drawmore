@@ -32,11 +32,26 @@ PolygonBrush = Klass(Brush, {
     ctx.closePath();
   },
 
+  // draw brush at each endpoint
   // for each brush path segment, draw a quad from
   // one endpoint to the other
   drawLine : function(ctx, color, x1, y1, r1, x2, y2, r2) {
     ctx.fillStyle = color;
     ctx.beginPath();
+    var u = this.path[0];
+    ctx.moveTo(x1+u.x*r1, y1+u.y*r1)
+    for (var i=1; i<this.path.length; i++) {
+      var u = this.path[i];
+      ctx.lineTo(x1+u.x*r1, y1+u.y*r1)
+    }
+    ctx.closePath();
+    var u = this.path[0];
+    ctx.moveTo(x2+u.x*r2, y2+u.y*r2)
+    for (var i=1; i<this.path.length; i++) {
+      var u = this.path[i];
+      ctx.lineTo(x2+u.x*r2, y2+u.y*r2)
+    }
+    ctx.closePath();
     var u = this.path[this.path.length-1];
     var v = this.path[0];
     this.drawQuad(ctx, 
