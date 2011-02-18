@@ -8,6 +8,8 @@ Scribble = Klass(Undoable, ColorUtils, {
     opacityDown: ['s','l'],
     clear : [Key.DELETE, Key.BACKSPACE],
     undo: ['z', 'n'],
+    nextBrush: ['t','y'],
+    previousBrush: ['g','h'],
     flip: ['x'],
     pickColor: ['r', 'u'],
     paletteKeys: ['1','2','3','4','5','6','7','8','9'],
@@ -135,7 +137,9 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.layers = [];
     this.palette = [];
     this.constraints = [];
-    this.brushes = [new RoundBrush(), new PolygonBrush([{x:-0.5, y:0}, {x:0.5, y:0}])];
+    this.brushes = [];
+    this.addRoundBrush();
+    this.addPolygonBrush([{x:1, y:0}, {x:1, y:0.1}, {x:-1, y:0.5}, {x:1, y:0.4}]);
     this.setBrush(0);
     this.setupPalette();
     this.resize(this.canvas.width, this.canvas.height);
@@ -184,9 +188,8 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.constraints = state.constraints;
     this.strokeInProgress = state.strokeInProgress;
     this.pickRadius = state.pickRadius;
-    this.brushIndex = state.brushIndex;
     this.brushes = state.brushes.map(function(l){ return l.copy(); });
-    this.brush = this.brushes[state.brushIndex];
+    this.setBrush(state.brushIndex);
     this.layers = state.layers.map(function(l){ return l.copy(); });
     this.setCurrentLayer(state.currentLayerIndex);
     this.strokeLayer = this.layers[state.strokeLayerIndex];
@@ -203,7 +206,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   createSnapshot : function() {
     return {
       state: this.getState()
-    }
+    };
   },
 
   applySnapshot : function(snapshot) {
@@ -435,6 +438,12 @@ Scribble = Klass(Undoable, ColorUtils, {
       } else if (Key.match(ev,  draw.keyBindings.brushSizeDown)) {
         draw.brushSizeDown();
 
+      } else if (Key.match(ev,  draw.keyBindings.previousBrush)) {
+        draw.previousBrush();
+
+      } else if (Key.match(ev,  draw.keyBindings.nextBrush)) {
+        draw.nextBrush();
+
       } else if (Key.match(ev, draw.keyBindings.flip)) {
         draw.flip();
 
@@ -619,9 +628,48 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   // Brush state
 
+  addRoundBrush : function() {
+    this.brushes.push(new RoundBrush);
+    this.addHistoryState({methodName: 'addRoundBrush', args: [], breakpoint:true});
+  },
+  
+  addPolygonBrush : function(path) {
+    this.brushes.push(new PolygonBrush(path));
+    this.addHistoryState({methodName: 'addPolygonBrush', args: [path], breakpoint:true});
+  },
+  
+  addImageBrush : function(src) {
+    var img = new Image();
+    img.src = src;
+    this.brushes.push(new ImageBrush(img));
+    this.addHistoryState({methodName: 'addImageBrush', args: [src], breakpoint:true});
+  },
+  
   setBrush : function(idx) {
     this.brushIndex = idx;
     this.brush = this.brushes[idx];
+    this.addHistoryState({methodName: 'setBrush', args: [idx], breakpoint:true});
+  },
+  
+  nextBrush : function() {
+    this.setBrush((this.brushIndex + 1) % this.brushes.length);
+  },
+
+  previousBrush : function() {
+    if (this.brushIndex == 0)
+      this.setBrush(this.brushes.length-1);
+    else
+      this.setBrush(this.brushIndex - 1);
+  },
+  
+  deleteBrush : function(idx) {
+    if (idx < 0 || idx >= this.brushes.length)
+      throw (new Error('Bad brush index'));
+    if (idx <= this.brushIndex)
+      this.brushIndex--;
+    this.setBrush(this.brushIndex);
+    this.brushes.splice(idx, 1);
+    this.addHistoryState({methodName: 'deleteBrush', args: [idx]});
   },
   
   setColor : function(color) {
