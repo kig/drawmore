@@ -15,21 +15,46 @@ PolygonBrush = Klass(Brush, {
   initialize : function(path) {
     this.path = path;
   },
+  
+  drawQuad : function(ctx, x1,y1, x2,y2, x3,y3, x4,y4) {
+    var cx = (x1+x2+x3+x4) / 4;
+    var cy = (y1+y2+y3+y4) / 4;
+    var points = [[x1,y1], [x2,y2], [x3,y3], [x4,y4]];
+    points = points.map(function(p){
+      return [p, Math.atan2(cx-p[0], cy-p[1])];
+    }).sort(function(a,b){
+      return b[1] - a[1];
+    }).map(function(a){ return a[0]; });
+    ctx.moveTo(points[0][0], points[0][1]);
+    ctx.lineTo(points[1][0], points[1][1]);
+    ctx.lineTo(points[2][0], points[2][1]);
+    ctx.lineTo(points[3][0], points[3][1]);
+    ctx.closePath();
+  },
 
   // for each brush path segment, draw a quad from
   // one endpoint to the other
   drawLine : function(ctx, color, x1, y1, r1, x2, y2, r2) {
+    ctx.fillStyle = color;
     ctx.beginPath();
+    var u = this.path[this.path.length-1];
+    var v = this.path[0];
+    this.drawQuad(ctx, 
+      x1+u.x*r1, y1+u.y*r1,
+      x1+v.x*r2, y1+v.y*r2,
+      x2+u.x*r1, y2+u.y*r1,
+      x2+v.x*r2, y2+v.y*r2
+    );
     for (var i=1; i<this.path.length; i++) {
       var u = this.path[i-1];
       var v = this.path[i];
-      ctx.moveTo(x1+u.x*r1, y1+u.y*r1);
-      ctx.lineTo(x2+u.x*r2, y2+u.y*r2);
-      ctx.lineTo(x2+v.x*r2, y2+v.y*r2);
-      ctx.lineTo(x1+v.x*r1, y1+v.y*r1);
-      ctx.closePath();
+      this.drawQuad(ctx, 
+        x1+u.x*r1, y1+u.y*r1,
+        x1+v.x*r2, y1+v.y*r2,
+        x2+u.x*r1, y2+u.y*r1,
+        x2+v.x*r2, y2+v.y*r2
+      );
     }
-    ctx.fillStyle = color;
     ctx.fill();
   }  
 });
@@ -55,10 +80,10 @@ RoundBrush = Klass(Brush, {
       ctx.stroke();
     } else {
       ctx.beginPath();
-      ctx.moveTo(x1+r1*Math.cos(a11), y1+r1*Math.sin(a11));
-      ctx.lineTo(x2+r2*Math.cos(a21), y1+r1*Math.sin(a21));
-      ctx.lineTo(x2+r2*Math.cos(a22), y1+r1*Math.sin(a22));
-      ctx.lineTo(x1+r1*Math.cos(a12), y1+r1*Math.sin(a12));
+      ctx.moveTo(x1+r1*Math.cos(a1), y1+r1*Math.sin(a1));
+      ctx.lineTo(x2+r2*Math.cos(a1), y2+r2*Math.sin(a1));
+      ctx.lineTo(x2+r2*Math.cos(a2), y2+r2*Math.sin(a2));
+      ctx.lineTo(x1+r1*Math.cos(a2), y1+r1*Math.sin(a2));
       ctx.closePath();
       ctx.moveTo(x1,y1);
       ctx.arc(x1, y1, r1, 0, Math.PI*2);

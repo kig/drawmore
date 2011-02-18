@@ -139,7 +139,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.constraints = [];
     this.brushes = [];
     this.addRoundBrush();
-    this.addPolygonBrush([{x:1, y:0}, {x:1, y:0.1}, {x:-1, y:0.5}, {x:1, y:0.4}]);
+    this.addPolygonBrush([{x:1, y:0}, {x:1, y:-0.1}, {x:-1, y:0.4}, {x:-1, y:0.5}]);
     this.setBrush(0);
     this.setupPalette();
     this.resize(this.canvas.width, this.canvas.height);
