@@ -33,7 +33,12 @@ Layer = Klass({
     this.display = false;
   },
 
-  clear : function(){}
+  clear : function(){},
+
+  drawPolygon : function(path, color) {},
+
+  drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {}
+    
 });
 
 
@@ -54,7 +59,37 @@ CanvasLayer = Klass(Layer, {
   compositeTo : function(ctx, w, h) {
     ctx.drawImage(this.canvas, 0, 0);
   },
+  
+  drawPolygon : function(path, color) {
+    var ctx = this.ctx;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(path[0].x, path[0].y);
+    for (var i=1; i<path.length; i++) {
+      var u = path[i];
+      ctx.lineTo(u.x, u.y);
+    }
+    ctx.fill();
+  },
 
+  drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {
+    var ctx = this.ctx;
+    if (stroke) {
+      ctx.lineWidth = lineWidth;
+      ctx.strokeStyle = color;
+    } else {
+      ctx.fillStyle = color;
+    }
+    ctx.beginPath();
+    ctx.arc(x,y,r,a1,a2);
+    if (closed)
+      ctx.closePath();
+    if (stroke)
+      ctx.stroke();
+    else
+      ctx.fill();
+  },
+  
   flip : function() {
     this.ctx.save();
     this.ctx.globalCompositeOperation = 'copy';
@@ -145,9 +180,67 @@ TiledLayer = Klass(Layer, {
     }
   },
 
-  drawLine : function(x1, y1, x2, y2, brush) {
-    // to optimize drawImage
-  }
+  drawPolygon : function(path, color) {
+    var hitTiles = [];
+    var minX,maxX,minY,maxY;
+    minX = maxX = path[0].x;
+    minY = maxY = path[0].y;
+    for (var i=1; i<path.length; i++) {
+      var p = path[i];
+      if (p.x < minX) minX = p.x;
+      else if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      else if (p.y > maxY) maxY = p.y;
+    }
+    var fx = Math.floor(minX/this.tileSize);
+    var fy = Math.floor(minY/this.tileSize);
+    var lx = Math.floor(maxX/this.tileSize);
+    var ly = Math.floor(maxY/this.tileSize);
+    for (var tx=fx; tx <= lx; tx++)
+      for (var ty=fy; ty <= ly; ty++)
+        hitTiles.push({x:tx, y:ty});
+    for (var j=0; j<hitTiles.length; j++) {
+      var tile = hitTiles[j];
+      var ctx = this.getTileCtx(tile.x, tile.y);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(path[0].x, path[0].y);
+      for (var i=1; i<path.length; i++) {
+        var u = path[i];
+        ctx.lineTo(u.x, u.y);
+      }
+      ctx.fill();
+    }
+  },
 
+  drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {
+    var hitTiles = [];
+    var fx = Math.floor((x-r)/this.tileSize);
+    var fy = Math.floor((y-r)/this.tileSize);
+    var lx = Math.floor((x+r)/this.tileSize);
+    var ly = Math.floor((y+r)/this.tileSize);
+    for (var tx=fx; tx <= lx; tx++)
+      for (var ty=fy; ty <= ly; ty++)
+        hitTiles.push({x:tx, y:ty});
+    for (var j=0; j<hitTiles.length; j++) {
+      var tile = hitTiles[j];
+      var ctx = this.getTileCtx(tile.x, tile.y);
+      if (stroke) {
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = color;
+      } else {
+        ctx.fillStyle = color;
+      }
+      ctx.beginPath();
+      ctx.arc(x,y,r,a1,a2);
+      if (closed)
+        ctx.closePath();
+      if (stroke)
+        ctx.stroke();
+      else
+        ctx.fill();
+    }
+  }
+  
 });
 
