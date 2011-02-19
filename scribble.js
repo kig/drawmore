@@ -21,7 +21,6 @@ Scribble = Klass(Undoable, ColorUtils, {
   opacity : 1,
   color : [0,0,0,1],
   background : [1,1,1,1],
-  lineCap : 'round',
   pickRadius : 1,
   current : null,
   prev : null,
@@ -148,7 +147,6 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.strokeLayer = this.newLayer(10);
     this.setColor(this.color);
     this.setBackground(this.background);
-    this.setLineCap(this.lineCap);
     this.setLineWidth(this.lineWidth);
     this.clear();
   },
@@ -174,7 +172,6 @@ Scribble = Klass(Undoable, ColorUtils, {
       background : this.background,
       lineWidth : this.lineWidth,
       opacity : this.opacity,
-      lineCap : this.lineCap,
       palette : this.palette.slice(0),
       constraints: cs,
       strokeInProgress : this.strokeInProgress,
@@ -198,7 +195,6 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.palette.splice(state.palette.length, this.palette.length);
     this.setColor(state.color);
     this.setBackground(state.background);
-    this.setLineCap(state.lineCap);
     this.setLineWidth(state.lineWidth);
     this.setOpacity(state.opacity);
   },
@@ -606,7 +602,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   drawPoint : function(xy) {
     if (!this.strokeInProgress) return;
     this.brush.drawPoint(
-      this.strokeLayer.ctx, this.strokeLayer.ctx.strokeStyle,
+      this.strokeLayer, this.strokeLayer.strokeStyle,
       xy.x, xy.y, this.lineWidth/2
     );
     this.addHistoryState({methodName: 'drawPoint', args:[xy]});
@@ -616,7 +612,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   drawLine : function(prev, current) {
     if (!this.strokeInProgress) return;
     this.brush.drawLine(
-      this.strokeLayer.ctx, this.strokeLayer.ctx.strokeStyle, 
+      this.strokeLayer, this.strokeLayer.strokeStyle, 
       prev.x, prev.y, this.lineWidth/2,
       current.x, current.y, this.lineWidth/2
     );
@@ -679,8 +675,8 @@ Scribble = Klass(Undoable, ColorUtils, {
       this.color = color;
     var s = this.colorToStyle(this.color);
     byId('foregroundColor').style.backgroundColor = s
-    this.strokeLayer.ctx.strokeStyle = s;
-    this.strokeLayer.ctx.fillStyle = s;
+    this.strokeLayer.strokeStyle = s;
+    this.strokeLayer.fillStyle = s;
     this.addHistoryState({methodName: 'setColor', args:[this.color]});
   },
 
@@ -694,12 +690,6 @@ Scribble = Klass(Undoable, ColorUtils, {
     }
     byId('foregroundColor').textContent = s.join("");
     this.addHistoryState({methodName: 'setOpacity', args:[this.opacity]});
-  },
-
-  setLineCap : function(lineCap) {
-    this.strokeLayer.ctx.lineCap = lineCap;
-    this.lineCap = this.strokeLayer.ctx.lineCap;
-    this.addHistoryState({methodName: 'setLineCap', args:[this.lineCap]});
   },
 
   setLineWidth : function(w) {
