@@ -20,11 +20,6 @@ PolygonBrush = Klass(Brush, {
     var cx = (x1+x2+x3+x4) / 4;
     var cy = (y1+y2+y3+y4) / 4;
     var points = [{x:x1,y:y1}, {x:x2,y:y2}, {x:x3,y:y3}, {x:x4,y:y4}];
-    points = points.map(function(p){
-      return [p, Math.atan2(cx-p.x, cy-p.y)];
-    }).sort(function(a,b){
-      return b[1] - a[1];
-    }).map(function(a){ return a[0]; });
     ctx.drawPolygon(points, color);
   },
 
@@ -42,18 +37,18 @@ PolygonBrush = Klass(Brush, {
     var v = this.path[0];
     this.drawQuad(ctx, color,
       x1+u.x*r1, y1+u.y*r1,
-      x1+v.x*r2, y1+v.y*r2,
-      x2+u.x*r1, y2+u.y*r1,
-      x2+v.x*r2, y2+v.y*r2
+      x1+v.x*r1, y1+v.y*r1,
+      x2+v.x*r2, y2+v.y*r2,
+      x2+u.x*r2, y2+u.y*r2
     );
     for (var i=1; i<this.path.length; i++) {
       var u = this.path[i-1];
       var v = this.path[i];
       this.drawQuad(ctx, color,
         x1+u.x*r1, y1+u.y*r1,
-        x1+v.x*r2, y1+v.y*r2,
-        x2+u.x*r1, y2+u.y*r1,
-        x2+v.x*r2, y2+v.y*r2
+        x1+v.x*r1, y1+v.y*r1,
+        x2+v.x*r2, y2+v.y*r2,
+        x2+u.x*r2, y2+u.y*r2
       );
     }
   }  
@@ -69,9 +64,11 @@ RoundBrush = Klass(Brush, {
     ctx.drawArc(x1, y1, r1, 0, Math.PI*2, color);
     ctx.drawArc(x2, y2, r2, 0, Math.PI*2, color);
     var a = Math.atan2(y2-y1, x2-x1);
-    var da = Math.PI*0.5;
     var dx = x2-x1, dy = y2-y1;
     var d = Math.sqrt(dx*dx + dy*dy);
+    var ada = Math.asin(Math.abs(r2-r1) / d);
+    if (r1 > r2) ada = -ada;
+    var da = Math.PI*0.5 + ada;
     var points = [
       {x: Math.cos(a+da)*r1+x1, y: Math.sin(a+da)*r1+y1},
       {x: x1, y: y1},

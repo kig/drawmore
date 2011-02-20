@@ -290,7 +290,6 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.listeners['mousedown'] = function(ev) {
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
       draw.cursor.moveTo(draw.current.x, draw.current.y);
-      draw.stopResizingBrush();
       if (Mouse.state[Mouse.LEFT] && ev.target == draw.canvas) {
         draw.mousedown = true;
         draw.beginStroke();
@@ -310,7 +309,6 @@ Scribble = Klass(Undoable, ColorUtils, {
     };
 
     this.listeners['mouseup'] = function(ev) {
-      draw.stopResizingBrush();
       if (draw.mousedown)
         ev.preventDefault();
       draw.mousedown = false;
@@ -357,7 +355,6 @@ Scribble = Klass(Undoable, ColorUtils, {
       if (ev.touches.length == 1) {
         draw.current = Mouse.getRelativeCoords(draw.canvas, ev.touches[0]);
         draw.cursor.moveTo(draw.current.x, draw.current.y);
-        draw.stopResizingBrush();
         if (ev.target == draw.canvas) {
           draw.mousedown = true;
           draw.beginStroke();
@@ -379,7 +376,6 @@ Scribble = Klass(Undoable, ColorUtils, {
 
     this.listeners['touchend'] = function(ev) {
       if (ev.touches.length == 1) {
-        draw.stopResizingBrush();
         if (draw.mousedown)
           ev.preventDefault();
         draw.mousedown = false;
@@ -408,7 +404,6 @@ Scribble = Klass(Undoable, ColorUtils, {
     };
 
     this.listeners['keyup'] = function(ev) {
-      draw.stopResizingBrush();
       if (Key.match(ev, draw.keyBindings.clear)) {
         draw.clear();
 
@@ -420,7 +415,7 @@ Scribble = Klass(Undoable, ColorUtils, {
         draw.toggleHelp();
 
       } else if (Key.match(ev, draw.keyBindings.brushResize)) {
-        // stopped resize above
+        draw.stopResizingBrush();
 
       } else if (Key.match(ev,  draw.keyBindings.opacityUp)) {
         draw.opacityUp();

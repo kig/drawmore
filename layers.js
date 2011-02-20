@@ -60,34 +60,55 @@ CanvasLayer = Klass(Layer, {
     ctx.drawImage(this.canvas, 0, 0);
   },
   
-  drawPolygon : function(path, color) {
+  beginPath : function() {
+    this.ctx.beginPath();
+  },
+  
+  endPath : function() {
+    this.ctx.beginPath();
+  },
+  
+  fill : function(color) {
+    this.ctx.fillStyle = color;
+    this.ctx.fill();
+  },
+
+  stroke : function(color, lineWidth) {
+    this.ctx.lineWidth = lineWidth;
+    this.ctx.strokeStyle = color;
+    this.ctx.stroke();
+  },
+
+  subPolygon : function(path) {
     var ctx = this.ctx;
-    ctx.fillStyle = color;
-    ctx.beginPath();
     ctx.moveTo(path[0].x, path[0].y);
     for (var i=1; i<path.length; i++) {
       var u = path[i];
       ctx.lineTo(u.x, u.y);
     }
-    ctx.fill();
+    ctx.closePath();
   },
-
-  drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {
-    var ctx = this.ctx;
-    if (stroke) {
-      ctx.lineWidth = lineWidth;
-      ctx.strokeStyle = color;
-    } else {
-      ctx.fillStyle = color;
-    }
-    ctx.beginPath();
-    ctx.arc(x,y,r,a1,a2);
+  
+  subArc : function(x,y,r,a1,a2,closed) {
+    this.ctx.arc(x,y,r,a1,a2);
     if (closed)
-      ctx.closePath();
-    if (stroke)
-      ctx.stroke();
-    else
-      ctx.fill();
+      this.ctx.closePath();
+  },
+  
+  drawPolygon : function(path, color) {
+    this.beginPath();
+    this.subPolygon(path);
+    this.fill(color);
+  },
+  
+  drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {
+    this.beginPath();
+    this.subArc(x,y,r,a1,a2,closed);
+    if (stroke) {
+      this.stroke(color, lineWidth);
+    } else {
+      this.fill(color);
+    }
   },
   
   flip : function() {
@@ -149,7 +170,7 @@ TiledLayer = Klass(Layer, {
     }
   },
 
-  getTileCtx : function(x,y) {
+  getTile : function(x,y) {
     if (y<0 || x<0 || y>0xffff || x>0xffff)
       throw('bad coords');
     var p=x+y*0x10000;
@@ -165,7 +186,14 @@ TiledLayer = Klass(Layer, {
       }
       t[p] = c;
     }
-    return c.getContext('2d');
+    return c;
+  },
+  
+  getTileCtx : function(x,y) {
+    var t = this.getTile(x,y)
+    var c = t.getContext('2d');
+    c.tile = t;
+    return c;
   },
 
   clear : function(){
@@ -179,8 +207,48 @@ TiledLayer = Klass(Layer, {
       ctx.drawImage(this.tiles[f], x, y);
     }
   },
+  
+  beginPath : function() {
+    for (var f in this.tiles) {
+      this.tiles[f].useNewPath = true;
+      this.tiles[f].hasNewPath = false;
+    }
+  },
+  
+  endPath : function() {
+    for (var f in this.tiles) {
+      this.tiles[f].useNewPath = false;
+    }
+  },
 
-  drawPolygon : function(path, color) {
+  fill : function(color) {
+    for (var f in this.tiles) {
+      var t = this.tiles[f];
+      if (t.hasNewPath) {
+        var c = t.getContext('2d');
+        c.fillStyle = color;
+        c.fill();
+        t.hasNewPath = false;
+      }
+      t.useNewPath = false;
+    }
+  },
+  
+  stroke : function(color, lineWidth) {
+    for (var f in this.tiles) {
+      var t = this.tiles[f];
+      if (t.hasNewPath) {
+        var c = t.getContext('2d');
+        c.strokeStyle = color;
+        c.lineWidth = lineWidth;
+        c.stroke();
+        t.hasNewPath = false;
+      }
+      t.useNewPath = false;
+    }
+  },
+  
+  subPolygon : function(path) {
     var hitTiles = [];
     var minX,maxX,minY,maxY;
     minX = maxX = path[0].x;
@@ -202,18 +270,21 @@ TiledLayer = Klass(Layer, {
     for (var j=0; j<hitTiles.length; j++) {
       var tile = hitTiles[j];
       var ctx = this.getTileCtx(tile.x, tile.y);
-      ctx.fillStyle = color;
-      ctx.beginPath();
+      if (ctx.tile.useNewPath) {
+        ctx.beginPath();
+        ctx.tile.useNewPath = false;
+      }
       ctx.moveTo(path[0].x, path[0].y);
       for (var i=1; i<path.length; i++) {
         var u = path[i];
         ctx.lineTo(u.x, u.y);
       }
-      ctx.fill();
+      ctx.closePath();
+      ctx.tile.hasNewPath = true;
     }
   },
-
-  drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {
+  
+  subArc : function(x,y,r,a1,a2,closed) {
     var hitTiles = [];
     var fx = Math.floor((x-r)/this.tileSize);
     var fy = Math.floor((y-r)/this.tileSize);
@@ -225,20 +296,30 @@ TiledLayer = Klass(Layer, {
     for (var j=0; j<hitTiles.length; j++) {
       var tile = hitTiles[j];
       var ctx = this.getTileCtx(tile.x, tile.y);
-      if (stroke) {
-        ctx.lineWidth = lineWidth;
-        ctx.strokeStyle = color;
-      } else {
-        ctx.fillStyle = color;
+      if (ctx.tile.useNewPath) {
+        ctx.beginPath();
+        ctx.tile.useNewPath = false;
       }
-      ctx.beginPath();
       ctx.arc(x,y,r,a1,a2);
       if (closed)
         ctx.closePath();
-      if (stroke)
-        ctx.stroke();
-      else
-        ctx.fill();
+      ctx.tile.hasNewPath = true;
+    }
+  },
+  
+  drawPolygon : function(path, color) {
+    this.beginPath();
+    this.subPolygon(path);
+    this.fill(color);
+  },
+
+  drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {
+    this.beginPath();
+    this.subArc(x,y,r,a1,a2,closed);
+    if (stroke) {
+      this.stroke(color, lineWidth);
+    } else {
+      this.fill(color);
     }
   }
   
