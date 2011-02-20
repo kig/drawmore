@@ -25,9 +25,13 @@ Scribble = Klass(Undoable, ColorUtils, {
   current : null,
   prev : null,
 
+  defaultLineWidth : 0.5,
+  defaultColor : [0,0,0,1],
+  defaultBackground : [1,1,1,1],
+
   brushIndex : 0,
 
-  minimumBrushSize : 0.75,
+  minimumBrushSize : 0.5,
   maximumBrushSize : 1000,
 
   strokeInProgress : false,
@@ -145,9 +149,10 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.newLayer(0);
     this.setCurrentLayer(0);
     this.strokeLayer = this.newLayer(10);
-    this.setColor(this.color);
-    this.setBackground(this.background);
-    this.setLineWidth(this.lineWidth);
+    this.setColor(this.defaultColor);
+    this.setBackground(this.defaultBackground);
+    this.setLineWidth(this.defaultLineWidth);
+    this.setOpacity(1);
     this.clear();
     this.addHistoryBarrier();
   },
@@ -393,7 +398,7 @@ Scribble = Klass(Undoable, ColorUtils, {
       if (Key.match(ev, Key.ESC)) {
         draw.stopResizingBrush();
       }
-      if (!ev.shiftKey && !ev.altKey && !ev.ctrlKey) {
+      if (!ev.altKey && !ev.ctrlKey) {
         if (Key.match(ev, draw.keyBindings.brushResize)) {
           draw.startResizingBrush();
 
@@ -414,7 +419,7 @@ Scribble = Klass(Undoable, ColorUtils, {
 
     this.listeners['keyup'] = function(ev) {
       draw.stopResizingBrush();
-      if (!ev.shiftKey && !ev.altKey && !ev.ctrlKey) {
+      if (!ev.altKey && !ev.ctrlKey) {
         if (Key.match(ev, draw.keyBindings.clear)) {
           draw.clear();
 
