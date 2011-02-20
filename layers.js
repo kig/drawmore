@@ -2,6 +2,7 @@ Layer = Klass({
   display : true,
   opacity : 1,
   zIndex : 0,
+  globalAlpha : 1,
 
   initialize : function(){},
 
@@ -16,13 +17,14 @@ Layer = Klass({
 
   flip : function() {},
 
-  applyTo : function(ctx, w, h){
+  applyTo : function(ctx){
     if (this.display) {
-      ctx.save();
-        ctx.globalAlpha = this.opacity;
-        this.compositeTo(ctx, w, h);
-      ctx.restore();
+      ctx.globalAlpha = this.opacity;
+      this.compositeTo(ctx);
     }
+  },
+
+  compositeTo : function(ctx) {
   },
 
   show : function(){
@@ -38,7 +40,7 @@ Layer = Klass({
   drawPolygon : function(path, color) {},
 
   drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {}
-    
+
 });
 
 
@@ -56,26 +58,28 @@ CanvasLayer = Klass(Layer, {
     tgt.ctx.globalCompositeOperation = 'source-over';
   },
 
-  compositeTo : function(ctx, w, h) {
+  compositeTo : function(ctx, opacity) {
     ctx.drawImage(this.canvas, 0, 0);
   },
-  
+
   beginPath : function() {
     this.ctx.beginPath();
   },
-  
+
   endPath : function() {
     this.ctx.beginPath();
   },
-  
+
   fill : function(color) {
     this.ctx.fillStyle = color;
+    this.ctx.globalAlpha = this.globalAlpha;
     this.ctx.fill();
   },
 
   stroke : function(color, lineWidth) {
     this.ctx.lineWidth = lineWidth;
     this.ctx.strokeStyle = color;
+    this.ctx.globalAlpha = this.globalAlpha;
     this.ctx.stroke();
   },
 
@@ -88,19 +92,19 @@ CanvasLayer = Klass(Layer, {
     }
     ctx.closePath();
   },
-  
+
   subArc : function(x,y,r,a1,a2,closed) {
     this.ctx.arc(x,y,r,a1,a2);
     if (closed)
       this.ctx.closePath();
   },
-  
+
   drawPolygon : function(path, color) {
     this.beginPath();
     this.subPolygon(path);
     this.fill(color);
   },
-  
+
   drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {
     this.beginPath();
     this.subArc(x,y,r,a1,a2,closed);
@@ -110,9 +114,15 @@ CanvasLayer = Klass(Layer, {
       this.fill(color);
     }
   },
-  
+
+  drawImage : function(image, x, y) {
+    this.ctx.globalAlpha = this.globalAlpha;
+    this.ctx.drawImage(image,x,y);
+  },
+
   flip : function() {
     this.ctx.save();
+    this.ctx.globalAlpha = 1;
     this.ctx.globalCompositeOperation = 'copy';
     this.ctx.translate(this.canvas.width,0);
     this.ctx.scale(-1,1);
@@ -127,21 +137,6 @@ CanvasLayer = Klass(Layer, {
 });
 
 
-ColorLayer = Klass(Layer, {
-  initialize : function(color){
-    this.color = (color != null ? color : [0,0,0,1]);
-  },
-
-  copyProperties : function(tgt) {
-    tgt.color = this.color.slice(0);
-  },
-
-  compositeTo : function(ctx, w, h) {
-    ctx.fillStyle = ColorUtils.colorToStyle(this.color);
-    ctx.fillRect(0,0,w,h);
-  }
-});
-
 TiledLayer = Klass(Layer, {
 
   tileSize: 64,
@@ -150,8 +145,15 @@ TiledLayer = Klass(Layer, {
     this.tiles = {};
   },
 
+  copyProperties : function(tgt) {
+    tgt.tiles = {};
+    for (var f in this.tiles) {
+      this.tiles[f].snapshotted = true;
+      tgt.tiles[f] = Object.extend({}, this.tiles[f]);
+    }
+  },
+
   drawImage: function(img, x, y) {
-    x += 0x8000, y += 0x8000;
     var tx = Math.floor(x / this.tileSize);
     var ty = Math.floor(y / this.tileSize);
     var ltx = Math.floor((x+img.width) / this.tileSize);
@@ -159,62 +161,66 @@ TiledLayer = Klass(Layer, {
     var ox = x - tx*this.tileSize;
     var oy = y - ty*this.tileSize;
     while (tx <= ltx) {
-      while (ty <= lty) {
+      var oy2 = oy;
+      var ty2 = ty;
+      while (ty2 <= lty) {
         // optimize: skip if img is transparent here
-        this.getTileCtx(tx,ty).drawImage(img,ox,oy);
-        ty++;
-        oy -= this.tileSize;
+        var ctx = this.getTileCtx(tx,ty2);
+        ctx.globalAlpha = this.globalAlpha;
+        ctx.drawImage(img,ox,oy2);
+        ty2++;
+        oy2 -= this.tileSize;
       }
       tx++;
       ox -= this.tileSize;
     }
   },
 
-  getTile : function(x,y) {
-    if (y<0 || x<0 || y>0xffff || x>0xffff)
-      throw('bad coords');
-    var p=x+y*0x10000;
+  getTile : function(x,y, create) {
+    var p=x | (y << 16);
     var t=this.tiles;
     var c=t[p];
-    if (c == null || c.snapshotted) {
-      c = E.canvas(this.tileSize, this.tileSize);
-      if (t[p].snapshotted) {
-        var ctx = c.getContext('2d');
+    if (create && (c == null || c.snapshotted)) {
+      var nc = {
+        canvas: E.canvas(this.tileSize, this.tileSize),
+        x: x, y: y, snapshotted: false,
+        useNewPath: true, hasNewPath: false
+      };
+      if (c && c.snapshotted) {
+        var ctx = nc.canvas.getContext('2d');
         ctx.globalCompositeOperation = 'copy';
-        ctx.drawImage(t[p],0,0);
+        ctx.drawImage(c.canvas,0,0);
         ctx.globalCompositeOperation = 'source-over';
       }
+      c = nc;
       t[p] = c;
+      c.context = c.canvas.getContext('2d');
     }
     return c;
   },
-  
+
   getTileCtx : function(x,y) {
-    var t = this.getTile(x,y)
-    var c = t.getContext('2d');
-    c.tile = t;
-    return c;
+    return this.getTile(x,y,true).context;
   },
 
   clear : function(){
     this.tiles = {};
   },
 
-  composite : function(ctx) {
+  compositeTo : function(ctx) {
     for (var f in this.tiles) {
-      var x = f & 0xffff;
-      var y = f >> 16;
-      ctx.drawImage(this.tiles[f], x, y);
+      var t = this.tiles[f];
+      ctx.drawImage(t.canvas, t.x*this.tileSize, t.y*this.tileSize);
     }
   },
-  
+
   beginPath : function() {
     for (var f in this.tiles) {
       this.tiles[f].useNewPath = true;
       this.tiles[f].hasNewPath = false;
     }
   },
-  
+
   endPath : function() {
     for (var f in this.tiles) {
       this.tiles[f].useNewPath = false;
@@ -225,29 +231,31 @@ TiledLayer = Klass(Layer, {
     for (var f in this.tiles) {
       var t = this.tiles[f];
       if (t.hasNewPath) {
-        var c = t.getContext('2d');
+        var c = t.context;
         c.fillStyle = color;
+        c.globalAlpha = this.globalAlpha;
         c.fill();
         t.hasNewPath = false;
       }
-      t.useNewPath = false;
+      t.useNewPath = true;
     }
   },
-  
+
   stroke : function(color, lineWidth) {
     for (var f in this.tiles) {
       var t = this.tiles[f];
       if (t.hasNewPath) {
-        var c = t.getContext('2d');
+        var c = t.context;
         c.strokeStyle = color;
         c.lineWidth = lineWidth;
+        c.globalAlpha = this.globalAlpha;
         c.stroke();
         t.hasNewPath = false;
       }
-      t.useNewPath = false;
+      t.useNewPath = true;
     }
   },
-  
+
   subPolygon : function(path) {
     var hitTiles = [];
     var minX,maxX,minY,maxY;
@@ -269,21 +277,23 @@ TiledLayer = Klass(Layer, {
         hitTiles.push({x:tx, y:ty});
     for (var j=0; j<hitTiles.length; j++) {
       var tile = hitTiles[j];
-      var ctx = this.getTileCtx(tile.x, tile.y);
-      if (ctx.tile.useNewPath) {
+      var t = this.getTile(tile.x, tile.y, true);
+      var ctx = t.context;
+      var ox = tile.x*this.tileSize, oy = tile.y*this.tileSize;
+      if (t.useNewPath) {
         ctx.beginPath();
-        ctx.tile.useNewPath = false;
+        t.useNewPath = false;
       }
-      ctx.moveTo(path[0].x, path[0].y);
+      ctx.moveTo(path[0].x-ox, path[0].y-oy);
       for (var i=1; i<path.length; i++) {
         var u = path[i];
-        ctx.lineTo(u.x, u.y);
+        ctx.lineTo(u.x-ox, u.y-oy);
       }
       ctx.closePath();
-      ctx.tile.hasNewPath = true;
+      t.hasNewPath = true;
     }
   },
-  
+
   subArc : function(x,y,r,a1,a2,closed) {
     var hitTiles = [];
     var fx = Math.floor((x-r)/this.tileSize);
@@ -295,18 +305,20 @@ TiledLayer = Klass(Layer, {
         hitTiles.push({x:tx, y:ty});
     for (var j=0; j<hitTiles.length; j++) {
       var tile = hitTiles[j];
-      var ctx = this.getTileCtx(tile.x, tile.y);
-      if (ctx.tile.useNewPath) {
+      var t = this.getTile(tile.x, tile.y, true);
+      var ctx = t.context;
+      var ox = tile.x*this.tileSize, oy = tile.y*this.tileSize;
+      if (t.useNewPath) {
         ctx.beginPath();
-        ctx.tile.useNewPath = false;
+        t.useNewPath = false;
       }
-      ctx.arc(x,y,r,a1,a2);
+      ctx.arc(x-ox,y-oy,r,a1,a2);
       if (closed)
         ctx.closePath();
-      ctx.tile.hasNewPath = true;
+      t.hasNewPath = true;
     }
   },
-  
+
   drawPolygon : function(path, color) {
     this.beginPath();
     this.subPolygon(path);
@@ -322,6 +334,6 @@ TiledLayer = Klass(Layer, {
       this.fill(color);
     }
   }
-  
+
 });
 

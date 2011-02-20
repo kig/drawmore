@@ -26,7 +26,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   prev : null,
 
   brushIndex : 0,
-  
+
   minimumBrushSize : 0.75,
   maximumBrushSize : 1000,
 
@@ -149,6 +149,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.setBackground(this.background);
     this.setLineWidth(this.lineWidth);
     this.clear();
+    this.addHistoryBarrier();
   },
 
   resize : function(w,h) {
@@ -156,6 +157,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.height = h;
     this.canvas.width = w;
     this.canvas.height = h;
+    this.requestRedraw();
   },
 
 
@@ -288,6 +290,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     };
 
     this.listeners['mousedown'] = function(ev) {
+      draw.stopResizingBrush();
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
       draw.cursor.moveTo(draw.current.x, draw.current.y);
       if (Mouse.state[Mouse.LEFT] && ev.target == draw.canvas) {
@@ -309,6 +312,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     };
 
     this.listeners['mouseup'] = function(ev) {
+      draw.stopResizingBrush();
       if (draw.mousedown)
         ev.preventDefault();
       draw.mousedown = false;
@@ -386,63 +390,71 @@ Scribble = Klass(Undoable, ColorUtils, {
     };
 
     this.listeners['keydown'] = function(ev) {
-      if (Key.match(ev, draw.keyBindings.brushResize)) {
-        draw.startResizingBrush();
+      if (Key.match(ev, Key.ESC)) {
+        draw.stopResizingBrush();
+      }
+      if (!ev.shiftKey && !ev.altKey && !ev.ctrlKey) {
+        if (Key.match(ev, draw.keyBindings.brushResize)) {
+          draw.startResizingBrush();
 
-      } else if (Key.match(ev, draw.keyBindings.undo)) {
-        if (ev.shiftKey)
-          draw.redo();
-        else
-          draw.undo();
+        } else if (Key.match(ev, draw.keyBindings.undo)) {
+          if (ev.shiftKey)
+            draw.redo();
+          else
+            draw.undo();
 
-      } else if (Key.match(ev, draw.keyBindings.pickColor) && !ev.ctrlKey && !draw.disableColorPick) {
-        draw.pickColor(draw.current, draw.pickRadius);
+        } else if (Key.match(ev, draw.keyBindings.pickColor) && !ev.ctrlKey && !draw.disableColorPick) {
+          draw.pickColor(draw.current, draw.pickRadius);
 
-      } else if (Key.match(ev, draw.keyBindings.toggleUI)) {
-        Event.stop(ev);
+        } else if (Key.match(ev, draw.keyBindings.toggleUI)) {
+          Event.stop(ev);
+        }
       }
     };
 
     this.listeners['keyup'] = function(ev) {
-      if (Key.match(ev, draw.keyBindings.clear)) {
-        draw.clear();
+      draw.stopResizingBrush();
+      if (!ev.shiftKey && !ev.altKey && !ev.ctrlKey) {
+        if (Key.match(ev, draw.keyBindings.clear)) {
+          draw.clear();
 
-      } else if (Key.match(ev, draw.keyBindings.toggleUI)) {
-        draw.toggleUI();
-        Event.stop(ev);
+        } else if (Key.match(ev, draw.keyBindings.toggleUI)) {
+          draw.toggleUI();
+          Event.stop(ev);
 
-      } else if (Key.match(ev, draw.keyBindings.toggleHelp)) {
-        draw.toggleHelp();
+        } else if (Key.match(ev, draw.keyBindings.toggleHelp)) {
+          draw.toggleHelp();
 
-      } else if (Key.match(ev, draw.keyBindings.brushResize)) {
-        draw.stopResizingBrush();
+        } else if (Key.match(ev, draw.keyBindings.brushResize)) {
+          draw.stopResizingBrush();
 
-      } else if (Key.match(ev,  draw.keyBindings.opacityUp)) {
-        draw.opacityUp();
+        } else if (Key.match(ev,  draw.keyBindings.opacityUp)) {
+          draw.opacityUp();
 
-      } else if (Key.match(ev,  draw.keyBindings.opacityDown)) {
-        draw.opacityDown();
+        } else if (Key.match(ev,  draw.keyBindings.opacityDown)) {
+          draw.opacityDown();
 
-      } else if (Key.match(ev,  draw.keyBindings.brushSizeUp)) {
-        draw.brushSizeUp();
+        } else if (Key.match(ev,  draw.keyBindings.brushSizeUp)) {
+          draw.brushSizeUp();
 
-      } else if (Key.match(ev,  draw.keyBindings.brushSizeDown)) {
-        draw.brushSizeDown();
+        } else if (Key.match(ev,  draw.keyBindings.brushSizeDown)) {
+          draw.brushSizeDown();
 
-      } else if (Key.match(ev,  draw.keyBindings.previousBrush)) {
-        draw.previousBrush();
+        } else if (Key.match(ev,  draw.keyBindings.previousBrush)) {
+          draw.previousBrush();
 
-      } else if (Key.match(ev,  draw.keyBindings.nextBrush)) {
-        draw.nextBrush();
+        } else if (Key.match(ev,  draw.keyBindings.nextBrush)) {
+          draw.nextBrush();
 
-      } else if (Key.match(ev, draw.keyBindings.flip)) {
-        draw.flip();
+        } else if (Key.match(ev, draw.keyBindings.flip)) {
+          draw.flip();
 
-      } else if (Key.match(ev, draw.keyBindings.paletteKeys)) {
-        for (var i=0; i<draw.keyBindings.paletteKeys.length; i++) {
-          if (Key.match(ev, draw.keyBindings.paletteKeys[i])) {
-            draw.setColor(draw.palette[i]);
-            break;
+        } else if (Key.match(ev, draw.keyBindings.paletteKeys)) {
+          for (var i=0; i<draw.keyBindings.paletteKeys.length; i++) {
+            if (Key.match(ev, draw.keyBindings.paletteKeys[i])) {
+              draw.setColor(draw.palette[i]);
+              break;
+            }
           }
         }
       }
@@ -519,7 +531,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   // Layers
 
   newLayer : function(zIndex) {
-    var layer = new CanvasLayer();
+    var layer = new TiledLayer();
     layer.zIndex = zIndex || 0;
     this.pushLayer(layer);
     this.addHistoryState({methodName:'newLayer', args:[zIndex], breakpoint:true});
@@ -577,7 +589,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   // Brush strokes
 
   beginStroke : function() {
-    if (this.strokeInProgress || !this.currentLayer.ctx) return;
+    if (this.strokeInProgress || this.currentLayer.notDrawable) return;
     this.strokeInProgress = true;
     this.strokeLayer.clear();
     this.strokeLayer.show();
@@ -588,7 +600,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   endStroke : function() {
     if (!this.strokeInProgress) return;
     this.strokeInProgress = false;
-    this.strokeLayer.applyTo(this.currentLayer.ctx, this.canvas.width, this.canvas.height);
+    this.strokeLayer.applyTo(this.currentLayer);
     this.strokeLayer.hide();
     this.addHistoryState({methodName: 'endStroke', args: []});
     this.requestRedraw();
@@ -597,7 +609,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   drawPoint : function(xy) {
     if (!this.strokeInProgress) return;
     this.brush.drawPoint(
-      this.strokeLayer, this.strokeLayer.strokeStyle,
+      this.strokeLayer, this.colorStyle,
       xy.x, xy.y, this.lineWidth/2
     );
     this.addHistoryState({methodName: 'drawPoint', args:[xy]});
@@ -607,7 +619,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   drawLine : function(prev, current) {
     if (!this.strokeInProgress) return;
     this.brush.drawLine(
-      this.strokeLayer, this.strokeLayer.strokeStyle, 
+      this.strokeLayer, this.colorStyle,
       prev.x, prev.y, this.lineWidth/2,
       current.x, current.y, this.lineWidth/2
     );
@@ -623,25 +635,25 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.brushes.push(new RoundBrush);
     this.addHistoryState({methodName: 'addRoundBrush', args: [], breakpoint:true});
   },
-  
+
   addPolygonBrush : function(path) {
     this.brushes.push(new PolygonBrush(path));
     this.addHistoryState({methodName: 'addPolygonBrush', args: [path], breakpoint:true});
   },
-  
+
   addImageBrush : function(src) {
     var img = new Image();
     img.src = src;
     this.brushes.push(new ImageBrush(img));
     this.addHistoryState({methodName: 'addImageBrush', args: [src], breakpoint:true});
   },
-  
+
   setBrush : function(idx) {
     this.brushIndex = idx;
     this.brush = this.brushes[idx];
     this.addHistoryState({methodName: 'setBrush', args: [idx], breakpoint:true});
   },
-  
+
   nextBrush : function() {
     this.setBrush((this.brushIndex + 1) % this.brushes.length);
   },
@@ -652,7 +664,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     else
       this.setBrush(this.brushIndex - 1);
   },
-  
+
   deleteBrush : function(idx) {
     if (idx < 0 || idx >= this.brushes.length)
       throw (new Error('Bad brush index'));
@@ -662,7 +674,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.brushes.splice(idx, 1);
     this.addHistoryState({methodName: 'deleteBrush', args: [idx]});
   },
-  
+
   setColor : function(color) {
     if (typeof color == 'string')
       this.color = this.styleToColor(color);
@@ -670,8 +682,7 @@ Scribble = Klass(Undoable, ColorUtils, {
       this.color = color;
     var s = this.colorToStyle(this.color);
     byId('foregroundColor').style.backgroundColor = s
-    this.strokeLayer.strokeStyle = s;
-    this.strokeLayer.fillStyle = s;
+    this.colorStyle = s;
     this.addHistoryState({methodName: 'setColor', args:[this.color]});
   },
 
@@ -688,8 +699,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   },
 
   setLineWidth : function(w) {
-    this.strokeLayer.ctx.lineWidth = w;
-    this.lineWidth = this.strokeLayer.ctx.lineWidth;
+    this.lineWidth = w;
     this.cursor.update(this.lineWidth);
     // collapse multiple setLineWidth calls into a single history event
     var last = this.history.last();

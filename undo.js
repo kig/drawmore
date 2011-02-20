@@ -1,6 +1,6 @@
 Undoable = Klass({
-  historySnapshotEventCount : 100,
-  playbackRate : 5, // events per millisecond
+  historySnapshotEventCount : 3000,
+  playbackRate : 5000, // events per millisecond
   recordHistory : true,
   historyIndex : -1,
 
@@ -57,15 +57,22 @@ Undoable = Klass({
       this.history[this.historyIndex] = obj;
       if (this.history.length > this.historyIndex+1) {
         this.history.splice(this.historyIndex+1);
-        var sidx = Math.floor(this.historyIndex / this.historySnapshotEventCount);
-        if (this.snapshots.length > sidx+1) {
-          this.snapshots.splice(sidx+1);
+        for (var i=0; i<this.snapshots.length; i++) {
+          if (this.snapshots[i].historyIndex > this.historyIndex) {
+            this.snapshots.splice(i);
+            break;
+          }
         }
       }
       if (this.historyIndex % this.historySnapshotEventCount == 0) {
         this.addSnapshot();
       }
     }
+  },
+
+  addHistoryBarrier : function() {
+    this.addHistoryState(null);
+    this.addSnapshot();
   },
 
   gotoHistoryState : function(index) {
@@ -75,7 +82,8 @@ Undoable = Klass({
     this.recordHistory = false;
     this.applySnapshot(snapshot.value);
     for (var i=snapshot.historyIndex+1; i<=index; i++) {
-      this.applyHistoryState(this.history[i]);
+      if (this.history[i] != null)
+        this.applyHistoryState(this.history[i]);
     }
     this.recordHistory = true;
     this.historyIndex = index;
@@ -84,7 +92,10 @@ Undoable = Klass({
   undo : function() {
     var lastPoint = this.historyIndex;
     for (var i=lastPoint; i>=0; i--) {
-      if (this.history[i].breakpoint) {
+      if (this.history[i] == null) { // barrier, can't cross
+        lastPoint = i+1;
+        break;
+      } else if (this.history[i].breakpoint) {
         lastPoint = i;
         break;
       }
@@ -95,7 +106,7 @@ Undoable = Klass({
   redo : function() {
     var nextPoint = this.history.length;
     for (var i=this.historyIndex+2; i<this.history.length; i++) {
-      if (this.history[i].breakpoint) {
+      if (this.history[i] != null && this.history[i].breakpoint) {
         nextPoint = i;
         break;
       }
@@ -123,7 +134,8 @@ Undoable = Klass({
         var j = i;
         while (new Date() - t < 30 && i <= self.historyIndex && (i-j) < self.playbackRate*10) {
           var cmd = h[i];
-          self.applyHistoryState(cmd);
+          if (cmd != null)
+            self.applyHistoryState(cmd);
           i++;
         }
         if (window.console) {
