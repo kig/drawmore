@@ -229,16 +229,13 @@ Scribble = Klass(Undoable, ColorUtils, {
   createSaveObject : function() {
     return {
       history: this.history,
-      historyIndex : this.historyIndex,
-      width: this.canvas.width,
-      height: this.canvas.height
+      historyIndex : this.historyIndex
     };
   },
 
   applySaveObject : function(obj) {
     this.newDocument();
     this.clearHistory();
-    this.resize(obj.width, obj.height);
     for (var i=0; i<obj.history.length; i++) {
       if (obj.history[i] != null) {
         this.applyHistoryState(obj.history[i]);

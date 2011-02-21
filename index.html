@@ -15,17 +15,8 @@
 
       window.addEventListener('load', function() {
         window.addEventListener('resize', function() {
-          if (draw.canvas.width < window.innerWidth || draw.canvas.height < window.innerHeight) {
-            var id = draw.ctx.getImageData(0,0,draw.canvas.width,draw.canvas.height);
+          if (draw.width != window.innerWidth || draw.height != window.innerHeight) {
             draw.resize(window.innerWidth, window.innerHeight);
-            draw.canvas.width = window.innerWidth;
-            draw.canvas.height = window.innerHeight;
-            draw.ctx.putImageData(id, 0,0);
-            var s = draw.getState();
-            var rh = draw.recordHistory;
-            draw.recordHistory = false;
-            draw.applyState(s);
-            draw.recordHistory = rh;
           }
         }, false);
 
