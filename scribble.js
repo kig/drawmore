@@ -235,8 +235,10 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.clearHistory();
     this.resize(obj.width, obj.height);
     for (var i=0; i<obj.history.length; i++) {
-      this.applyHistoryState(obj.history[i]);
-      this.history.last().breakpoint = obj.history[i].breakpoint;
+      if (obj.history[i] != null) {
+        this.applyHistoryState(obj.history[i]);
+        this.history.last().breakpoint = obj.history[i].breakpoint;
+      }
     }
     this.gotoHistoryState(obj.historyIndex);
   },
