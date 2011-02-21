@@ -1,5 +1,5 @@
 Undoable = Klass({
-  historySnapshotEventCount : 3000,
+  historySnapshotEventCount : 1000,
   playbackRate : 5000, // events per millisecond
   recordHistory : true,
   historyIndex : -1,
