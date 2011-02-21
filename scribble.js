@@ -256,6 +256,9 @@ Scribble = Klass(Undoable, ColorUtils, {
       }
     }
     var self = this;
+    this.canvas.addEventListener('contextmenu', function(ev) {
+      Event.stop(ev);
+    }, false);
   },
 
   removeListeners : function() {
@@ -264,6 +267,9 @@ Scribble = Klass(Undoable, ColorUtils, {
         window.removeEventListener(i, this.listeners[i], false);
       }
     }
+    this.canvas.removeEventListener('contextmenu', function(ev) {
+      Event.stop(ev);
+    }, false);
   },
 
   createListeners : function() {
@@ -320,6 +326,12 @@ Scribble = Klass(Undoable, ColorUtils, {
           draw.prev = draw.current;
         }
         ev.preventDefault();
+      } else if (Mouse.state[Mouse.MIDDLE] && ev.target == draw.canvas) {
+        draw.startPanning();
+        ev.preventDefault();
+      } else if (Mouse.state[Mouse.RIGHT] && ev.target == draw.canvas) {
+        draw.startResizingBrush();
+        ev.preventDefault();
       }
     };
 
@@ -331,6 +343,9 @@ Scribble = Klass(Undoable, ColorUtils, {
       draw.mouseup = Mouse.getRelativeCoords(draw.canvas, ev);
       if (!Mouse.state[Mouse.LEFT]) {
         draw.prev = null;
+      }
+      if (ev.button == Mouse.MIDDLE) {
+        draw.stopPanning();
       }
       draw.endStroke();
     };
