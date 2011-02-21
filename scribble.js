@@ -31,13 +31,13 @@ Scribble = Klass(Undoable, ColorUtils, {
   current : null,
   prev : null,
 
-  defaultLineWidth : 0.5,
+  defaultLineWidth : 0.75,
   defaultColor : [0,0,0,1],
   defaultBackground : [1,1,1,1],
 
   brushIndex : 0,
 
-  minimumBrushSize : 0.5,
+  minimumBrushSize : 0.75,
   maximumBrushSize : 1000,
 
   strokeInProgress : false,
@@ -51,6 +51,7 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   initialize : function(canvas) {
     this.canvas = canvas;
+    this.canvas.style.setProperty("image-rendering", "optimizeSpeed", "important");
     this.ctx = canvas.getContext('2d');
     this.canvas.style.cursor = 'url('+E.canvas(1,1).toDataURL()+'),crosshair';
     Undoable.initialize.call(this);
@@ -76,6 +77,9 @@ Scribble = Klass(Undoable, ColorUtils, {
       this.ctx.fillRect(0,0,this.width,this.height);
       this.ctx.translate(this.panX, this.panY);
       this.ctx.scale(this.zoom, this.zoom);
+      this.ctx.mozImageSmoothingEnabled = false;
+      this.ctx.webkitImageSmoothingEnabled = false;
+      this.ctx.imageSmoothingEnabled = false;
       for (var i=0; i<this.layers.length; i++) {
         this.layers[i].applyTo(this.ctx, this.width, this.height);
       }
@@ -274,6 +278,20 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   createListeners : function() {
     var draw = this;
+
+    this.listeners['mousewheel'] = function(ev) {
+      if (ev.wheelDelta > 0)
+        draw.zoomIn();
+      else
+        draw.zoomOut();
+    };
+
+    this.listeners['DOMMouseScroll'] = function(ev) {
+      if (ev.detail < 0)
+        draw.zoomIn();
+      else
+        draw.zoomOut();
+    };
 
     this.listeners['mousemove'] = function(ev) {
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
@@ -578,10 +596,12 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   zoomIn : function() {
     this.setZoom(this.zoom * 2);
+    this.setLineWidth(this.lineWidth * 2);
   },
 
   zoomOut : function() {
     this.setZoom(this.zoom / 2);
+    this.setLineWidth(this.lineWidth / 2);
   },
 
   setZoom : function(z) {
@@ -593,8 +613,8 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.zoom = z;
     px *= this.zoom;
     py *= this.zoom;
-    this.panX = px+this.current.x;
-    this.panY = py+this.current.y;
+    this.panX = Math.floor(px)+this.current.x;
+    this.panY = Math.floor(py)+this.current.y;
     this.requestRedraw();
   },
 
