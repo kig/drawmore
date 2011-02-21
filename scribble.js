@@ -49,9 +49,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.canvas.style.cursor = 'url('+E.canvas(1,1).toDataURL()+'),crosshair';
     Undoable.initialize.call(this);
     this.current = {x:0,y:0};
-    this.cursor = new RoundBrushCursor();
-    this.cursor.update(this.lineWidth);
-    this.cursor.moveTo(this.current.x, this.current.y);
+    this.cursor = new BrushCursor();
     this.setupDefaultState();
     this.listeners = {};
     this.createListeners();
@@ -665,6 +663,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   setBrush : function(idx) {
     this.brushIndex = idx;
     this.brush = this.brushes[idx];
+    this.cursor.setBrush(this.brush);
     this.addHistoryState({methodName: 'setBrush', args: [idx], breakpoint:true});
   },
 

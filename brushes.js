@@ -1,4 +1,10 @@
 Brush = Klass({
+  diameter : 1,
+  left : -0.5,
+  top : -0.5,
+  right : 0.5,
+  bottom : 0.5,
+
   initialize : function() {},
   drawLine : function(ctx, color, x1, y1, r1, x2, y2, r2) {},
   drawPoint : function(ctx, color, x, y, r) {
@@ -7,6 +13,10 @@ Brush = Klass({
 
   copy : function(){
     return Object.extend({}, this);
+  },
+
+  brushPath : function(ctx, scale) {
+    ctx.arc(0,0,scale,0,Math.PI*2);
   }
 });
 
@@ -16,6 +26,31 @@ PolygonBrush = Klass(Brush, {
 
   initialize : function(path) {
     this.path = path;
+    var u = this.path[0];
+    var minX = u.x, maxX = u.x, minY = u.y, maxY = u.y;
+    for (var i=1; i<this.path.length; i++) {
+      var u = this.path[i];
+      if (u.x < minX) minX = u.x;
+      else if (u.x > maxX) maxX = u.x;
+      if (u.y < minY) minY = u.y;
+      else if (u.y > maxY) maxY = u.y;
+    }
+    this.left = minX;
+    this.top = minY;
+    this.right = maxX;
+    this.bottom = maxY;
+    var dx = maxX-minX, dy = maxY-minY;
+    this.diameter = Math.sqrt(dx*dx + dy*dy);
+  },
+
+  brushPath : function(ctx, scale) {
+    var u = this.path[0];
+    ctx.moveTo(u.x*scale, u.y*scale);
+    for (var i=1; i<this.path.length; i++) {
+      var u = this.path[i];
+      ctx.lineTo(u.x*scale, u.y*scale);
+    }
+    ctx.closePath();
   },
 
   drawPoint : function(ctx, color, x, y, r) {
@@ -54,6 +89,12 @@ PolygonBrush = Klass(Brush, {
       return;
     }
     ctx.beginPath();
+    ctx.subPolygon(this.path.map(function(p){
+      return {x: p.x*r1+x1, y: p.y*r1+y1};
+    }));
+    ctx.subPolygon(this.path.map(function(p){
+      return {x: p.x*r2+x2, y: p.y*r2+y2};
+    }));
     var u = this.path[this.path.length-1];
     var v = this.path[0];
     ctx.subPolygon(this.ccwSort([
@@ -72,12 +113,6 @@ PolygonBrush = Klass(Brush, {
         {x:x2+u.x*r2, y:y2+u.y*r2}
       ]));
     }
-    ctx.subPolygon(this.path.map(function(p){
-      return {x: p.x*r1+x1, y: p.y*r1+y1};
-    }));
-    ctx.subPolygon(this.path.map(function(p){
-      return {x: p.x*r2+x2, y: p.y*r2+y2};
-    }));
     ctx.fill(color);
   }
 });

@@ -67,6 +67,87 @@ RoundBrushCursor = Klass({
 });
 
 
+BrushCursor = Klass({
+  x : 0,
+  y : 0,
+  sz : 64,
+  minSz : 64,
+  diameter : 1,
+
+  initialize : function() {
+    this.cursorCanvas = E.canvas(this.sz, this.sz);
+    this.cursorCanvas.style.position = 'absolute';
+    this.cursorCanvas.style.zIndex = '5';
+    this.cursorCanvas.style.pointerEvents = 'none';
+    document.body.appendChild(this.cursorCanvas);
+  },
+
+  setBrush : function(brush) {
+    this.brush = brush;
+    this.update(this.diameter);
+  },
+
+  update : function(diameter) {
+    var origDiameter = diameter;
+    this.diameter = diameter;
+    var diameter = this.brush.diameter * diameter;
+    var ctx = this.cursorCanvas.getContext('2d');
+    var w = this.sz;
+    if (w > this.minSz && (w > diameter*4 || (w > 512 && w > diameter*2))) {
+      while (w > this.minSz && (w > diameter*4 || (w > 512 && w > diameter*2)))
+        w /= 2;
+      this.cursorCanvas.width = this.cursorCanvas.height = w;
+      console.log('scale down to '+w);
+    } else if (w < diameter+2) {
+      while (w < diameter+2)
+        w *= 2
+      this.cursorCanvas.width = this.cursorCanvas.height = w;
+      console.log('scale up to '+w);
+    }
+    this.sz = w;
+    ctx.clearRect(0,0,w,w);
+    ctx.save();
+      ctx.beginPath();
+      ctx.translate(w/2, w/2);
+      this.brush.brushPath(ctx, origDiameter/2);
+      ctx.lineWidth = 0.75;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+      ctx.beginPath();
+      this.brush.brushPath(ctx, origDiameter/2);
+      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = '#000000';
+      ctx.stroke();
+    ctx.restore();
+    if (diameter < 3) {
+      ctx.beginPath();
+      ctx.moveTo(w/2+2, w/2);
+      ctx.lineTo(w/2+4, w/2);
+      ctx.moveTo(w/2-2, w/2);
+      ctx.lineTo(w/2-4, w/2);
+      ctx.moveTo(w/2, w/2-2);
+      ctx.lineTo(w/2, w/2-4);
+      ctx.moveTo(w/2, w/2+2);
+      ctx.lineTo(w/2, w/2+4);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+    this.moveTo(this.x, this.y);
+  },
+
+  moveTo : function(x, y) {
+    this.x = x;
+    this.y = y;
+    this.cursorCanvas.style.left = this.x - this.sz/2 + 'px';
+    this.cursorCanvas.style.top = this.y - this.sz/2 + 'px';
+  }
+});
+
+
 Math.clamp = function(v, min, max) {
   return Math.min(max, Math.max(min, v));
 };
