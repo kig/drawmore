@@ -1,5 +1,7 @@
 Layer = Klass({
   display : true,
+  x : 0,
+  y : 0,
   opacity : 1,
   zIndex : 0,
   globalAlpha : 1,
@@ -154,37 +156,29 @@ TiledLayer = Klass(Layer, {
   },
 
   drawImage: function(img, x, y) {
-    var tx = Math.floor(x / this.tileSize);
-    var ty = Math.floor(y / this.tileSize);
+    var ftx = Math.floor(x / this.tileSize);
+    var fty = Math.floor(y / this.tileSize);
     var ltx = Math.floor((x+img.width) / this.tileSize);
     var lty = Math.floor((y+img.height) / this.tileSize);
-    var ox = x - tx*this.tileSize;
-    var oy = y - ty*this.tileSize;
-    while (tx <= ltx) {
-      var oy2 = oy;
-      var ty2 = ty;
-      while (ty2 <= lty) {
+    for (var tx=ftx; tx <= ltx; tx++) {
+      for (var ty=fty; ty <= lty; ty++) {
         // optimize: skip if img is transparent here
-        var ctx = this.getTileCtx(tx,ty2);
+        var ctx = this.getTileCtx(tx,ty);
         ctx.globalAlpha = this.globalAlpha;
-        ctx.drawImage(img,ox,oy2);
-        ty2++;
-        oy2 -= this.tileSize;
+        ctx.drawImage(img,x-tx*this.tileSize,y-ty*this.tileSize);
       }
-      tx++;
-      ox -= this.tileSize;
     }
   },
 
   getTile : function(x,y, create) {
-    var p=x | (y << 16);
+    var p=((x + 0x8000) & 0xffff) | (((y + 0x8000) & 0xffff) << 16);
     var t=this.tiles;
     var c=t[p];
     if (create && (c == null || c.snapshotted)) {
       var nc = {
         canvas: E.canvas(this.tileSize, this.tileSize),
         x: x, y: y, snapshotted: false,
-        useNewPath: true, hasNewPath: false
+        useNewPath: true
       };
       if (c && c.snapshotted) {
         var ctx = nc.canvas.getContext('2d');

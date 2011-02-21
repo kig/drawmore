@@ -7,6 +7,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     opacityUp: ['w','o'],
     opacityDown: ['s','l'],
     clear : [Key.DELETE, Key.BACKSPACE],
+    pan : [Key.SPACE],
     undo: ['z', 'n'],
     nextBrush: ['t','y'],
     previousBrush: ['g','h'],
@@ -16,6 +17,10 @@ Scribble = Klass(Undoable, ColorUtils, {
     toggleUI: [Key.TAB, '0'],
     toggleHelp: [191] // question mark
   },
+
+  panX : 0,
+  panY : 0,
+  zoom : 1,
 
   lineWidth : 1,
   opacity : 1,
@@ -68,6 +73,8 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.ctx.save();
       this.ctx.fillStyle = this.colorToStyle(this.background);
       this.ctx.fillRect(0,0,this.width,this.height);
+      this.ctx.translate(this.panX, this.panY);
+      this.ctx.scale(this.zoom, this.zoom);
       for (var i=0; i<this.layers.length; i++) {
         this.layers[i].applyTo(this.ctx, this.width, this.height);
       }
@@ -266,6 +273,8 @@ Scribble = Klass(Undoable, ColorUtils, {
 
     this.listeners['mousemove'] = function(ev) {
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
+      if (draw.panning)
+        draw.keepPanning();
       if (draw.resizingBrush) {
         draw.keepResizingBrush();
       } else {
@@ -331,6 +340,8 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.listeners['touchmove'] = function(ev) {
       if (ev.touches.length == 1) {
         draw.current = Mouse.getRelativeCoords(draw.canvas, ev.touches[0]);
+        if (draw.panning)
+          draw.keepPanning();
         if (draw.resizingBrush) {
           draw.keepResizingBrush();
         } else {
@@ -409,6 +420,9 @@ Scribble = Klass(Undoable, ColorUtils, {
         if (Key.match(ev, draw.keyBindings.brushResize)) {
           draw.startResizingBrush();
 
+        } else if (Key.match(ev, draw.keyBindings.pan)) {
+          draw.startPanning();
+
         } else if (Key.match(ev, draw.keyBindings.undo)) {
           if (ev.shiftKey)
             draw.redo();
@@ -429,6 +443,9 @@ Scribble = Klass(Undoable, ColorUtils, {
       if (!ev.altKey && !ev.ctrlKey) {
         if (Key.match(ev, draw.keyBindings.clear)) {
           draw.clear();
+
+        } else if (Key.match(ev, draw.keyBindings.pan)) {
+          draw.stopPanning();
 
         } else if (Key.match(ev, draw.keyBindings.toggleUI)) {
           draw.toggleUI();
@@ -503,6 +520,38 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   brushSizeDown : function() {
     this.setLineWidth(Math.clamp(this.lineWidth/1.5, this.minimumBrushSize, this.maximumBrushSize));
+  },
+
+
+  // Panning
+
+  startPanning : function() {
+    if (this.panning) return;
+    this.panning = true;
+    this.panStart = this.current;
+  },
+
+  keepPanning : function() {
+    if (!this.panning) return;
+    var dx = this.current.x - this.panStart.x;
+    var dy = this.current.y - this.panStart.y;
+    this.panStart = this.current;
+    this.pan(dx,dy);
+  },
+
+  stopPanning : function() {
+    if (!this.panning) return;
+    this.panning = false;
+    var dx = this.current.x - this.panStart.x;
+    var dy = this.current.y - this.panStart.y;
+    this.panStart = null;
+    this.pan(dx,dy);
+  },
+
+  pan : function(dx, dy) {
+    this.panX += dx;
+    this.panY += dy;
+    this.requestRedraw();
   },
 
 
@@ -618,24 +667,43 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.requestRedraw();
   },
 
+  panPoint : function(p) {
+    var np = Object.extend({}, p);
+    np.x -= this.panX;
+    np.y -= this.panY;
+    np.r = this.lineWidth/2;
+    if (this.pressureControlsSize)
+      np.r *= np.pressure;
+    if (this.pressureControlsOpacity)
+      np.opacity *= np.pressure;
+    np.absolute = true;
+    return np;
+  },
+
   drawPoint : function(xy) {
     if (!this.strokeInProgress) return;
+    if (!xy.absolute)
+      xy = this.panPoint(xy);
     this.brush.drawPoint(
       this.strokeLayer, this.colorStyle,
-      xy.x, xy.y, this.lineWidth/2
+      xy.x, xy.y, xy.r
     );
     this.addHistoryState({methodName: 'drawPoint', args:[xy]});
     this.requestRedraw();
   },
 
-  drawLine : function(prev, current) {
+  drawLine : function(a, b) {
     if (!this.strokeInProgress) return;
+    if (!a.absolute)
+      a = this.panPoint(a);
+    if (!b.absolute)
+      b = this.panPoint(b);
     this.brush.drawLine(
       this.strokeLayer, this.colorStyle,
-      prev.x, prev.y, this.lineWidth/2,
-      current.x, current.y, this.lineWidth/2
+      a.x, a.y, a.r,
+      b.x, b.y, b.r
     );
-    var s = {methodName: 'drawLine', args:[prev, current]}
+    var s = {methodName: 'drawLine', args:[a, b]}
     this.addHistoryState(s);
     this.requestRedraw();
   },
