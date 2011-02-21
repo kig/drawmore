@@ -400,7 +400,14 @@ Scribble = Klass(Undoable, ColorUtils, {
       if (Key.match(ev, Key.ESC)) {
         draw.stopResizingBrush();
       }
-      if (!ev.altKey && !ev.ctrlKey) {
+      if (ev.altKey) {
+        if (Key.match(ev, draw.keyBindings.undo)) {
+          if (ev.shiftKey)
+            draw.redo(true);
+          else
+            draw.undo(true);
+        }
+      } else if (!ev.altKey && !ev.ctrlKey) {
         if (Key.match(ev, draw.keyBindings.brushResize)) {
           draw.startResizingBrush();
 

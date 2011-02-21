@@ -89,13 +89,13 @@ Undoable = Klass({
     this.historyIndex = index;
   },
 
-  undo : function() {
+  undo : function(singleStep) {
     var lastPoint = this.historyIndex;
     for (var i=lastPoint; i>=0; i--) {
       if (this.history[i] == null) { // barrier, can't cross
         lastPoint = i+1;
         break;
-      } else if (this.history[i].breakpoint) {
+      } else if (singleStep || this.history[i].breakpoint) {
         lastPoint = i;
         break;
       }
@@ -103,10 +103,10 @@ Undoable = Klass({
     this.gotoHistoryState(lastPoint-1);
   },
 
-  redo : function() {
+  redo : function(singleStep) {
     var nextPoint = this.history.length;
     for (var i=this.historyIndex+2; i<this.history.length; i++) {
-      if (this.history[i] != null && this.history[i].breakpoint) {
+      if (this.history[i] != null && (singleStep || this.history[i].breakpoint)) {
         nextPoint = i;
         break;
       }
