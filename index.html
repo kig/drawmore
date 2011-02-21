@@ -241,8 +241,29 @@
       }
       #help p {
         font-size: 12px;
+        margin-bottom: 0px;
+        margin-top: 0px;
+        margin-left: 8px;
+      }
+      #help h3 {
+        font-size: 12px;
         margin-bottom: 4px;
         margin-top: 0px;
+      }
+      #help h4 {
+        font-size: 12px;
+        margin-bottom: 2px;
+        padding-top: 4px;
+        margin-top: 6px;
+        border-top: 1px solid black;
+      }
+      #help hr {
+        border: 0;
+        border-top: 1px solid black;
+      }
+      #help b {
+        font-weight: semi-bold;
+        color: #381;
       }
     </style>
   </head>
@@ -278,28 +299,42 @@
     </div>
     <div id="helpToggle">?</div>
     <div id="help">
-      <p>Use the Keyboard, Luke!</p>
-      <p>drag current color to palette</p>
-      <p>1-9 choose colors from palette</p>
-      <p>r picks color under cursor (u)</p>
-      <p>f + move mouse to resize brush (j)</p>
-      <p>e and d change brush size (i and k)</p>
-      <p>w and s change brush opacity (o and l)</p>
-      <p>t and g to change brush (y and h)</p>
-      <p>shift draws with constraints</p>
-      <p>shift-click does straight lines</p>
-      <p>space pans the canvas</p>
-      <p>z is undo (n)</p>
-      <p>shift-z is redo (shift-n)</p>
-      <p>alt-z is smooth undo (alt-n)</p>
-      <p>shift-alt-z is smooth redo (shift-alt-n)</p>
-      <p>x flips the image</p>
-      <p>tab hides the GUI (0)</p>
-      <p>delete clears the canvas</p>
+      <h3>Use the Keyboard, Luke!</h3>
+
+      <h4>Navigation</h4>
+      <p><b>space</b> pans the canvas</p>
+      <p><b>v</b> zooms in (<b>m</b>)</p>
+      <p><b>shift-v</b> zooms out (<b>shift-m</b>)</p>
+      <p><b>tab</b> hides the GUI (<b>0</b>)</p>
+<!--       <p><b>x</b> flips the image</p> -->
+
+      <h4>Colors</h4>
+      <p><b>1</b>-<b>9</b> choose colors from palette</p>
+      <p>drag the current color to palette</p>
+      <p><b>r</b> picks the color under cursor (<b>u</b>)</p>
+
+      <h4>Brushes</h4>
+      <p><b>t</b> and <b>g</b> change brush (<b>y</b> and <b>h</b>)</p>
+      <p><b>f</b> + move mouse to resize brush (<b>j</b>)</p>
+      <p><b>e</b> and <b>d</b> change brush size (<b>i</b> and <b>k</b>)</p>
+      <p><b>w</b> and <b>s</b> change brush opacity (<b>o</b> and <b>l</b>)</p>
+
+      <h4>Constraints</h4>
+      <p><b>shift</b> draws with constraints</p>
+      <p><b>shift-click</b> to draw straight lines</p>
+
+      <h4>Undo</h4>
+      <p><b>z</b> is undo (<b>n</b>)</p>
+      <p><b>shift-z</b> is redo (<b>shift-n</b>)</p>
+      <p><b>alt-z</b> is smooth undo (<b>alt-n</b>)</p>
+      <p><b>shift-alt-z</b> is smooth redo (<b>shift-alt-n</b>)</p>
+      <hr>
+      <p><b>delete</b> clears the canvas</p>
+      <p><b>?</b> toggles help</p>
       <hr>
       <p>left-handed keys parenthesized</p>
-      <p>unused good keys: q a xcv SPACE</p>
-      <p>as well as RMB and MMB</p>
+      <p>unused good keys: <b>q a c</b></p>
+      <p>as well as <b>RMB</b> and <b>MMB</b></p>
       <hr>
       <p>feedback to <a href="http://twitter.com/ilmarihei">twitter</a></p>
       <p>patches to <a href="http://github.com/kig/scribble">github</a></p>

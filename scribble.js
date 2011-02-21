@@ -8,6 +8,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     opacityDown: ['s','l'],
     clear : [Key.DELETE, Key.BACKSPACE],
     pan : [Key.SPACE],
+    zoom : ['v', 'm'],
     undo: ['z', 'n'],
     nextBrush: ['t','y'],
     previousBrush: ['g','h'],
@@ -426,6 +427,12 @@ Scribble = Klass(Undoable, ColorUtils, {
           else
             draw.undo();
 
+        } else if (Key.match(ev, draw.keyBindings.zoom)) {
+          if (ev.shiftKey)
+            draw.zoomOut();
+          else
+            draw.zoomIn();
+
         } else if (Key.match(ev, draw.keyBindings.pickColor) && !ev.ctrlKey && !draw.disableColorPick) {
           draw.pickColor(draw.current, draw.pickRadius);
 
@@ -552,6 +559,31 @@ Scribble = Klass(Undoable, ColorUtils, {
   },
 
 
+  // Zooming
+
+  zoomIn : function() {
+    this.setZoom(this.zoom * 2);
+  },
+
+  zoomOut : function() {
+    this.setZoom(this.zoom / 2);
+  },
+
+  setZoom : function(z) {
+    if (z < (1/64) || z > 64) return;
+    var px = this.panX-this.current.x;
+    var py = this.panY-this.current.y;
+    px /= this.zoom;
+    py /= this.zoom;
+    this.zoom = z;
+    px *= this.zoom;
+    py *= this.zoom;
+    this.panX = px+this.current.x;
+    this.panY = py+this.current.y;
+    this.requestRedraw();
+  },
+
+
   // Opacity keyboard control
 
   opacityUp : function() {
@@ -666,9 +698,9 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   panPoint : function(p) {
     var np = Object.extend({}, p);
-    np.x -= this.panX;
-    np.y -= this.panY;
-    np.r = this.lineWidth/2;
+    np.x = (np.x-this.panX)/this.zoom;
+    np.y = (np.y-this.panY)/this.zoom;
+    np.r = (this.lineWidth/2)/this.zoom;
     if (this.pressureControlsSize)
       np.r *= np.pressure;
     if (this.pressureControlsOpacity)
