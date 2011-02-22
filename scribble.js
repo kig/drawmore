@@ -48,6 +48,8 @@ Scribble = Klass(Undoable, ColorUtils, {
   lastUpdateTime : 0,
 
   disableColorPick : true,
+  flippedX : false,
+  flippedY : false,
 
   initialize : function(canvas) {
     this.canvas = canvas;
@@ -76,6 +78,14 @@ Scribble = Klass(Undoable, ColorUtils, {
       this.ctx.fillStyle = this.colorToStyle(this.background);
       this.ctx.fillRect(0,0,this.width,this.height);
       this.ctx.translate(this.panX, this.panY);
+      if (this.flippedX) {
+        this.ctx.translate(this.width, 0);
+        this.ctx.scale(-1,1);
+      }
+      if (this.flippedY) {
+        this.ctx.translate(0, this.height);
+        this.ctx.scale(1,-1);
+      }
       this.ctx.scale(this.zoom, this.zoom);
       this.ctx.mozImageSmoothingEnabled = false;
       this.ctx.webkitImageSmoothingEnabled = false;
@@ -186,6 +196,8 @@ Scribble = Klass(Undoable, ColorUtils, {
       brushIndex : this.brushIndex,
       brushes : this.brushes.map(function(l){ return l.copy(); }),
       color : this.color,
+      flippedX : this.flippedX,
+      flippedY : this.flippedY,
       background : this.background,
       lineWidth : this.lineWidth,
       opacity : this.opacity,
@@ -214,6 +226,8 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.setBackground(state.background);
     this.setLineWidth(state.lineWidth);
     this.setOpacity(state.opacity);
+    this.flippedX = state.flippedX;
+    this.flippedY = state.flippedY;
   },
 
   createSnapshot : function() {
@@ -513,7 +527,10 @@ Scribble = Klass(Undoable, ColorUtils, {
           draw.nextBrush();
 
         } else if (Key.match(ev, draw.keyBindings.flip)) {
-          draw.flip();
+          if (ev.shiftKey)
+            draw.flipY();
+          else
+            draw.flipX();
 
         } else if (Key.match(ev, draw.keyBindings.paletteKeys)) {
           for (var i=0; i<draw.keyBindings.paletteKeys.length; i++) {
@@ -704,10 +721,16 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.requestRedraw();
   },
 
-  flip : function() {
-    this.layers.forEach(function(l) { l.flip(); });
+  flipX : function() {
+    this.flippedX = !this.flippedX;
     this.requestRedraw();
-    this.addHistoryState({methodName: 'flip', args: [], breakpoint: true});
+    this.addHistoryState({methodName: 'flipX', args: [], breakpoint: true});
+  },
+
+  flipY : function() {
+    this.flippedY = !this.flippedY;
+    this.requestRedraw();
+    this.addHistoryState({methodName: 'flipY', args: [], breakpoint: true});
   },
 
 
@@ -731,10 +754,12 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.requestRedraw();
   },
 
-  panPoint : function(p) {
+  getAbsolutePoint : function(p) {
     var np = Object.extend({}, p);
-    np.x = (np.x-this.panX)/this.zoom;
-    np.y = (np.y-this.panY)/this.zoom;
+    var pX = np.x-this.panX;
+    var pY = np.y-this.panY;
+    np.x = (this.flippedX?this.width-pX:pX)/this.zoom;
+    np.y = (this.flippedY?this.height-pY:pY)/this.zoom;
     np.r = (this.lineWidth/2)/this.zoom;
     if (this.pressureControlsSize)
       np.r *= np.pressure;
@@ -747,7 +772,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   drawPoint : function(xy) {
     if (!this.strokeInProgress) return;
     if (!xy.absolute)
-      xy = this.panPoint(xy);
+      xy = this.getAbsolutePoint(xy);
     this.brush.drawPoint(
       this.strokeLayer, this.colorStyle,
       xy.x, xy.y, xy.r
@@ -759,9 +784,9 @@ Scribble = Klass(Undoable, ColorUtils, {
   drawLine : function(a, b) {
     if (!this.strokeInProgress) return;
     if (!a.absolute)
-      a = this.panPoint(a);
+      a = this.getAbsolutePoint(a);
     if (!b.absolute)
-      b = this.panPoint(b);
+      b = this.getAbsolutePoint(b);
     this.brush.drawLine(
       this.strokeLayer, this.colorStyle,
       a.x, a.y, a.r,
