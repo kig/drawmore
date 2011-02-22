@@ -82,12 +82,12 @@ BrushCursor = Klass({
     document.body.appendChild(this.cursorCanvas);
   },
 
-  setBrush : function(brush, transform) {
+  setBrush : function(brush, transform, color, opacity) {
     this.brush = brush;
-    this.update(this.diameter, transform);
+    this.update(this.diameter, transform, color, opacity);
   },
 
-  update : function(diameter, transform) {
+  update : function(diameter, transform, color, opacity) {
     var origDiameter = diameter;
     this.diameter = diameter;
     var diameter = this.brush.diameter * diameter;
@@ -119,7 +119,36 @@ BrushCursor = Klass({
       ctx.strokeStyle = '#000000';
       ctx.stroke();
     ctx.restore();
-    if (diameter < 3) {
+    if (origDiameter < 3) {
+      ctx.save();
+        ctx.translate(w/2 + 8, w/2 - 8);
+        ctx.font = '7px sans-serif';
+        var s = origDiameter.toString().substring(0,4);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(s,-2,2);
+        ctx.fillStyle = '#000000';
+        ctx.fillText(s,-3,3);
+        ctx.translate(0, -8);
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        ctx.globalAlpha = opacity;
+        ctx.fillRect(11,-3,3,6);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 1;
+        ctx.fillRect(8,-3,3,6);
+        ctx.strokeStyle = '#888888';
+        ctx.strokeRect(8,-3,6,6);
+        ctx.beginPath();
+        this.brush.brushPath(ctx, 3, transform);
+        ctx.lineWidth = 0.75;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+        ctx.beginPath();
+        this.brush.brushPath(ctx, 3, transform);
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = '#000000';
+        ctx.stroke();
+      ctx.restore();
       ctx.beginPath();
       ctx.moveTo(w/2+2, w/2);
       ctx.lineTo(w/2+4, w/2);
@@ -135,6 +164,30 @@ BrushCursor = Klass({
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 0.5;
       ctx.stroke();
+    } else {
+      ctx.save();
+        var d = (0.5*origDiameter+3)/Math.sqrt(2);
+        ctx.translate(w/2 + d, w/2 + d);
+        ctx.font = '7px sans-serif';
+        var s = Math.round(origDiameter).toString();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(s,0,3);
+        ctx.fillStyle = '#000000';
+        ctx.fillText(s,1,4);
+      ctx.restore();
+      ctx.save();
+        ctx.translate(w/2 + d, w/2 - d);
+        ctx.rotate(-Math.PI/4);
+        ctx.beginPath();
+        ctx.strokeStyle = '#888888';
+        ctx.strokeRect(0,-3,8,6);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = opacity;
+        ctx.fillRect(4,-3,4,6);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 1;
+        ctx.fillRect(0,-3,4,6);
+      ctx.restore();
     }
     this.moveTo(this.x, this.y);
   },

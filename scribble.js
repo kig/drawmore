@@ -832,7 +832,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   setBrush : function(idx) {
     this.brushIndex = idx;
     this.brush = this.brushes[idx];
-    this.cursor.setBrush(this.brush, this.getBrushTransform());
+    this.cursor.setBrush(this.brush, this.getBrushTransform(), this.colorStyle, this.opacity);
     this.addHistoryState({methodName: 'setBrush', args: [idx], breakpoint:true});
   },
 
@@ -865,6 +865,7 @@ Scribble = Klass(Undoable, ColorUtils, {
     var s = this.colorToStyle(this.color);
     byId('foregroundColor').style.backgroundColor = s
     this.colorStyle = s;
+    this.cursor.update(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
     this.addHistoryState({methodName: 'setColor', args:[this.color]});
   },
 
@@ -877,12 +878,13 @@ Scribble = Klass(Undoable, ColorUtils, {
       s.push("`");
     }
     byId('foregroundColor').textContent = s.join("");
+    this.cursor.update(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
     this.addHistoryState({methodName: 'setOpacity', args:[this.opacity]});
   },
 
   setLineWidth : function(w) {
     this.lineWidth = w;
-    this.cursor.update(this.lineWidth, this.getBrushTransform());
+    this.cursor.update(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
     // collapse multiple setLineWidth calls into a single history event
     var last = this.history.last();
     if (last && last.methodName == 'setLineWidth')
