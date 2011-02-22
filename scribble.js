@@ -623,15 +623,18 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   setZoom : function(z) {
     if (z < (1/64) || z > 64) return;
-    var px = this.panX-this.current.x;
-    var py = this.panY-this.current.y;
-    px /= this.zoom;
-    py /= this.zoom;
+    var f = z/this.zoom;
+    if (this.flippedX) {
+      this.panX = Math.floor(f*(this.panX+(this.width-this.current.x))-(this.width-this.current.x));
+    } else {
+      this.panX = Math.floor(f*(this.panX-this.current.x)+this.current.x);
+    }
+    if (this.flippedY) {
+      this.panY = Math.floor(f*(this.panY+(this.height-this.current.y))-(this.height-this.current.y));
+    } else {
+      this.panY = Math.floor(f*(this.panY-this.current.y)+this.current.y);
+    }
     this.zoom = z;
-    px *= this.zoom;
-    py *= this.zoom;
-    this.panX = Math.floor(px)+this.current.x;
-    this.panY = Math.floor(py)+this.current.y;
     this.requestRedraw();
   },
 
