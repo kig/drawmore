@@ -82,12 +82,12 @@ BrushCursor = Klass({
     document.body.appendChild(this.cursorCanvas);
   },
 
-  setBrush : function(brush) {
+  setBrush : function(brush, transform) {
     this.brush = brush;
-    this.update(this.diameter);
+    this.update(this.diameter, transform);
   },
 
-  update : function(diameter) {
+  update : function(diameter, transform) {
     var origDiameter = diameter;
     this.diameter = diameter;
     var diameter = this.brush.diameter * diameter;
@@ -109,12 +109,12 @@ BrushCursor = Klass({
     ctx.save();
       ctx.beginPath();
       ctx.translate(w/2, w/2);
-      this.brush.brushPath(ctx, origDiameter/2);
+      this.brush.brushPath(ctx, origDiameter/2, transform);
       ctx.lineWidth = 0.75;
       ctx.strokeStyle = '#ffffff';
       ctx.stroke();
       ctx.beginPath();
-      this.brush.brushPath(ctx, origDiameter/2);
+      this.brush.brushPath(ctx, origDiameter/2, transform);
       ctx.lineWidth = 0.5;
       ctx.strokeStyle = '#000000';
       ctx.stroke();

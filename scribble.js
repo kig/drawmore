@@ -769,13 +769,21 @@ Scribble = Klass(Undoable, ColorUtils, {
     return np;
   },
 
+  getBrushTransform : function() {
+    return [
+      this.flippedX ? -1 : 1, 0,
+      0, this.flippedY ? -1 : 1
+    ];
+  },
+
   drawPoint : function(xy) {
     if (!this.strokeInProgress) return;
     if (!xy.absolute)
       xy = this.getAbsolutePoint(xy);
     this.brush.drawPoint(
       this.strokeLayer, this.colorStyle,
-      xy.x, xy.y, xy.r
+      xy.x, xy.y, xy.r,
+      this.getBrushTransform()
     );
     this.addHistoryState({methodName: 'drawPoint', args:[xy]});
     this.requestRedraw();
@@ -790,7 +798,8 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.brush.drawLine(
       this.strokeLayer, this.colorStyle,
       a.x, a.y, a.r,
-      b.x, b.y, b.r
+      b.x, b.y, b.r,
+      this.getBrushTransform()
     );
     var s = {methodName: 'drawLine', args:[a, b]}
     this.addHistoryState(s);
@@ -820,7 +829,7 @@ Scribble = Klass(Undoable, ColorUtils, {
   setBrush : function(idx) {
     this.brushIndex = idx;
     this.brush = this.brushes[idx];
-    this.cursor.setBrush(this.brush);
+    this.cursor.setBrush(this.brush, this.getBrushTransform());
     this.addHistoryState({methodName: 'setBrush', args: [idx], breakpoint:true});
   },
 
@@ -870,7 +879,7 @@ Scribble = Klass(Undoable, ColorUtils, {
 
   setLineWidth : function(w) {
     this.lineWidth = w;
-    this.cursor.update(this.lineWidth);
+    this.cursor.update(this.lineWidth, this.getBrushTransform());
     // collapse multiple setLineWidth calls into a single history event
     var last = this.history.last();
     if (last && last.methodName == 'setLineWidth')

@@ -43,21 +43,36 @@ PolygonBrush = Klass(Brush, {
     this.diameter = Math.sqrt(dx*dx + dy*dy);
   },
 
-  brushPath : function(ctx, scale) {
-    var u = this.path[0];
+  brushPath : function(ctx, scale, transform) {
+    var path = this.getTransformedPath(transform);
+    var u = path[0];
     ctx.moveTo(u.x*scale, u.y*scale);
-    for (var i=1; i<this.path.length; i++) {
-      var u = this.path[i];
+    for (var i=1; i<path.length; i++) {
+      var u = path[i];
       ctx.lineTo(u.x*scale, u.y*scale);
     }
     ctx.closePath();
   },
 
-  drawPoint : function(ctx, color, x, y, r) {
+  getTransformedPath : function(transform) {
+    var t = transform;
+    var path = this.path.map(function(p) {
+      return {
+        x: p.x * t[0] + p.y * t[1],
+        y: p.x * t[2] + p.y * t[3]
+      };
+    });
+    return path;
+  },
+
+  drawPoint : function(ctx, color, x, y, r, transform) {
     ctx.beginPath();
-    ctx.subPolygon(this.path.map(function(p){
-      return {x: p.x*r+x, y: p.y*r+y};
-    }));
+    var t = transform;
+    ctx.subPolygon(this.ccwSort(this.path.map(function(p){
+      var px = p.x * t[0] + p.y * t[1];
+      var py = p.x * t[2] + p.y * t[2];
+      return {x: px*r+x, y: py*r+y};
+    })));
     ctx.fill(color);
   },
 
@@ -83,29 +98,30 @@ PolygonBrush = Klass(Brush, {
   // draw brush at each endpoint
   // for each brush path segment, draw a quad from
   // one endpoint to the other
-  drawLine : function(ctx, color, x1, y1, r1, x2, y2, r2) {
+  drawLine : function(ctx, color, x1, y1, r1, x2, y2, r2, transform) {
     if (this.stipple) {
       this.drawPoint(ctx, color, x2, y2, r2);
       return;
     }
     ctx.beginPath();
-    ctx.subPolygon(this.path.map(function(p){
+    var path = this.ccwSort(this.getTransformedPath(transform));
+    ctx.subPolygon(path.map(function(p){
       return {x: p.x*r1+x1, y: p.y*r1+y1};
     }));
-    ctx.subPolygon(this.path.map(function(p){
+    ctx.subPolygon(path.map(function(p){
       return {x: p.x*r2+x2, y: p.y*r2+y2};
     }));
-    var u = this.path[this.path.length-1];
-    var v = this.path[0];
+    var u = path[path.length-1];
+    var v = path[0];
     ctx.subPolygon(this.ccwSort([
       {x:x1+u.x*r1, y:y1+u.y*r1},
       {x:x1+v.x*r1, y:y1+v.y*r1},
       {x:x2+v.x*r2, y:y2+v.y*r2},
       {x:x2+u.x*r2, y:y2+u.y*r2}
     ]));
-    for (var i=1; i<this.path.length; i++) {
-      var u = this.path[i-1];
-      var v = this.path[i];
+    for (var i=1; i<path.length; i++) {
+      var u = path[i-1];
+      var v = path[i];
       ctx.subPolygon(this.ccwSort([
         {x:x1+u.x*r1, y:y1+u.y*r1},
         {x:x1+v.x*r1, y:y1+v.y*r1},
