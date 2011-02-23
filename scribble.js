@@ -98,11 +98,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.ctx.fillRect(0,0,this.width,this.height);
       this.ctx.translate(this.panX, this.panY);
       if (this.flippedX) {
-        this.ctx.translate(this.width, 0);
+        this.ctx.translate(-2*this.panX+this.width, 0);
         this.ctx.scale(-1,1);
       }
       if (this.flippedY) {
-        this.ctx.translate(0, this.height);
+        this.ctx.translate(0, -2*this.panY+this.height);
         this.ctx.scale(1,-1);
       }
       this.ctx.scale(this.zoom, this.zoom);
@@ -192,6 +192,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.setBackground(this.defaultBackground);
     this.setLineWidth(this.defaultLineWidth);
     this.setOpacity(1);
+    this.resetFlip();
     this.clear();
     this.addHistoryBarrier();
   },
@@ -272,7 +273,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   applySaveObject : function(obj) {
-    this.newDocument();
+    this.setupDefaultState();
     this.clearHistory();
     for (var i=0; i<obj.history.length; i++) {
       if (obj.history[i] != null) {
@@ -665,8 +666,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   pan : function(dx, dy) {
-    this.panX += dx;
-    this.panY += dy;
+    this.panX += (this.flippedX?-1:1)*dx;
+    this.panY += (this.flippedY?-1:1)*dy;
     this.requestRedraw();
   },
 
@@ -796,6 +797,12 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.flippedY = !this.flippedY;
     this.requestRedraw();
     this.addHistoryState({methodName: 'flipY', args: []});
+  },
+
+  resetFlip : function() {
+    this.flippedX = this.flippedY = false;
+    this.requestRedraw();
+    this.addHistoryState({methodName: 'resetFlip', args: []});
   },
 
 
