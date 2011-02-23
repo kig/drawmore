@@ -181,7 +181,24 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.constraints = [];
     this.brushes = [];
     this.addRoundBrush();
-    this.addPolygonBrush([{x:1, y:-0.1}, {x:1, y:0}, {x:-1, y:0.5}, {x:-1, y:0.4}]);
+    var s2 = 1/Math.sqrt(2);
+    for (var i=0; i<3; i++) {
+      var a = (i+1)*Math.PI/8;
+      this.addPolygonBrush([
+        {x: Math.cos(a+Math.PI-0.05), y: Math.sin(a+Math.PI-0.05)},
+        {x: Math.cos(a+Math.PI+0.05), y: Math.sin(a+Math.PI+0.05)},
+        {x: Math.cos(a-0.05), y: Math.sin(a-0.05)},
+        {x: Math.cos(a+0.05), y: Math.sin(a+0.05)}
+      ]);
+      this.addPolygonBrush([
+        {x: -Math.cos(a+0.05), y: Math.sin(a+0.05)},
+        {x: -Math.cos(a-0.05), y: Math.sin(a-0.05)},
+        {x: -Math.cos(a+Math.PI+0.05), y: Math.sin(a+Math.PI+0.05)},
+        {x: -Math.cos(a+Math.PI-0.05), y: Math.sin(a+Math.PI-0.05)}
+      ]);
+    }
+    this.addPolygonBrush([{x:s2, y:s2}, {x:s2,y:-s2}, {x:-s2,y:-s2}, {x:-s2,y:s2}]);
+    this.addPolygonBrush([{x:1, y:0}, {x:0,y:-1}, {x:-1,y:0}, {x:0,y:1}]);
     this.setBrush(0);
     this.setupPalette();
     this.resize(this.canvas.width, this.canvas.height);
@@ -902,7 +919,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.brushIndex = idx;
     this.brush = this.brushes[idx];
     this.cursor.setBrush(this.brush, [1,0,0,1], this.colorStyle, this.opacity);
-    this.addHistoryState({methodName: 'setBrush', args: [idx], breakpoint:true});
+    this.addHistoryState({methodName: 'setBrush', args: [idx]});
   },
 
   nextBrush : function() {
