@@ -2,10 +2,11 @@
   <head>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="viewport" content="width=device-width; initial-scale=1.0; user-scalable=no;">
-    <title>Scribble!</title>
+    <title>Drawmore!</title>
     <script src="magi.js"></script>
     <script src="file_format.js"></script>
     <script src="undo.js"></script>
+    <script src="cursors.js"></script>
     <script src="color_utils.js"></script>
     <script src="layers.js"></script>
     <script src="brushes.js"></script>
@@ -21,7 +22,7 @@
         }, false);
 
         window.addEventListener('unload', function() {
-          localStorage.savedScribbleState = draw.getSaveString();
+          localStorage.savedDrawmoreState = draw.getSaveString();
         }, false);
 
         document.ontouchstart = function(ev){
@@ -106,7 +107,7 @@
           };
         }
 
-        draw = new Scribble(c);
+        draw = new Drawmore(c);
         draw.toggleUI = function(){
           var f = byId('fileIO');
           var p = byId('colorPicker');
@@ -124,12 +125,12 @@
           var h = byId('help');
           h.style.display = h.style.display == 'block' ? 'none' : 'block';
         };
-        var prefs = localStorage.savedScribbleState;
+        var prefs = localStorage.savedDrawmoreState;
         if (prefs) {
           try {
-            //draw.load(prefs);
+            draw.load(prefs);
           } catch(e) {
-            console.log("Failed to load saved Scribble state", e);
+            console.log("Failed to load saved Drawmore state", e);
           }
         }
 

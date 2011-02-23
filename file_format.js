@@ -730,7 +730,7 @@ OldBinaryDrawHistorySerializer = Klass(BinaryDrawHistorySerializer, {
 
 
 
-ScribbleFile = {
+DrawmoreFile = {
 
   serializers : [
     BinaryDrawHistorySerializer,

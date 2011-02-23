@@ -1,20 +1,39 @@
-Scribble = Klass(Undoable, ColorUtils, {
+Drawmore = Klass(Undoable, ColorUtils, {
 
   keyBindings : {
-    brushResize: ['f', 'j'],
-    brushSizeUp: ['e','i'],
-    brushSizeDown: ['d','k'],
-    opacityUp: ['w','o'],
-    opacityDown: ['s','l'],
-    clear : [Key.DELETE, Key.BACKSPACE],
     pan : [Key.SPACE],
     zoom : ['v', 'm'],
+    flip: ['x'],
+
     undo: ['z', 'n'],
+    clear : [Key.DELETE, Key.BACKSPACE],
+
     nextBrush: ['t','y'],
     previousBrush: ['g','h'],
-    flip: ['x'],
+    brushResize: ['f', 'j'],
+    brushSizeUp: ['e', 'i'],
+    brushSizeDown: ['d','k'],
+
+    opacityUp: ['w','o'],
+    opacityDown: ['s','l'],
+    opacity1: null,
+    opacity2: null,
+    opacity3: null,
+    opacity4: null,
+
     pickColor: ['r', 'u'],
-    paletteKeys: ['1','2','3','4','5','6','7','8','9'],
+    nextColor: null,
+    previousColor: null,
+    palette1: ['1'],
+    palette2: ['2'],
+    palette3: ['3'],
+    palette4: ['4'],
+    palette5: ['5'],
+    palette6: ['6'],
+    palette7: ['7'],
+    palette8: ['8'],
+    palette9: ['9'],
+
     toggleUI: [Key.TAB, '0'],
     toggleHelp: [191] // question mark
   },
@@ -134,18 +153,18 @@ Scribble = Klass(Undoable, ColorUtils, {
   },
 
   load : function(string) {
-    var obj = ScribbleFile.parse(string);
+    var obj = DrawmoreFile.parse(string);
     this.applySaveObject(obj);
   },
 
   getSaveString : function() {
-    return ScribbleFile.stringify(this.createSaveObject());
+    return DrawmoreFile.stringify(this.createSaveObject());
   },
 
   save : function() {
     var string = this.getSaveString();
     var b64 = btoa(string);
-    window.open('data:image/x-scribble;base64,'+b64);
+    window.open('data:image/x-drawmore;base64,'+b64);
   },
 
 
@@ -532,6 +551,49 @@ Scribble = Klass(Undoable, ColorUtils, {
           else
             draw.flipX();
 
+        } else if (Key.match(ev, draw.keyBindings.opacity1)) {
+          draw.setOpacity(0.125);
+        } else if (Key.match(ev, draw.keyBindings.opacity2)) {
+          draw.setOpacity(0.25);
+        } else if (Key.match(ev, draw.keyBindings.opacity3)) {
+          draw.setOpacity(0.5);
+        } else if (Key.match(ev, draw.keyBindings.opacity4)) {
+          draw.setOpacity(1);
+
+        } else if (Key.match(ev, draw.keyBindings.nextColor)) {
+          draw.nextColor();
+
+        } else if (Key.match(ev, draw.keyBindings.previousColor)) {
+          draw.previousColor();
+
+        } else if (Key.match(ev, draw.keyBindings.palette1)) {
+          if (ev.shiftKey) draw.setPaletteColor(0, draw.color);
+          else draw.setColor(draw.palette[0]);
+        } else if (Key.match(ev, draw.keyBindings.palette2)) {
+          if (ev.shiftKey) draw.setPaletteColor(1, draw.color);
+          else draw.setColor(draw.palette[1]);
+        } else if (Key.match(ev, draw.keyBindings.palette3)) {
+          if (ev.shiftKey) draw.setPaletteColor(2, draw.color);
+          else draw.setColor(draw.palette[2]);
+        } else if (Key.match(ev, draw.keyBindings.palette4)) {
+          if (ev.shiftKey) draw.setPaletteColor(3, draw.color);
+          else draw.setColor(draw.palette[3]);
+        } else if (Key.match(ev, draw.keyBindings.palette5)) {
+          if (ev.shiftKey) draw.setPaletteColor(4, draw.color);
+          else draw.setColor(draw.palette[4]);
+        } else if (Key.match(ev, draw.keyBindings.palette6)) {
+          if (ev.shiftKey) draw.setPaletteColor(5, draw.color);
+          else draw.setColor(draw.palette[5]);
+        } else if (Key.match(ev, draw.keyBindings.palette7)) {
+          if (ev.shiftKey) draw.setPaletteColor(6, draw.color);
+          else draw.setColor(draw.palette[6]);
+        } else if (Key.match(ev, draw.keyBindings.palette8)) {
+          if (ev.shiftKey) draw.setPaletteColor(7, draw.color);
+          else draw.setColor(draw.palette[7]);
+        } else if (Key.match(ev, draw.keyBindings.palette9)) {
+          if (ev.shiftKey) draw.setPaletteColor(8, draw.color);
+          else draw.setColor(draw.palette[8]);
+
         } else if (Key.match(ev, draw.keyBindings.paletteKeys)) {
           for (var i=0; i<draw.keyBindings.paletteKeys.length; i++) {
             if (Key.match(ev, draw.keyBindings.paletteKeys[i])) {
@@ -912,6 +974,17 @@ Scribble = Klass(Undoable, ColorUtils, {
     this.addHistoryState({methodName: 'setPaletteColor', args:[idx, c], breakpoint: true});
   },
 
+  nextColor : function() {
+    var idx = this.palette.indexOf(this.color);
+    if (idx < 0) idx = this.palette.length-1;
+    this.setColor(this.palette[(idx+1) % this.palette.length]);
+  },
+
+  previousColor : function() {
+    var idx = this.palette.indexOf(this.color);
+    if (idx < 0) idx = this.palette.length+1;
+    this.setColor(this.palette[(idx-1) % this.palette.length]);
+  },
 
   // Picking
 
