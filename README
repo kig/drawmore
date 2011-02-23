@@ -1,12 +1,17 @@
-Scribble is a canvas painting app
+Drawmore is a canvas painting app
+http://drawmore.net
 
 Drawing oekaki-style for fun times.
 Experimenting with UI and workflow.
 
 Very shortcut-centric.
 
-Workflow & kb shortcuts cribbed from MyPaint.
+Zero-dialog idea & kb shortcuts cribbed from MyPaint.
 Brush resize after Blender's sculpt tool.
 
+
+
+2011 (c) Ilmari Heikkinen 
+ilmari.heikkinen@gmail.com
 
 License: MIT
