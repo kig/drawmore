@@ -220,6 +220,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.setOpacity(1);
     this.resetFlip();
     this.clear();
+    this.resetView();
     this.addHistoryBarrier();
   },
 
@@ -893,32 +894,34 @@ Drawmore = Klass(Undoable, ColorUtils, {
     ];
   },
 
-  drawPoint : function(xy) {
+  drawPoint : function(xy, brushTransform) {
     if (!this.strokeInProgress) return;
     if (!xy.absolute)
       xy = this.getAbsolutePoint(xy);
+    brushTransform = brushTransform != null ? brushTransform : this.getBrushTransform();
     this.brush.drawPoint(
       this.strokeLayer, this.colorStyle,
       xy.x, xy.y, xy.r,
-      this.getBrushTransform()
+      brushTransform
     );
-    this.addHistoryState({methodName: 'drawPoint', args:[xy]});
+    this.addHistoryState({methodName: 'drawPoint', args:[xy, brushTransform]});
     this.requestRedraw();
   },
 
-  drawLine : function(a, b) {
+  drawLine : function(a, b, brushTransform) {
     if (!this.strokeInProgress) return;
     if (!a.absolute)
       a = this.getAbsolutePoint(a);
     if (!b.absolute)
       b = this.getAbsolutePoint(b);
+    brushTransform = brushTransform != null ? brushTransform : this.getBrushTransform();
     this.brush.drawLine(
       this.strokeLayer, this.colorStyle,
       a.x, a.y, a.r,
       b.x, b.y, b.r,
-      this.getBrushTransform()
+      brushTransform
     );
-    var s = {methodName: 'drawLine', args:[a, b]}
+    var s = {methodName: 'drawLine', args:[a, b, brushTransform]}
     this.addHistoryState(s);
     this.requestRedraw();
   },

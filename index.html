@@ -11,6 +11,7 @@
     <script src="brushes.js"></script>
     <script src="constraints.js"></script>
     <script src="drawmore.js"></script>
+    <script src="defaultImage.js"></script>
     <script>
 
       window.addEventListener('load', function() {
@@ -21,7 +22,11 @@
         }, false);
 
         window.addEventListener('unload', function() {
-          localStorage.savedDrawmoreState = draw.getSaveString();
+          if (draw.history.last() != null) {
+            localStorage.savedDrawmoreState = draw.getSaveString();
+          } else {
+            delete localStorage.savedDrawmoreState;
+          }
         }, false);
 
         document.ontouchstart = function(ev){
@@ -57,8 +62,7 @@
           draw.exportImage();
         };
         byId('new').onclick = function(){
-          draw.clearHistory();
-          draw.clear();
+          draw.newDocument();
         };
 
         var picker = byId('colorPicker');
@@ -124,13 +128,18 @@
           var h = byId('help');
           h.style.display = h.style.display == 'block' ? 'none' : 'block';
         };
-        var prefs = localStorage.savedDrawmoreState;
+        var prefs = window.localStorage && localStorage.savedDrawmoreState;
+        var loaded = false;
         if (prefs) {
           try {
             draw.load(prefs);
+            loaded = true;
           } catch(e) {
             console.log("Failed to load saved Drawmore state", e);
           }
+        }
+        if (!loaded) {
+          draw.applySaveObject(DefaultImage);
         }
 
         byId('helpToggle').onclick = function(ev){
