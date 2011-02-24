@@ -15,7 +15,7 @@ Brush = Klass({
     return Object.extend({}, this);
   },
 
-  brushPath : function(ctx, scale) {
+  brushPath : function(ctx, scale, transform) {
     ctx.arc(0,0,scale,0,Math.PI*2,true);
   }
 });
@@ -106,10 +106,10 @@ PolygonBrush = Klass(Brush, {
     ctx.beginPath();
     var path = this.ccwSort(this.getTransformedPath(transform));
     ctx.subPolygon(path.map(function(p){
-      return {x: p.x*r1+x1, y: p.y*r1+y1};
+      return {x: p.x*Math.max(0.1,r1-0.5)+x1, y: p.y*Math.max(0.1,r1-0.5)+y1};
     }));
     ctx.subPolygon(path.map(function(p){
-      return {x: p.x*r2+x2, y: p.y*r2+y2};
+      return {x: p.x*Math.max(0.1,r2-0.5)+x2, y: p.y*Math.max(0.1,r2-0.5)+y2};
     }));
     var u = path[path.length-1];
     var v = path[0];
@@ -141,8 +141,8 @@ RoundBrush = Klass(Brush, {
 
   drawLine : function(ctx, color, x1, y1, r1, x2, y2, r2) {
     ctx.beginPath();
-    ctx.subArc(x1, y1, r1, 0, Math.PI*2);
-    ctx.subArc(x2, y2, r2, 0, Math.PI*2);
+    ctx.subArc(x1, y1, (Math.max(0.1,r1-0.5)), 0, Math.PI*2);
+    ctx.subArc(x2, y2, (Math.max(0.1,r2-0.5)), 0, Math.PI*2);
     var a = Math.atan2(y2-y1, x2-x1);
     var dx = x2-x1, dy = y2-y1;
     var d = Math.sqrt(dx*dx + dy*dy);
