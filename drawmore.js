@@ -1,6 +1,7 @@
 Drawmore = Klass(Undoable, ColorUtils, {
 
   keyBindings : {
+    resetView : [Key.ESC],
     pan : [Key.SPACE],
     zoom : ['v', 'm'],
     flip: ['x'],
@@ -293,7 +294,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
   createSaveObject : function() {
     return {
       history: this.history,
-      historyIndex : this.historyIndex
+      historyIndex : this.historyIndex,
+      panX : this.panX,
+      panY : this.panY,
+      zoom : this.zoom
     };
   },
 
@@ -307,6 +311,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
       }
     }
     this.gotoHistoryState(obj.historyIndex);
+    this.setZoom(obj.zoom);
+    this.setPan(obj.panX, obj.panY);
   },
 
 
@@ -496,9 +502,6 @@ Drawmore = Klass(Undoable, ColorUtils, {
     };
 
     this.listeners['keydown'] = function(ev) {
-      if (Key.match(ev, Key.ESC)) {
-        draw.stopResizingBrush();
-      }
       if (ev.altKey) {
         if (Key.match(ev, draw.keyBindings.undo)) {
           if (ev.shiftKey)
@@ -539,6 +542,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
       if (!ev.altKey && !ev.ctrlKey) {
         if (Key.match(ev, draw.keyBindings.clear)) {
           draw.clear();
+
+        } else if (Key.match(ev, draw.keyBindings.resetView)) {
+          draw.resetView();
 
         } else if (Key.match(ev, draw.keyBindings.pan)) {
           draw.stopPanning();
@@ -665,6 +671,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
 
+  // Reset view
+
+  resetView : function() {
+    this.setZoom(1);
+    this.setPan(0,0);
+  },
+
+
   // Panning
 
   startPanning : function() {
@@ -691,8 +705,12 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   pan : function(dx, dy) {
-    this.panX += (this.flippedX?-1:1)*dx;
-    this.panY += (this.flippedY?-1:1)*dy;
+    this.setPan(this.panX+(this.flippedX?-1:1)*dx, this.panY+(this.flippedY?-1:1)*dy);
+  },
+
+  setPan : function(x, y) {
+    this.panX = x;
+    this.panY = y;
     this.requestRedraw();
   },
 
@@ -713,12 +731,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
     if (z < (1/64) || z > 64) return;
     var f = z/this.zoom;
     if (this.flippedX) {
-      this.panX = Math.floor(f*(this.panX+(this.width-this.current.x))-(this.width-this.current.x));
+      // panX is the distance of the right edge of the screen from the origin
+      this.panX = Math.floor(f*(this.panX-(this.width-this.current.x))+(this.width-this.current.x));
     } else {
+      // panX is the distance of the left edge of the screen from the origin
       this.panX = Math.floor(f*(this.panX-this.current.x)+this.current.x);
     }
     if (this.flippedY) {
-      this.panY = Math.floor(f*(this.panY+(this.height-this.current.y))-(this.height-this.current.y));
+      this.panY = Math.floor(f*(this.panY-(this.height-this.current.y))+(this.height-this.current.y));
     } else {
       this.panY = Math.floor(f*(this.panY-this.current.y)+this.current.y);
     }
@@ -853,10 +873,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   getAbsolutePoint : function(p) {
     var np = Object.extend({}, p);
-    var pX = np.x-this.panX;
-    var pY = np.y-this.panY;
-    np.x = (this.flippedX?this.width-pX:pX)/this.zoom;
-    np.y = (this.flippedY?this.height-pY:pY)/this.zoom;
+    var pX = (this.flippedX ? -np.x+this.width-this.panX : np.x-this.panX);
+    var pY = (this.flippedY ? -np.y+this.height-this.panY : np.y-this.panY);
+    np.x = pX/this.zoom;
+    np.y = pY/this.zoom;
     np.r = (this.lineWidth/2)/this.zoom;
     if (this.pressureControlsSize)
       np.r *= np.pressure;
