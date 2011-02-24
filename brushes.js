@@ -16,7 +16,7 @@ Brush = Klass({
   },
 
   brushPath : function(ctx, scale) {
-    ctx.arc(0,0,scale,0,Math.PI*2);
+    ctx.arc(0,0,scale,0,Math.PI*2,true);
   }
 });
 

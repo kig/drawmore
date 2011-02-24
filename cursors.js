@@ -19,23 +19,23 @@ RoundBrushCursor = Klass({
       while (w > this.minSz && (w > diameter*4 || (w > 512 && w > diameter*2)))
         w /= 2;
       this.cursorCanvas.width = this.cursorCanvas.height = w;
-      console.log('scale down to '+w);
+      if (window.console) console.log('scale down to '+w);
     } else if (w < diameter+2) {
       while (w < diameter+2)
         w *= 2
       this.cursorCanvas.width = this.cursorCanvas.height = w;
-      console.log('scale up to '+w);
+      if (window.console) console.log('scale up to '+w);
     }
     this.sz = w;
     ctx.clearRect(0,0,w,w);
     ctx.beginPath();
     ctx.lineWidth = 0.75;
-    ctx.arc(w/2, w/2, diameter/2+0.25, 0, Math.PI*2);
+    ctx.arc(w/2, w/2, diameter/2+0.25, 0, Math.PI*2, true);
     ctx.strokeStyle = '#ffffff';
     ctx.stroke();
     ctx.beginPath();
     ctx.lineWidth = 0.5;
-    ctx.arc(w/2, w/2, diameter/2, 0, Math.PI*2);
+    ctx.arc(w/2, w/2, diameter/2, 0, Math.PI*2, true);
     ctx.strokeStyle = '#000000';
     ctx.stroke();
     if (diameter < 3) {
@@ -97,12 +97,12 @@ BrushCursor = Klass({
       while (w > this.minSz && (w > diameter*4 || (w > 512 && w > diameter*2)))
         w /= 2;
       this.cursorCanvas.width = this.cursorCanvas.height = w;
-      console.log('scale down to '+w);
+      if (window.console) console.log('scale down to '+w);
     } else if (w < diameter+2) {
       while (w < diameter+2)
         w *= 2
       this.cursorCanvas.width = this.cursorCanvas.height = w;
-      console.log('scale up to '+w);
+      if (window.console) console.log('scale up to '+w);
     }
     this.sz = w;
     ctx.clearRect(0,0,w,w);

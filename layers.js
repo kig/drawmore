@@ -306,7 +306,7 @@ TiledLayer = Klass(Layer, {
         ctx.beginPath();
         t.useNewPath = false;
       }
-      ctx.arc(x-ox,y-oy,r,a1,a2);
+      ctx.arc(x-ox,y-oy,r,a1,a2, false);
       if (closed)
         ctx.closePath();
       t.hasNewPath = true;
