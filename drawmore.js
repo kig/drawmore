@@ -127,6 +127,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.requestRedraw();
   },
 
+  setBackgroundImage : function(src) {
+    this.backgroundImage = new Image();
+    this.backgroundImage.src = src;
+    var self = this;
+    this.backgroundImage.onload = function() { self.requestRedraw(); };
+    this.addHistoryState({methodName: 'setBackground', args:[src]});
+  },
+
   requestRedraw : function() {
     if (this.redrawRequested)
       return;
