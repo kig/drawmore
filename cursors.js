@@ -109,12 +109,12 @@ BrushCursor = Klass({
     ctx.save();
       ctx.beginPath();
       ctx.translate(w/2, w/2);
-      this.brush.brushPath(ctx, origDiameter/2, transform);
-      ctx.lineWidth = 0.75;
+      this.brush.brushPath(ctx, Math.max(0.5, origDiameter/2-0.5), transform);
+      ctx.lineWidth = 1;
       ctx.strokeStyle = '#ffffff';
       ctx.stroke();
       ctx.beginPath();
-      this.brush.brushPath(ctx, origDiameter/2, transform);
+      this.brush.brushPath(ctx, Math.max(0.5, origDiameter/2), transform);
       ctx.lineWidth = 0.5;
       ctx.strokeStyle = '#000000';
       ctx.stroke();
@@ -129,8 +129,8 @@ BrushCursor = Klass({
         ctx.fillStyle = '#000000';
         ctx.fillText(s,6,3);
         ctx.beginPath();
-        this.brush.brushPath(ctx, 3, transform);
-        ctx.lineWidth = 0.75;
+        this.brush.brushPath(ctx, 2.5, transform);
+        ctx.lineWidth = 1;
         ctx.strokeStyle = '#ffffff';
         ctx.stroke();
         ctx.beginPath();
