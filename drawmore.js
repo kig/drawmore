@@ -675,7 +675,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Reset view
 
   resetView : function() {
+    var f = 1/this.zoom;
     this.setZoom(1);
+    this.setLineWidth(this.lineWidth * f);
     this.setPan(0,0);
   },
 
