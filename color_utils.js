@@ -74,6 +74,12 @@ ColorUtils = Klass(Magi.Colors, {
     c[3] /= 255;
     return c;
   },
+  
+  hsva2rgba : function(h,s,v,a) {
+    var rgb = this.hsv2rgb(h,s,v);
+    rgb.push(a);
+    return rgb;
+  },
 
   rgb2cmy : function(r,g,b) {
     return [1-r, 1-g, 1-b];
@@ -127,6 +133,29 @@ ColorUtils = Klass(Magi.Colors, {
         h += 360;
     }
     return [h,s,v];
+  },
+
+  rgba2hsva : function(r,g,b,a) {
+    var h=0,s=0,v=0;
+    var mini = Math.min(r,g,b);
+    var maxi = Math.max(r,g,b);
+    var v=maxi;
+    var delta = maxi-mini;
+    if (maxi > 0) {
+      s = delta/maxi;
+      if (delta == 0)
+        h = 0;
+      else if (r == maxi)
+        h = (g-b)/delta;
+      else if (g == maxi)
+        h = 2+(b-r)/delta;
+      else
+        h = 4+(r-g)/delta;
+      h *= 60;
+      if (h < 0)
+        h += 360;
+    }
+    return [h,s,v,a];
   },
 
   rgb2yiqMatrix : mat3.create([
@@ -215,44 +244,56 @@ ColorUtils = Klass(Magi.Colors, {
 
 ColorPicker = Klass(ColorUtils, {
   hue : 0,
+  saturation : 0,
+  value : 0,
 
   initialize: function(container, width, height, callback) {
     var self = this;
     this.callback = callback;
-    this.canvas = E.canvas(width, height);
-    container.appendChild(this.canvas);
+    var widget = DIV();
+    widget.style.position = 'relative';
+    widget.style.padding = '0px';
+    this.widget = widget;
+    container.appendChild(this.widget);
+    this.canvas = E.canvas(width-8, height-8);
     this.ctx = this.canvas.getContext('2d');
-    this.hueCanvas = E.canvas(width, 15);
-    container.appendChild(this.hueCanvas);
+    var hueSize = Math.ceil((34+width) * Math.sqrt(2));
+    this.hueCanvas = E.canvas(hueSize, hueSize);
+    this.hueCanvas.style.position = 'relative';
+    this.hueCanvas.style.top = this.hueCanvas.style.left = '0px';
+    widget.appendChild(this.hueCanvas);
+    this.svWidget = DIV();
+    this.svWidget.style.position = 'absolute';
+    this.svWidget.style.left = Math.floor((hueSize-this.canvas.width)/2) + 'px';
+    this.svWidget.style.top = Math.floor((hueSize-this.canvas.width)/2) + 'px';
+    this.canvas.style.position = 'absolute';
+    this.canvas.style.boxShadow =
+    this.canvas.style.mozBoxShadow =
+    this.canvas.style.webkitBoxShadow = '0px 0px 4px rgba(0,0,0,0.3)';
+    this.canvas.style.top = this.canvas.style.left = '0px';
+    this.svWidget.appendChild(this.canvas);
+    widget.appendChild(this.svWidget);
     this.hueCtx = this.hueCanvas.getContext('2d');
     this.cursor = new RoundBrushCursor();
     this.cursor.cursorCanvas.style.zIndex = 11;
-    container.appendChild(this.cursor.cursorCanvas);
+    this.svWidget.appendChild(this.cursor.cursorCanvas);
     this.cursor.update(8);
-    for (var i=0; i<width; i++) {
-      var rgb = this.hsv2rgb(i/width*360, 1,1);
-      rgb[3] = 1;
-      this.hueCtx.fillStyle = this.colorToStyle(rgb);
-      this.hueCtx.fillRect(i,0,1,15);
-    }
-    this.hueCtx.fillStyle = 'black';
-    this.hueCtx.fillRect(0,0,width,3);
     var hc = this.hueCanvas;
     var cc = this.canvas;
     hc.addEventListener('mousedown', function(ev) {
       this.down = true;
       var xy = Mouse.getRelativeCoords(hc, ev);
-      var h = Math.clamp(xy.x/width, 0, (width-1)/width);
-      self.setHue(h*360);
-      var c = self.colorAt(self.ctx, self.cursor.x, self.cursor.y);
-      self.callback(c);
+      var h = self.hueAtMouseCoords(xy);
+      self.setHue(h);
       ev.preventDefault();
     }, false);
     cc.addEventListener('mousedown', function(ev) {
       this.down = true;
       var xy = Mouse.getRelativeCoords(cc, ev);
-      var x = Math.clamp(xy.x, 0, width-1);
-      var y = Math.clamp(xy.y, 0, height-1);
+      var x = Math.clamp(xy.x, 0, self.canvas.width-1);
+      var y = Math.clamp(xy.y, 0, self.canvas.height-1);
+      self.saturation = x/(self.canvas.width-1);
+      self.value = 1-(y/(self.canvas.width-1));
       self.cursor.moveTo(x, y);
       self.signalChange();
       ev.preventDefault();
@@ -260,13 +301,15 @@ ColorPicker = Klass(ColorUtils, {
     window.addEventListener('mousemove', function(ev) {
       if (hc.down) {
         var xy = Mouse.getRelativeCoords(hc, ev);
-        var h = Math.clamp(xy.x/width, 0, (width-1)/width);
-        self.setHue(h*360);
+        var h = self.hueAtMouseCoords(xy);
+        self.setHue(h);
         ev.preventDefault();
       } else if (cc.down) {
         var xy = Mouse.getRelativeCoords(cc, ev);
-        var x = Math.clamp(xy.x, 0, width-1);
-        var y = Math.clamp(xy.y, 0, height-1);
+        var x = Math.clamp(xy.x, 0, self.canvas.width-1);
+        var y = Math.clamp(xy.y, 0, self.canvas.height-1);
+        self.saturation = x/(self.canvas.width-1);
+        self.value = 1-(y/(self.canvas.width-1));
         self.cursor.moveTo(x, y);
         self.signalChange();
         ev.preventDefault();
@@ -276,7 +319,7 @@ ColorPicker = Klass(ColorUtils, {
       hc.down = false;
       cc.down = false;
     }, false);
-    var w = this.ctx.createLinearGradient(0,0,0,height-1);
+    var w = this.ctx.createLinearGradient(0,0,0,self.canvas.height-1);
     w.addColorStop(0, 'rgba(0,0,0,0)');
     w.addColorStop(1, 'rgba(0,0,0,1)');
     this.valueGradient = w;
@@ -284,42 +327,107 @@ ColorPicker = Klass(ColorUtils, {
   },
 
   signalChange : function() {
-    this.callback(this.colorAt(this.ctx, this.cursor.x, this.cursor.y));
+    this.callback(this.hsva2rgba(this.hue, this.saturation, this.value, 1));
   },
 
   setColor : function(c, signal) {
-    var hsv = this.rgb2hsv(c[0], c[1], c[2]);
-    this.setHue(hsv[0], false);
-    this.setSaturation(hsv[1], false);
-    this.setValue(hsv[2], false);
-    if (signal == true)
+    var cc = this.currentColor;
+    var eq = !cc || (
+      (Math.floor(c[0]*255) == Math.floor(cc[0]*255)) && 
+      (Math.floor(c[1]*255) == Math.floor(cc[1]*255)) && 
+      (Math.floor(c[2]*255) == Math.floor(cc[2]*255))
+    );
+    if (!eq) {
+      var hsv = this.rgb2hsv(c[0], c[1], c[2]);
+      this.setHue(hsv[0], false);
+      this.setSaturation(hsv[1], false);
+      this.setValue(hsv[2], false);
+      this.currentColor = [c[0],c[1],c[2]];
+    }
+    if (signal == true) {
       this.signalChange();
+    }
   },
 
   setSaturation : function(s, signal) {
     this.cursor.moveTo(s*this.canvas.width, this.cursor.y);
-    if (signal == true)
+    this.saturation = s;
+    if (signal == true) {
+      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
       this.signalChange();
+    }
   },
 
   setValue : function(s, signal) {
     this.cursor.moveTo(this.cursor.x, (1-s)*this.canvas.height);
-    if (signal == true)
+    this.value = s;
+    if (signal == true) {
+      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
       this.signalChange();
+    }
+  },
+
+  hueAtMouseCoords : function(xy) {
+    var w2 = this.hueCanvas.width/2;
+    var h2 = this.hueCanvas.height/2;
+    var dx = xy.x - w2;
+    var dy = xy.y - h2;
+    console.log(dx,dy,Math.atan2(dy,dx));
+    var a = Math.PI/2 + Math.atan2(dy,dx);
+    if (a < 0) a += 2*Math.PI;
+    return (a*180/Math.PI) % 360;
+  },
+  
+  redrawHueCanvas : function() {
+    var hc = this.hueCtx;
+    var deg2rad = Math.PI/180;
+    var r = this.canvas.width*0.5 * Math.sqrt(2) + 11.5;
+    var w2 = this.hueCanvas.width/2;
+    var h2 = this.hueCanvas.height/2;
+    hc.save();
+    hc.clearRect(0,0,this.hueCanvas.width,this.hueCanvas.height);
+    hc.translate(w2,h2);
+    hc.lineWidth = 15;
+    
+    hc.save();
+    hc.shadowOffsetX = 0;
+    hc.shadowOffsetY = 1;
+    hc.shadowBlur = 5;
+    hc.shadowColor = 'rgba(0,0,0,0.8)';
+    hc.fillStyle = '#808080';
+    hc.beginPath();
+    hc.arc(0,0,r+11, 0, Math.PI*2, true);
+    hc.fill();
+    hc.beginPath();
+    hc.arc(0,0,r, 0, Math.PI*2, false);
+    hc.strokeStyle = 'black'
+    hc.lineWidth = 14;
+    hc.stroke();
+    hc.restore();
+    
+    hc.lineWidth = 15;
+    for (var h=0; h<360; h++) {
+      var rgb = this.hsv2rgb(h, 1,1);
+      rgb[3] = 1;
+      hc.strokeStyle = this.colorToStyle(rgb);
+      hc.beginPath();
+      var a1 = (h-1)*deg2rad-Math.PI*0.5;
+      var a2 = (h+0.5)*deg2rad-Math.PI*0.5;
+      hc.arc(0,0,r, a1, a2, false);
+      hc.stroke();
+    }
+    hc.fillStyle = 'black';
+    hc.rotate(this.hue*deg2rad-Math.PI*0.5);
+    hc.fillRect(r-8,-2,16,4);
+    hc.restore();  
   },
 
   setHue : function(hue, signal) {
     var w = this.canvas.width;
     var h = this.canvas.height;
-    var last = this.hsv2rgb(this.hue, 1, 1);
-    last[3] = 1;
-    this.hueCtx.fillStyle = this.colorToStyle(last);
-    this.hueCtx.fillRect(Math.floor(this.hue/360*w), 3, 1, this.hueCanvas.height);
-    this.hueCtx.fillStyle = 'black';
-    this.hueCtx.fillRect(Math.floor(hue/360*w), 3, 1, this.hueCanvas.height);
     this.hue = hue;
-    var rgb = this.hsv2rgb(hue, 1, 1);
-    rgb[3] = 1;
+    this.redrawHueCanvas();
+    var rgb = this.hsva2rgba(hue, 1, 1, 1);
     var white = [1,1,1,1];
     var g = this.ctx.createLinearGradient(0, 0, w-1, 0);
     g.addColorStop(0, this.colorToStyle(white));
@@ -328,7 +436,9 @@ ColorPicker = Klass(ColorUtils, {
     this.ctx.fillRect(0,0,w,h);
     this.ctx.fillStyle = this.valueGradient;
     this.ctx.fillRect(0,0,w,h);
-    if (signal == true)
+    if (signal == true) {
+      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
       this.signalChange();
+    }
   }
 });
