@@ -16,6 +16,10 @@ Layer = Klass({
 
   copyProperties : function(tgt) {
   },
+  
+  getBoundingBox : function() {
+    return null;
+  },
 
   flip : function() {},
 
@@ -47,9 +51,15 @@ Layer = Klass({
 
 
 CanvasLayer = Klass(Layer, {
-  initialize : function(){
-    this.canvas = E.canvas(window.innerWidth,window.innerHeight);
+  initialize : function(w,h){
+    this.canvas = E.canvas(w,h);
     this.ctx = this.canvas.getContext('2d');
+  },
+  
+  getBoundingBox : function() {
+    var w = this.canvas.width;
+    var h = this.canvas.height;
+    return {left: this.x, top: this.y, right: this.x+w, bottom: this.y+h, width: w, height: h};
   },
 
   copyProperties : function(tgt) {
@@ -145,6 +155,22 @@ TiledLayer = Klass(Layer, {
 
   initialize: function() {
     this.tiles = {};
+  },
+
+  getBoundingBox : function() {
+    var top=1/0, left=1/0, bottom=-1/0, right=-1/0;
+    for (var f in this.tiles) {
+      var tile = this.tiles[f];
+      if (tile.y < top) top = tile.y;
+      if (tile.x < left) left = tile.x;
+      if (tile.y+1 > bottom) bottom = tile.y+1;
+      if (tile.x+1 > right) right = tile.x+1;
+    }
+    return {
+      left: this.x+left*this.tileSize, top: this.y+top*this.tileSize, 
+      right: this.x+right*this.tileSize, bottom: this.y+bottom*this.tileSize, 
+      width: (right-left+1)*this.tileSize, height: (bottom-top+1)*this.tileSize
+    };
   },
 
   copyProperties : function(tgt) {

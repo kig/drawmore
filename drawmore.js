@@ -94,28 +94,34 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Draw loop
 
   updateDisplay : function() {
-    this.ctx.save();
-      this.ctx.fillStyle = this.colorToStyle(this.background);
-      this.ctx.fillRect(0,0,this.width,this.height);
-      this.ctx.translate(this.panX, this.panY);
-      if (this.flippedX) {
-        this.ctx.translate(-2*this.panX+this.width, 0);
-        this.ctx.scale(-1,1);
-      }
-      if (this.flippedY) {
-        this.ctx.translate(0, -2*this.panY+this.height);
-        this.ctx.scale(1,-1);
-      }
-      this.ctx.scale(this.zoom, this.zoom);
-      this.ctx.mozImageSmoothingEnabled = false;
-      this.ctx.webkitImageSmoothingEnabled = false;
-      this.ctx.imageSmoothingEnabled = false;
-      for (var i=0; i<this.layers.length; i++) {
-        this.layers[i].applyTo(this.ctx, this.width, this.height);
-      }
-    this.ctx.restore();
+    this.applyTo(this.ctx, -this.panX, -this.panY, this.width, this.height, this.flippedX, this.flippedY, this.zoom);
     this.lastUpdateTime = (new Date()).getTime();
     this.redrawRequested = false;
+  },
+  
+  applyTo : function(ctx, x, y, w, h, flippedX, flippedY, zoom) {
+    var px = -x;
+    var py = -y;
+    ctx.save();
+      ctx.fillStyle = this.colorToStyle(this.background);
+      ctx.fillRect(0,0,w,h);
+      ctx.translate(px, py);
+      if (flippedX) {
+        ctx.translate(-2*px+w, 0);
+        ctx.scale(-1,1);
+      }
+      if (flippedY) {
+        ctx.translate(0, -2*py+h);
+        ctx.scale(1,-1);
+      }
+      ctx.scale(zoom, zoom);
+      ctx.mozImageSmoothingEnabled = false;
+      ctx.webkitImageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = false;
+      for (var i=0; i<this.layers.length; i++) {
+        this.layers[i].applyTo(ctx, x, y, w, h, zoom);
+      }
+    ctx.restore();
   },
 
   setBackground : function(color) {
@@ -159,9 +165,60 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   // File IO
 
-  exportImage : function() {
-    var dataURL = this.canvas.toDataURL('image/png');
+  exportCanvas : function(canvas) {
+    var dataURL = canvas.toDataURL('image/png');
     window.open(dataURL);
+  },
+  
+  exportVisibleImage : function() {
+    this.exportCanvas(this.canvas);
+  },
+  
+  exportImage : function() {
+    this.exportCanvas(this.getFullImage());
+  },
+  
+  exportCrop : function(x,y,w,h) {
+    this.exportCanvas(this.getCroppedImage(x,y,w,h));
+  },
+
+  getBoundingBox : function() {
+    var top=1/0, left=1/0, bottom=-1/0, right=-1/0;
+    for (var i=0; i<this.layers.length; i++) {
+      if (this.layers[i].display) {
+        var bbox = this.layers[i].getBoundingBox();
+        if (bbox) {
+          if (bbox.top < top) top = bbox.top;
+          if (bbox.left < left) left = bbox.left;
+          if (bbox.bottom > bottom) bottom = bbox.bottom;
+          if (bbox.right > right) right = bbox.right;
+        }
+      }
+    }
+    top = Math.floor(top);
+    left = Math.floor(left);
+    bottom = Math.ceil(bottom);
+    right = Math.ceil(right);
+    var width = right-left+1;
+    var height = bottom-top+1;
+    return {
+      top:top, left:left, bottom:bottom, right:right,
+      width:width, height:height,
+      x: this.flippedX ? right : left, 
+      y: this.flippedY ? bottom : top
+    };
+  },
+
+  getCroppedImage : function(x,y,w,h) {
+    var exportCanvas = E.canvas(w,h);
+    var ctx = exportCanvas.getContext('2d');
+    this.applyTo(ctx, x, y, w, h, this.flippedX, this.flippedY, 1);
+    return exportCanvas;
+  },
+  
+  getFullImage : function() {
+    var bbox = this.getBoundingBox();
+    return this.getCroppedImage(bbox.left, bbox.top, bbox.width, bbox.height);
   },
 
   load : function(string) {
