@@ -114,6 +114,19 @@
 
         draw = new Drawmore(c);
         draw.colorPicker = colorPicker;
+        draw.onopacitychange = function(o) {
+          var s = [];
+          for (var i=0; i<Math.round(o*8); i++){
+            s.push("`");
+          }
+          byId('foregroundColor').textContent = s.join("");
+        };
+        draw.oncolorchange = function(c) {
+          var s = ColorUtils.colorToStyle(c);
+          var h = ColorUtils.colorToHex(c);
+          byId('colorName').textContent = h;
+          byId('foregroundColor').style.backgroundColor = s;
+        }
         draw.toggleUI = function(){
           var f = byId('fileIO');
           var p = byId('colorPicker');
@@ -174,6 +187,15 @@
         bottom: 4px;
         right: 4px;
         position: absolute;
+      }
+      #colorName {
+        display: inline-block;
+        text-transform: uppercase;
+        color: rgba(128,128,128,0.3);
+        font-size: 12px;
+        margin-right: 12px;
+        position: relative;
+        top: -1px;
       }
       #foregroundColor {
         display: inline-block;
@@ -299,6 +321,7 @@
       <button id="replay">Replay</button>
     </div>
     <div id="palette">
+      <div id="colorName"></div>
       <div id="foregroundColor"></div>
       <div id="backgroundColor"></div>
 

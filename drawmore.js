@@ -123,7 +123,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.background = this.styleToColor(color);
     else
       this.background = color;
-    byId('backgroundColor').style.backgroundColor = this.colorToStyle(this.background);
+    if (this.onbackgroundchange)
+      this.onbackgroundchange(this.background);
     this.addHistoryState({methodName: 'setBackground', args:[this.background]});
     this.requestRedraw();
   },
@@ -131,6 +132,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
   setBackgroundImage : function(src) {
     this.backgroundImage = new Image();
     this.backgroundImage.src = src;
+    if (this.onbackgroundimagechange)
+      this.onbackgroundimagechange(this.backgroundImage);
     var self = this;
     this.backgroundImage.onload = function() { self.requestRedraw(); };
     this.addHistoryState({methodName: 'setBackground', args:[src]});
@@ -982,8 +985,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
     else
       this.color = color;
     var s = this.colorToStyle(this.color);
-    byId('foregroundColor').style.backgroundColor = s
     this.colorStyle = s;
+    if (this.oncolorchange)
+      this.oncolorchange(this.color);
     this.cursor.update(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
     if (this.colorPicker)
       this.colorPicker.setColor(this.color, false);
@@ -994,11 +998,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     o = Math.clamp(o, 0, 1);
     this.opacity = o;
     this.strokeLayer.opacity = o;
-    var s = [];
-    for (var i=0; i<Math.round(o*8); i++){
-      s.push("`");
-    }
-    byId('foregroundColor').textContent = s.join("");
+    if (this.onopacitychange)
+      this.onopacitychange(o);
     this.cursor.update(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
     this.addHistoryState({methodName: 'setOpacity', args:[this.opacity]});
   },

@@ -12,6 +12,18 @@ ColorUtils = Klass({
           ','+c[3]+')'
     );
   },
+  
+  colorToHex : function(c, noHash) {
+    var r = Math.floor(255*Math.clamp(c[0], 0, 1));
+    var g = Math.floor(255*Math.clamp(c[1], 0, 1));
+    var b = Math.floor(255*Math.clamp(c[2], 0, 1));
+    return [
+      noHash ? '' : '#',
+      r<16 ? '0' : '', r.toString(16),
+      g<16 ? '0' : '', g.toString(16),
+      b<16 ? '0' : '', b.toString(16)
+    ].join('');
+  },
 
   styleToColor : function(c) {
     var r=0,g=0,b=0,a=0;
@@ -520,7 +532,6 @@ ColorPicker = Klass(ColorUtils, {
     var h2 = this.hueCanvas.height/2;
     var dx = xy.x - w2;
     var dy = xy.y - h2;
-    console.log(dx,dy,Math.atan2(dy,dx));
     var a = Math.PI/2 + Math.atan2(dy,dx);
     if (a < 0) a += 2*Math.PI;
     return (a*180/Math.PI) % 360;
