@@ -983,6 +983,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     byId('foregroundColor').style.backgroundColor = s
     this.colorStyle = s;
     this.cursor.update(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
+    if (this.colorPicker)
+      this.colorPicker.setColor(this.color, false);
     this.addHistoryState({methodName: 'setColor', args:[this.color]});
   },
 

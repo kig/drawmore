@@ -66,7 +66,7 @@
         };
 
         var picker = byId('colorPicker');
-        new ColorPicker(picker, 128, 128, function(c) {
+        var colorPicker = new ColorPicker(picker, 128, 128, function(c) {
           draw.setColor(c);
         });
         var fg = byId('foregroundColor');
@@ -94,11 +94,13 @@
               draw.setPaletteColor(this.index, ev.dataTransfer.getData('text/plain'));
             ev.preventDefault();
           }, false);
-          ps[i].addEventListener('click', function(ev){
-            draw.setColor(this.getAttribute('color'));
-            if (ev)
-              Event.stop(ev);
-          }, false);
+          ps[i].addEventListener('click', (function(i){
+            return function(ev) {
+              draw.setColor(draw.palette[i]);
+              if (ev)
+                Event.stop(ev);
+            };
+          })(i), false);
         }
         var ps = byClass('brushWidth');
         for (var i=0; i<ps.length; i++) {
@@ -111,6 +113,7 @@
         }
 
         draw = new Drawmore(c);
+        draw.colorPicker = colorPicker;
         draw.toggleUI = function(){
           var f = byId('fileIO');
           var p = byId('colorPicker');
@@ -151,8 +154,15 @@
     </script>
     <style>
       html {
+        max-width: 100%;
+        max-height: 100%;
         overflow: hidden;
         font-family: Ubuntu, sans-serif;
+      }
+      body {
+        max-width: 100%;
+        max-height: 100%;
+        overflow: hidden;
       }
       #palette {
         position: absolute;
