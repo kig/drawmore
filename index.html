@@ -81,6 +81,36 @@
           ev.dataTransfer.setData('text/plain', this.style.backgroundColor);
           ev.dataTransfer.setDragImage(ev.target, 20, 20);
         }, false);
+        fg.addEventListener('dragover', function(ev) {
+          ev.preventDefault();
+        }, false);
+        fg.addEventListener('drop', function(ev) {
+          if (ev.dataTransfer.getData('text/plain'))
+            draw.setColor(ev.dataTransfer.getData('text/plain'));
+          ev.preventDefault();
+        }, false);
+        
+        var bg = byId('backgroundColor');
+        bg.setAttribute('draggable', 'true');
+        bg.addEventListener('dragstart', function(ev) {
+          ev.dataTransfer.effectAllowed = 'copy';
+          ev.dataTransfer.dropEffect = 'copy';
+          ev.dataTransfer.setData('text/plain', this.style.backgroundColor);
+          ev.dataTransfer.setDragImage(ev.target, 20, 20);
+        }, false);
+        bg.addEventListener('dragover', function(ev) {
+          ev.preventDefault();
+        }, false);
+        bg.addEventListener('drop', function(ev) {
+          if (ev.dataTransfer.getData('text/plain'))
+            draw.setBackground(ev.dataTransfer.getData('text/plain'));
+          ev.preventDefault();
+        }, false);
+        bg.addEventListener('click', function(ev) {
+          draw.setColor(this.style.backgroundColor);
+          if (ev)
+            Event.stop(ev);
+        }, false);
 
         var ps = byClass('paletteColor');
         for (var i=0; i<ps.length; i++) {
@@ -130,6 +160,10 @@
           var h = ColorUtils.colorToHex(c);
           byId('colorName').textContent = h;
           byId('foregroundColor').style.backgroundColor = s;
+        }
+        draw.onbackgroundchange = function(c) {
+          var s = ColorUtils.colorToStyle(c);
+          byId('backgroundColor').style.backgroundColor = s;
         }
         draw.toggleUI = function(){
           var f = byId('fileIO');
@@ -223,10 +257,10 @@
         right: 4px;
         position: absolute;
       }
-      #colorName {
+      #colorName, #bgColorName {
         display: inline-block;
         text-transform: uppercase;
-        color: rgba(128,128,128,0.3);
+        color: rgba(0,0,0,0.2);
         font-size: 12px;
         margin-right: 12px;
         position: relative;
@@ -254,11 +288,17 @@
       #backgroundColor {
         width: 40px;
         height: 20px;
-        display: none;
-        margin-top: 3px;
-        margin-left: 3px;
-        margin-bottom: 20px;
-        border: 1px solid gray;
+        display: inline-block;
+        position: absolute;
+        margin-top: 32px;
+        margin-bottom: 0px;
+        margin-left: 0px;
+        margin-right: 8px;
+        -webkit-box-shadow: 0px 1px 3px rgba(0,0,0,0.5);
+        -moz-box-shadow: 0px 1px 3px rgba(0,0,0,0.5);
+        box-shadow: 0px 1px 3px rgba(0,0,0,0.5);
+        border-top: 1px solid rgba(255,255,255,0.3);
+        border-left: 1px solid rgba(255,255,255,0.3);
         z-index: 0;
       }
       #colorPicker {
@@ -357,8 +397,8 @@
     </div>
     <div id="palette">
       <div id="colorName"></div>
-      <div id="foregroundColor"></div>
       <div id="backgroundColor"></div>
+      <div id="foregroundColor"></div>
 
       <div class="paletteColor" color="#000000"></div>
       <div class="paletteColor" color="#ffffff"></div>
