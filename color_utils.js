@@ -2,7 +2,7 @@ Math.clamp = function(v, min, max) {
   return Math.min(max, Math.max(min, v));
 };
 
-ColorUtils = Klass(Magi.Colors, {
+ColorUtils = Klass({
 
   colorToStyle : function(c) {
     return (
@@ -35,23 +35,23 @@ ColorUtils = Klass(Magi.Colors, {
       b = rgb[2] / 255;
       a = 1.0;
     }
-    return [r,g,b,a];
+    return this.colorVec(r,g,b,a);
   },
 
-  tween : function(a, b, f) {
-    var r = [];
+  tween : function(a, b, f, dst) {
+    var r = dst == null ? new this.colorVecType(a.length) : dst;
     for (var i=0; i<a.length; i++) {
       r[i] = a[i]*(1-f) + b[i]*f;
     }
     return r;
   },
 
-  tweenColor : function(a, b, f) {
-    var c = this.tween(a,b,f);
+  tweenColor : function(a, b, f, dst) {
+    var c = this.tween(a,b,f, dst);
     return this.colorToStyle(c);
   },
 
-  averageColor : function(imageData) {
+  averageColor : function(imageData, dst) {
     var d = imageData.data;
     var r=0, g=0, b=0, a=0;
     for (var i=-1, dl=d.length-1; i<dl;) {
@@ -61,13 +61,13 @@ ColorUtils = Klass(Magi.Colors, {
       a += d[++i];
     }
     var l = d.length / 4;
-    return [ r/l, g/l, b/l, a/l ];
+    return this.colorVec( r/l, g/l, b/l, a/l, dst );
   },
 
-  colorAt : function(ctx, x, y, radius) {
+  colorAt : function(ctx, x, y, radius, dst) {
     radius = radius || 1;
     var id = ctx.getImageData(x-(radius-1), y-(radius-1), 2*radius-1, 2*radius-1);
-    var c = this.averageColor(id);
+    var c = this.averageColor(id, dst);
     c[0] /= 255;
     c[1] /= 255;
     c[2] /= 255;
@@ -75,44 +75,174 @@ ColorUtils = Klass(Magi.Colors, {
     return c;
   },
   
-  hsva2rgba : function(h,s,v,a) {
-    var rgb = this.hsv2rgb(h,s,v);
-    rgb.push(a);
+  colorVecType : (typeof Float32Array == 'undefined' ? Array : Float32Array),
+  
+  colorVec : function(r,g,b,a,dst) {
+    if (dst == null) 
+      dst = new this.colorVecType(4);
+    dst[0]=r; dst[1]=g; dst[2]=b; dst[3]=a;
+    return dst;
+  },
+  
+  /**
+    Converts an HSL color to its corresponding RGB color.
+
+    @param h Hue in degrees [0 .. 360]
+    @param s Saturation [0.0 .. 1.0]
+    @param l Lightness [0.0 .. 1.0]
+    @param dst Optional array to write the color into.
+    @return The corresponding RGB color as [r,g,b]
+    @type Array
+    */
+  hsl2rgb : function(h,s,l,dst) {
+    var r,g,b;
+    if (s == 0) {
+      r=g=b=l;
+    } else {
+      var q = (l < 0.5 ? l * (1+s) : l+s-(l*s));
+      var p = 2 * l - q;
+      var hk = (h % 360) / 360;
+      var tr = hk + 1/3;
+      var tg = hk;
+      var tb = hk - 1/3;
+      if (tr < 0) tr++;
+      if (tr > 1) tr--;
+      if (tg < 0) tg++;
+      if (tg > 1) tg--;
+      if (tb < 0) tb++;
+      if (tb > 1) tb--;
+      if (tr < 1/6)
+        r = p + ((q-p)*6*tr);
+      else if (tr < 1/2)
+        r = q;
+      else if (tr < 2/3)
+        r = p + ((q-p)*6*(2/3 - tr));
+      else
+        r = p;
+
+      if (tg < 1/6)
+        g = p + ((q-p)*6*tg);
+      else if (tg < 1/2)
+        g = q;
+      else if (tg < 2/3)
+        g = p + ((q-p)*6*(2/3 - tg));
+      else
+        g = p;
+
+      if (tb < 1/6)
+        b = p + ((q-p)*6*tb);
+      else if (tb < 1/2)
+        b = q;
+      else if (tb < 2/3)
+        b = p + ((q-p)*6*(2/3 - tb));
+      else
+        b = p;
+    }
+    return this.colorVec(r,g,b,1,dst);
+  },
+
+  /**
+    Converts an HSV color to its corresponding RGB color.
+
+    @param h Hue in degrees [0 .. 360]
+    @param s Saturation [0.0 .. 1.0]
+    @param v Value [0 .. 1.0]
+    @return The corresponding RGB color as [r,g,b]
+    @type Array
+    */
+  hsv2rgb : function(h,s,v,dst) {
+    var r,g,b;
+    if (s == 0) {
+      r=g=b=v;
+    } else {
+      h = (h % 360)/60.0;
+      var i = Math.floor(h);
+      var f = h-i;
+      var p = v * (1-s);
+      var q = v * (1-s*f);
+      var t = v * (1-s*(1-f));
+      switch (i) {
+        case 0:
+          r = v;
+          g = t;
+          b = p;
+          break;
+        case 1:
+          r = q;
+          g = v;
+          b = p;
+          break;
+        case 2:
+          r = p;
+          g = v;
+          b = t;
+          break;
+        case 3:
+          r = p;
+          g = q;
+          b = v;
+          break;
+        case 4:
+          r = t;
+          g = p;
+          b = v;
+          break;
+        case 5:
+          r = v;
+          g = p;
+          b = q;
+          break;
+      }
+    }
+    return this.colorVec(r,g,b,1,dst);
+  },
+
+  hsva2rgba : function(h,s,v,a,dst) {
+    var rgb = this.hsv2rgb(h,s,v,dst);
+    rgb[3] = a;
     return rgb;
   },
 
-  rgb2cmy : function(r,g,b) {
-    return [1-r, 1-g, 1-b];
+  rgb2cmy : function(r,g,b,dst) {
+    return this.colorVec(1-r, 1-g, 1-b, 1, dst);
   },
 
-  cmy2rgb : function(c,m,y) {
-    return [1-c, 1-m, 1-y];
+  cmy2rgb : function(c,m,y,dst) {
+    return this.colorVec(1-c, 1-m, 1-y, 1, dst);
   },
 
-  cmy2cmyk : function(c,m,y) {
+  rgba2cmya : function(r,g,b,a,dst) {
+    return this.colorVec(1-r, 1-g, 1-b, a, dst);
+  },
+
+  cmya2rgba : function(c,m,y,a,dst) {
+    return this.colorVec(1-c, 1-m, 1-y, a, dst);
+  },
+
+  cmy2cmyk : function(c,m,y,dst) {
     var k = Math.min(c,m,y);
     if (k == 1)
-      return [0,0,0,1];
+      return this.colorVec(0,0,0,1,dst);
     var k1 = 1-k;
-    return [(c-k)/k1, (m-k)/k1, (y-k)/k1, k];
+    return this.colorVec((c-k)/k1, (m-k)/k1, (y-k)/k1, k,dst);
   },
 
-  cmyk2cmy : function(c,m,y,k) {
+  cmyk2cmy : function(c,m,y,k,dst) {
     var k1 = 1-k;
-    return [c*k1+k, m*k1+k, y*k1+k];
+    return this.colorVec(c*k1+k, m*k1+k, y*k1+k, 1, dst);
   },
 
-  cmyk2rgb : function(c,m,y,k) {
-    var cmy = this.cmyk2cmy(c,m,y,k);
-    return this.cmy2rgb(cmy[0], cmy[1], cmy[2]);
+  cmyk2rgb : function(c,m,y,k,dst) {
+    var cmy = this.cmyk2cmy(c,m,y,k,dst);
+    return this.cmy2rgb(cmy[0], cmy[1], cmy[2], cmy);
   },
 
-  rgb2cmyk : function(r,g,b) {
-    var cmy = this.rgb2cmy(r,g,b);
-    return this.cmy2cmyk(cmy[0], cmy[1], cmy[2]);
+  rgb2cmyk : function(r,g,b,dst) {
+    var cmy = this.rgb2cmy(r,g,b,dst);
+    return this.cmy2cmyk(cmy[0], cmy[1], cmy[2], cmy);
   },
 
-  rgb2hsv : function(r,g,b) {
+  rgba2hsva : function(r,g,b,a,dst) {
     var h=0,s=0,v=0;
     var mini = Math.min(r,g,b);
     var maxi = Math.max(r,g,b);
@@ -132,30 +262,11 @@ ColorUtils = Klass(Magi.Colors, {
       if (h < 0)
         h += 360;
     }
-    return [h,s,v];
+    return this.colorVec(h,s,v,a,dst);
   },
 
-  rgba2hsva : function(r,g,b,a) {
-    var h=0,s=0,v=0;
-    var mini = Math.min(r,g,b);
-    var maxi = Math.max(r,g,b);
-    var v=maxi;
-    var delta = maxi-mini;
-    if (maxi > 0) {
-      s = delta/maxi;
-      if (delta == 0)
-        h = 0;
-      else if (r == maxi)
-        h = (g-b)/delta;
-      else if (g == maxi)
-        h = 2+(b-r)/delta;
-      else
-        h = 4+(r-g)/delta;
-      h *= 60;
-      if (h < 0)
-        h += 360;
-    }
-    return [h,s,v,a];
+  rgb2hsv : function(r,g,b,dst) {
+    return this.rgba2hsva(r,g,b,1,dst);
   },
 
   rgb2yiqMatrix : mat3.create([
@@ -163,8 +274,12 @@ ColorUtils = Klass(Magi.Colors, {
     0.596, -0.275, -0.321,
     0.212, -0.523, 0.311
   ]),
-  rgb2yiq : function(r,g,b) {
-    return mat3.multiplyVec3(this.rgb2yiqMatrix, [r,g,b]);
+  rgba2yiqa : function(r,g,b,a,dst) {
+    return mat3.multiplyVec3(this.rgb2yiqMatrix, this.colorVec(r,g,b,a,dst));
+  },
+  
+  rgb2yiq : function(r,g,b,dst) {
+    return this.rgba2yiqa(r,g,b,1,dst);
   },
 
   yiq2rgbMatrix : mat3.create([
@@ -172,8 +287,12 @@ ColorUtils = Klass(Magi.Colors, {
     1, -0.272, -0.647,
     1, -1.105, 1.702
   ]),
-  yiq2rgb : function(y,i,q) {
-    return mat3.multiplyVec3(this.yiq2rgbMatrix, [y,i,q]);
+  yiqa2rgba : function(y,i,q,a,dst) {
+    return mat3.multiplyVec3(this.yiq2rgbMatrix, this.colorVec(y,i,q,a,dst));
+  },
+
+  yiq2rgb : function(y,i,q,dst) {
+    return this.yiqa2rgba(y,i,q,1,dst);
   },
 
   rgb2xyzMatrix : mat3.create([
@@ -181,8 +300,11 @@ ColorUtils = Klass(Magi.Colors, {
     -0.969256, 1.875992, 0.041556,
     0.055648, -0.204043, 1.057311
   ]),
-  rgb2xyz : function(r,g,b) {
-    return mat3.multiplyVec3(this.rgb2xyzMatrix, [r,g,b]);
+  rgba2xyza : function(r,g,b,a,dst) {
+    return mat3.multiplyVec3(this.rgba2xyzaMatrix, this.colorVec(r,g,b,a,dst));
+  },
+  rgb2xyz : function(r,g,b,dst) {
+    return this.rgba2xyza(r,g,b,1,dst);
   },
 
   xyz2rgbMatrix : mat3.create([
@@ -190,37 +312,54 @@ ColorUtils = Klass(Magi.Colors, {
     0.212671, 0.715160, 0.072169,
     0.019334, 0.119193, 0.950227
   ]),
-  xyz2rgb : function(x,y,z) {
-    return mat3.multiplyVec3(this.xyz2rgbMatrix, [x,y,z]);
+  xyza2rgba : function(x,y,z,a,dst) {
+    return mat3.multiplyVec3(this.xyz2rgbMatrix, this.colorVec(x,y,z,a,dst));
+  },
+  xyz2rgb : function(x,y,z,dst) {
+    return this.xyza2rgba(x,y,z,1,dst);
   },
 
-  lab2xyz : function(l,a,b,xn,yn,zn) {
+  laba2xyza : function(l,a,b,xn,yn,zn,alpha,dst) {
     p = (l + 16.0) / 116.0;
-    return [
+    return this.colorVec(
       xn * Math.pow(p + a / 500.0, 3),
       yn * p*p*p,
-      zn * Math.pow(p - b / 200.0, 3)
-    ];
+      zn * Math.pow(p - b / 200.0, 3),
+      alpha, dst
+    );
   },
-  xyz2lab : function(x,y,z,xn,yn,zn) {
+  lab2xyz : function(l,a,b,xn,yn,zn,dst) {
+    return this.laba2xyza(l,a,b,xn,yn,zn,1,dst);
+  },
+  xyza2laba : function(x,y,z,xn,yn,zn,a,dst) {
     var f = function(t) {
       return (t > 0.008856) ? Math.pow(t,(1.0/3.0)) : (7.787 * t + 16.0/116.0);
     };
-    return [
+    return this.colorVec(
       ((y/yn > 0.008856) ? 116.0 * Math.pow(y/yn, 1.0/3.0) - 16.0 : 903.3 * y/yn),
       500.0 * ( f(x/xn) - f(y/yn) ),
-      200.0 * ( f(y/yn) - f(z/zn) )
-    ];
+      200.0 * ( f(y/yn) - f(z/zn) ),
+      a, dst
+    );
+  },
+  xyz2lab : function(x,y,z,xn,yn,zn,dst) {
+    return this.xyza2laba(x,y,z,xn,yn,zn,1,dst);
   },
 
-  lab2rgb : function(l,a,b) {
-    var xyz = this.lab2xyz(l,a,b)
-    return this.xyz2rgb(xyz[0], xyz[1], xyz[2]);
+  laba2rgba : function(l,a,b,xn,yn,zn,a,dst) {
+    var xyza = this.laba2xyza(l,a,b,xn,yn,zn,a,dst)
+    return this.xyza2rgba(xyza[0], xyza[1], xyza[2], xyza[3], xyza);
+  },
+  lab2rgb : function(l,a,b,xn,yn,zn,dst) {
+    return this.laba2rgba(l,a,b,xn,yn,zn,1,dst);
   },
 
-  rgb2lab : function(r,g,b) {
-    var xyz = this.rgb2xyz(r,g,b);
-    return this.xyz2lab(xyz[0], xyz[1], xyz[2]);
+  rgba2laba : function(r,g,b,a,xn,yn,zn,dst) {
+    var xyza = this.rgba2xyza(r,g,b,a,dst);
+    return this.xyza2laba(xyza[0], xyza[1], xyza[2], xn,yn,zn, xyza[3], xyza);
+  },
+  rgb2lab : function(r,g,b,xn,yn,zn,dst) {
+    return this.rgba2labal(r,g,b,xn,yn,zn,1,dst);
   },
 
   rgb2yuvMatrix : mat3.create([
@@ -228,16 +367,23 @@ ColorUtils = Klass(Magi.Colors, {
     -0.159, -0.332, 0.050,
     0.500, -0.419, -0.081
   ]),
-  rgb2yuv : function(r,g,b) {
-    return mat3.multiplyVec3(cthis.rgb2yuvMatrix, [r,g,b]);
+  rgba2yuva : function(r,g,b,a,dst) {
+    return mat3.multiplyVec3(this.rgb2yuvMatrix, this.colorVec(r,g,b,a,dst));
+  },
+  rgb2yuv : function(r,g,b,dst) {
+    return this.rgba2yuva(r,g,b,1,dst);
   },
 
-  yuv2rgb : function(y,u,v) {
-    return [
+  yuva2rgba : function(y,u,v,a,dst) {
+    return this.colorVec(
       y + (1.4075 * (v - 128)),
       y - (0.3455 * (u - 128) - (0.7169 * (v - 128))),
-      y + (1.7790 * (u - 128))
-    ];
+      y + (1.7790 * (u - 128)),
+      a, dst
+    );
+  },
+  yuv2rgb : function(y,u,v,dst) {
+    return this.yuva2rgba(y,u,v,1,dst);
   }
 
 });
@@ -284,7 +430,7 @@ ColorPicker = Klass(ColorUtils, {
       this.down = true;
       var xy = Mouse.getRelativeCoords(hc, ev);
       var h = self.hueAtMouseCoords(xy);
-      self.setHue(h);
+      self.setHue(h, true);
       ev.preventDefault();
     }, false);
     cc.addEventListener('mousedown', function(ev) {
@@ -302,7 +448,7 @@ ColorPicker = Klass(ColorUtils, {
       if (hc.down) {
         var xy = Mouse.getRelativeCoords(hc, ev);
         var h = self.hueAtMouseCoords(xy);
-        self.setHue(h);
+        self.setHue(h, true);
         ev.preventDefault();
       } else if (cc.down) {
         var xy = Mouse.getRelativeCoords(cc, ev);
@@ -323,11 +469,13 @@ ColorPicker = Klass(ColorUtils, {
     w.addColorStop(0, 'rgba(0,0,0,0)');
     w.addColorStop(1, 'rgba(0,0,0,1)');
     this.valueGradient = w;
+    this.tmpColor = this.colorVec(0,0,0,0);
+    this.currentColor = this.colorVec(0,0,0,1);
     this.setHue(0);
   },
 
   signalChange : function() {
-    this.callback(this.hsva2rgba(this.hue, this.saturation, this.value, 1));
+    this.callback(this.hsva2rgba(this.hue, this.saturation, this.value, 1, this.tmpColor));
   },
 
   setColor : function(c, signal) {
@@ -342,7 +490,7 @@ ColorPicker = Klass(ColorUtils, {
       this.setHue(hsv[0], false);
       this.setSaturation(hsv[1], false);
       this.setValue(hsv[2], false);
-      this.currentColor = [c[0],c[1],c[2]];
+      this.currentColor = this.colorVec(c[0],c[1],c[2], 1, this.currentColor);
     }
     if (signal == true) {
       this.signalChange();
@@ -353,7 +501,7 @@ ColorPicker = Klass(ColorUtils, {
     this.cursor.moveTo(s*this.canvas.width, this.cursor.y);
     this.saturation = s;
     if (signal == true) {
-      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
+      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value, this.currentColor);
       this.signalChange();
     }
   },
@@ -362,7 +510,7 @@ ColorPicker = Klass(ColorUtils, {
     this.cursor.moveTo(this.cursor.x, (1-s)*this.canvas.height);
     this.value = s;
     if (signal == true) {
-      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
+      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value, this.currentColor);
       this.signalChange();
     }
   },
@@ -428,16 +576,15 @@ ColorPicker = Klass(ColorUtils, {
     this.hue = hue;
     this.redrawHueCanvas();
     var rgb = this.hsva2rgba(hue, 1, 1, 1);
-    var white = [1,1,1,1];
     var g = this.ctx.createLinearGradient(0, 0, w-1, 0);
-    g.addColorStop(0, this.colorToStyle(white));
+    g.addColorStop(0, 'white');
     g.addColorStop(1, this.colorToStyle(rgb));
     this.ctx.fillStyle = g;
     this.ctx.fillRect(0,0,w,h);
     this.ctx.fillStyle = this.valueGradient;
     this.ctx.fillRect(0,0,w,h);
     if (signal == true) {
-      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
+      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value, this.currentColor);
       this.signalChange();
     }
   }
