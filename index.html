@@ -11,7 +11,7 @@
     <script src="brushes.js"></script>
     <script src="constraints.js"></script>
     <script src="drawmore.js"></script>
-    <script src="defaultImage.js"></script>
+    <!--<script src="defaultImage.js"></script>-->
     <script>
 
       window.addEventListener('load', function() {
@@ -156,7 +156,7 @@
           }
         }
         if (!loaded) {
-          draw.applySaveObject(DefaultImage);
+          //draw.applySaveObject(DefaultImage);
         }
 
         byId('helpToggle').onclick = function(ev){
@@ -185,6 +185,29 @@
         border : 1px solid red;
         top: 0px;
         left: 0px;
+      }
+      .layers {
+        position: fixed;
+        bottom: 20px;
+        left: 4px;
+        background-color: rgba(0,0,0,0.2);
+        padding: 4px;
+        list-style: none;
+        margin: 0px;
+      }
+      .layers li {
+        display: block;
+        list-style: none;
+        margin: 0px;
+        margin-bottom: 2px;
+        padding: 8px;
+        background: white;
+        color: black;
+        border: 1px solid #808080;
+      }
+      .layers .current {
+        background: red;
+        color: white;
       }
       #palette {
         position: absolute;
