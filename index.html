@@ -73,17 +73,19 @@
         var colorPicker = new ColorPicker(picker, 128, 128, function(c) {
           draw.setColor(c);
         });
-        var fg = byId('foregroundColor');
-        fg.setAttribute('draggable', 'true');
-        fg.addEventListener('dragstart', function(ev) {
+        
+        var colorDrag = function(ev) {
           ev.dataTransfer.effectAllowed = 'copy';
           ev.dataTransfer.dropEffect = 'copy';
           ev.dataTransfer.setData('text/plain', this.style.backgroundColor);
           ev.dataTransfer.setDragImage(ev.target, 20, 20);
-        }, false);
-        fg.addEventListener('dragover', function(ev) {
-          ev.preventDefault();
-        }, false);
+        };
+        var preventDefault = function(ev) { ev.preventDefault(); };
+        
+        var fg = byId('foregroundColor');
+        fg.setAttribute('draggable', 'true');
+        fg.addEventListener('dragstart', colorDrag, false);
+        fg.addEventListener('dragover', preventDefault, false);
         fg.addEventListener('drop', function(ev) {
           if (ev.dataTransfer.getData('text/plain'))
             draw.setColor(ev.dataTransfer.getData('text/plain'));
@@ -92,15 +94,8 @@
         
         var bg = byId('backgroundColor');
         bg.setAttribute('draggable', 'true');
-        bg.addEventListener('dragstart', function(ev) {
-          ev.dataTransfer.effectAllowed = 'copy';
-          ev.dataTransfer.dropEffect = 'copy';
-          ev.dataTransfer.setData('text/plain', this.style.backgroundColor);
-          ev.dataTransfer.setDragImage(ev.target, 20, 20);
-        }, false);
-        bg.addEventListener('dragover', function(ev) {
-          ev.preventDefault();
-        }, false);
+        bg.addEventListener('dragstart', colorDrag, false);
+        bg.addEventListener('dragover', preventDefault, false);
         bg.addEventListener('drop', function(ev) {
           if (ev.dataTransfer.getData('text/plain'))
             draw.setBackground(ev.dataTransfer.getData('text/plain'));
@@ -120,9 +115,9 @@
             this.setAttribute('color', s);
             this.style.backgroundColor = s;
           }
-          ps[i].addEventListener('dragover', function(ev) {
-            ev.preventDefault();
-          }, false);
+          ps[i].setAttribute('draggable', 'true');
+          ps[i].addEventListener('dragstart', colorDrag, false);
+          ps[i].addEventListener('dragover', preventDefault, false);
           ps[i].addEventListener('drop', function(ev) {
             if (ev.dataTransfer.getData('text/plain'))
               draw.setPaletteColor(this.index, ev.dataTransfer.getData('text/plain'));
@@ -308,7 +303,7 @@
         margin-right: 8px;
         height: 0px;
         position: absolute;
-        top: 40px;
+        top: 60px;
         right: 0px;
       }
       .paletteColor {
