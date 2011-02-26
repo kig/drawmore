@@ -11,6 +11,7 @@
     <script src="brushes.js"></script>
     <script src="constraints.js"></script>
     <script src="drawmore.js"></script>
+    <script src="upload_util.js"></script>
     <!--<script src="defaultImage.js"></script>-->
     <script>
 
@@ -214,6 +215,16 @@
             var h = byId('help');
             h.style.display = h.style.display == 'block' ? 'none' : 'block';
           }
+        });
+        DnDUpload.setupTarget(c, function(files, ev) {
+          var xy = Mouse.getRelativeCoords(c, ev);
+          DnDUpload.loadImages(files, function(img) {
+            console.log('FUCK YES AN IMAGE, FUCKING AWESOME');
+            console.log(xy.x, xy.y);
+            xy = draw.getAbsolutePoint(xy);
+            console.log(xy.x, xy.y);
+            draw.newLayerFromImage(img, xy.x, xy.y);
+          });
         });
         colorPicker.app = draw;
         var prefs = window.localStorage && localStorage.savedDrawmoreState;

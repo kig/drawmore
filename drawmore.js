@@ -996,6 +996,22 @@ Drawmore = Klass(Undoable, ColorUtils, {
     return layer;
   },
 
+  newLayerFromImage : function(img, x, y) {
+    var layer = this.createLayerObject();
+    if ((x == null || y == null) && this.current) {
+      var xy = this.getAbsolutePoint(this.current);
+      x = xy.x;
+      y = xy.y;
+    }
+    x = x || 0;
+    y = y || 0;
+    layer.drawImage(img, x, y);
+    this.layers.push(layer);
+    this.setCurrentLayer(this.layers.length-1, false);
+    this.layerWidget.requestRedraw();
+    this.addHistoryState({methodName:'newLayerFromImage', args: [img,x,y], breakpoint:true});
+  },
+
   newLayer : function() {
     var layer = this.createLayerObject();
     if (this.layers.length == 0) {
