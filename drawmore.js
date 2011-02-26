@@ -830,7 +830,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.moveStart = this.current;
     dx *= this.flippedX ? -1 : 1;
     dy *= this.flippedY ? -1 : 1;
-    this.moveCurrentLayer(dx*this.zoom,dy*this.zoom);
+    this.moveCurrentLayer(dx/this.zoom,dy/this.zoom);
   },
 
   stopMoving : function() {
@@ -841,7 +841,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.moveStart = null;
     dx *= this.flippedX ? -1 : 1;
     dy *= this.flippedY ? -1 : 1;
-    this.moveCurrentLayer(dx*this.zoom,dy*this.zoom);
+    this.moveCurrentLayer(dx/this.zoom,dy/this.zoom);
   },
 
 
