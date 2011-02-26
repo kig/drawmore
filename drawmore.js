@@ -996,8 +996,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
     return layer;
   },
 
-  newLayerFromImage : function(img, x, y) {
+  newLayerFromImage : function(img, x, y, name) {
     var layer = this.createLayerObject();
+    if (name != null)
+      layer.name = name;
     if ((x == null || y == null) && this.current) {
       var xy = this.getAbsolutePoint(this.current);
       x = xy.x;
@@ -1009,7 +1011,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.layers.push(layer);
     this.setCurrentLayer(this.layers.length-1, false);
     this.layerWidget.requestRedraw();
-    this.addHistoryState({methodName:'newLayerFromImage', args: [img,x,y], breakpoint:true});
+    this.addHistoryState({methodName:'newLayerFromImage', args: [img,x,y,name], breakpoint:true});
   },
 
   newLayer : function() {

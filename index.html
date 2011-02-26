@@ -219,11 +219,8 @@
         DnDUpload.setupTarget(c, function(files, ev) {
           var xy = Mouse.getRelativeCoords(c, ev);
           DnDUpload.loadImages(files, function(img) {
-            console.log('FUCK YES AN IMAGE, FUCKING AWESOME');
-            console.log(xy.x, xy.y);
             xy = draw.getAbsolutePoint(xy);
-            console.log(xy.x, xy.y);
-            draw.newLayerFromImage(img, xy.x, xy.y);
+            draw.newLayerFromImage(img, xy.x-img.width/2, xy.y-img.height/2, img.filename);
           });
         });
         colorPicker.app = draw;

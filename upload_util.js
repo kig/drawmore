@@ -260,20 +260,18 @@ DnDUpload = Klass({
     var loadQueue = new CPSQueue(function(file, callback, onerror) {
       var reader = new FileReader();
       reader.onload = function(){
-        console.log('hi from reader.onload');
         var img = new Image();
         img.onload = function() {
-          console.log('hi from img.onload');
           imageCallback(this);
           callback();
         };
+        img.filename = file.name;
         img.src = this.result;
       };
       reader.readAsDataURL(file);
     });
     for (var i=0; i<files.length; i++) {
       if (files[i].type.match(/^image\//)) {
-        console.log('HEY, AN IMAGE!');
         loadQueue.append(files[i]);
       }
     }
