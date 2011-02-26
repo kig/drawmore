@@ -68,8 +68,8 @@ RoundBrushCursor = Klass({
 
 
 BrushCursor = Klass({
-  x : 0,
-  y : 0,
+  x : -10,
+  y : -10,
   sz : 64,
   minSz : 64,
   diameter : 1,
@@ -80,6 +80,14 @@ BrushCursor = Klass({
     this.cursorCanvas.style.zIndex = '5';
     this.cursorCanvas.style.pointerEvents = 'none';
     document.body.appendChild(this.cursorCanvas);
+  },
+
+  hide : function() {
+    this.cursorCanvas.style.visibility = 'hidden';
+  },
+
+  show : function() {
+    this.cursorCanvas.style.visibility = 'visible';
   },
 
   setBrush : function(brush, transform, color, opacity) {

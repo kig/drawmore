@@ -12,7 +12,7 @@ ColorUtils = Klass({
           ','+c[3]+')'
     );
   },
-  
+
   colorToHex : function(c, noHash) {
     var r = Math.floor(255*Math.clamp(c[0], 0, 1));
     var g = Math.floor(255*Math.clamp(c[1], 0, 1));
@@ -86,16 +86,16 @@ ColorUtils = Klass({
     c[3] /= 255;
     return c;
   },
-  
+
   colorVecType : (typeof Float32Array == 'undefined' ? Array : Float32Array),
-  
+
   colorVec : function(r,g,b,a,dst) {
-    if (dst == null) 
+    if (dst == null)
       dst = new this.colorVecType(4);
     dst[0]=r; dst[1]=g; dst[2]=b; dst[3]=a;
     return dst;
   },
-  
+
   /**
     Converts an HSL color to its corresponding RGB color.
 
@@ -289,7 +289,7 @@ ColorUtils = Klass({
   rgba2yiqa : function(r,g,b,a,dst) {
     return mat3.multiplyVec3(this.rgb2yiqMatrix, this.colorVec(r,g,b,a,dst));
   },
-  
+
   rgb2yiq : function(r,g,b,dst) {
     return this.rgba2yiqa(r,g,b,1,dst);
   },
@@ -481,20 +481,19 @@ ColorPicker = Klass(ColorUtils, {
     w.addColorStop(0, 'rgba(0,0,0,0)');
     w.addColorStop(1, 'rgba(0,0,0,1)');
     this.valueGradient = w;
-    this.tmpColor = this.colorVec(0,0,0,0);
-    this.currentColor = this.colorVec(0,0,0,1);
+    this.currentColor = this.colorVec(-1,0,0,1);
     this.setHue(0);
   },
 
   signalChange : function() {
-    this.callback(this.hsva2rgba(this.hue, this.saturation, this.value, 1, this.tmpColor));
+    this.callback(this.hsva2rgba(this.hue, this.saturation, this.value, 1));
   },
 
   setColor : function(c, signal) {
     var cc = this.currentColor;
     var eq = !cc || (
-      (Math.floor(c[0]*255) == Math.floor(cc[0]*255)) && 
-      (Math.floor(c[1]*255) == Math.floor(cc[1]*255)) && 
+      (Math.floor(c[0]*255) == Math.floor(cc[0]*255)) &&
+      (Math.floor(c[1]*255) == Math.floor(cc[1]*255)) &&
       (Math.floor(c[2]*255) == Math.floor(cc[2]*255))
     );
     if (!eq) {
@@ -502,7 +501,7 @@ ColorPicker = Klass(ColorUtils, {
       this.setHue(hsv[0], false);
       this.setSaturation(hsv[1], false);
       this.setValue(hsv[2], false);
-      this.currentColor = this.colorVec(c[0],c[1],c[2], 1, this.currentColor);
+      this.currentColor = this.colorVec(c[0],c[1],c[2], 1);
     }
     if (signal == true) {
       this.signalChange();
@@ -513,7 +512,7 @@ ColorPicker = Klass(ColorUtils, {
     this.cursor.moveTo(s*this.canvas.width, this.cursor.y);
     this.saturation = s;
     if (signal == true) {
-      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value, this.currentColor);
+      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
       this.signalChange();
     }
   },
@@ -522,7 +521,7 @@ ColorPicker = Klass(ColorUtils, {
     this.cursor.moveTo(this.cursor.x, (1-s)*this.canvas.height);
     this.value = s;
     if (signal == true) {
-      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value, this.currentColor);
+      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
       this.signalChange();
     }
   },
@@ -536,7 +535,7 @@ ColorPicker = Klass(ColorUtils, {
     if (a < 0) a += 2*Math.PI;
     return (a*180/Math.PI) % 360;
   },
-  
+
   redrawHueCanvas : function() {
     var hc = this.hueCtx;
     var deg2rad = Math.PI/180;
@@ -547,7 +546,7 @@ ColorPicker = Klass(ColorUtils, {
     hc.clearRect(0,0,this.hueCanvas.width,this.hueCanvas.height);
     hc.translate(w2,h2);
     hc.lineWidth = 15;
-    
+
     hc.save();
     hc.shadowOffsetX = 0;
     hc.shadowOffsetY = 1;
@@ -563,7 +562,7 @@ ColorPicker = Klass(ColorUtils, {
     hc.lineWidth = 14;
     hc.stroke();
     hc.restore();
-    
+
     hc.lineWidth = 15;
     for (var h=0; h<360; h++) {
       var rgb = this.hsv2rgb(h, 1,1);
@@ -578,7 +577,7 @@ ColorPicker = Klass(ColorUtils, {
     hc.fillStyle = 'black';
     hc.rotate(this.hue*deg2rad-Math.PI*0.5);
     hc.fillRect(r-8,-2,16,4);
-    hc.restore();  
+    hc.restore();
   },
 
   setHue : function(hue, signal) {
@@ -595,7 +594,7 @@ ColorPicker = Klass(ColorUtils, {
     this.ctx.fillStyle = this.valueGradient;
     this.ctx.fillRect(0,0,w,h);
     if (signal == true) {
-      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value, this.currentColor);
+      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
       this.signalChange();
     }
   }

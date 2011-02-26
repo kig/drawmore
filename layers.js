@@ -1,3 +1,132 @@
+LayerWidget = Klass({
+
+  initialize : function(app, container) {
+    this.app = app;
+    this.element = DIV();
+    this.element.className = 'layerWidget';
+    this.layers = OL();
+    this.layers.className = 'layers';
+    this.element.appendChild(this.layers);
+    var self = this;
+    this.element.appendChild(
+      DIV(
+        BUTTON("+", {onclick: function(ev) {self.app.newLayer();}}),
+        BUTTON("-", {onclick: function(ev) {self.app.deleteCurrentLayer();}})
+      )
+    );
+    this.container = container;
+    this.container.appendChild(this.element);
+    window.addEventListener('mouseup', function(ev){
+      if (self.active) {
+        var dropped = false;
+        var srcIdx,dstIdx;
+        var c = self.active;
+        self.active = null;
+        if (c.dragging) {
+          dropped = true;
+          var cc = toArray(self.layers.childNodes);
+          var i = cc.indexOf(c);
+          var clen = cc.length;
+          srcIdx = clen-1-i;
+          dstIdx = srcIdx - Math.round((ev.clientY-c.downY) / c.clientHeight);
+          dstIdx = Math.clamp(dstIdx, 0, clen-1);
+          ev.preventDefault();
+        }
+        c.style.top = '0px';
+        c.dragging = c.down = false;
+        if (dropped)
+          self.app.moveLayer(srcIdx, dstIdx);
+      }
+    }, false);
+    window.addEventListener('mousemove', function(ev) {
+      if (self.active) {
+        var y = ev.clientY;
+        var dy = y-self.active.downY;
+        if (Math.abs(dy) > 3) {
+          self.active.dragging = true;
+        }
+        if (self.active.dragging) {
+          self.active.style.top = dy + 'px';
+        }
+      }
+      ev.preventDefault();
+    }, false);
+  },
+
+  clear : function() {
+    while (this.layers.firstChild)
+      this.layers.removeChild(this.layers.firstChild);
+  },
+
+  newLayer : function(uid) {
+    var self = this;
+    var li = LI("LAYER "+uid, {
+      onmousedown : function(ev) {
+        this.down = true;
+        this.downY = ev.clientY;
+        if (self.active == null)
+          self.active = this;
+        ev.preventDefault();
+      },
+      onclick : function(ev) {
+        var cc = toArray(this.parentNode.childNodes);
+        var idx = cc.length-1-cc.indexOf(this);
+        self.app.setCurrentLayer(idx);
+        ev.preventDefault();
+      }
+    });
+    li.style.position = 'relative';
+    li.uid = uid;
+    if (this.layers.firstChild)
+      this.layers.insertBefore(li, this.layers.firstChild);
+    else
+      this.layers.appendChild(li);
+    return li;
+  },
+
+  rebuild : function() {
+    var layers = this.app.layers;
+    this.clear();
+    for (var i=0; i<layers.length; i++) {
+      var layer = layers[i];
+      this.newLayer(i, layer.uid);
+    }
+  },
+
+  moveLayer : function(srcIdx, dstIdx) {
+    var cc = this.layers.childNodes;
+    srcIdx = cc.length-1-srcIdx;
+    dstIdx = cc.length-1-dstIdx;
+    var a = cc[srcIdx];
+    var b = cc[dstIdx];
+    this.layers.removeChild(a);
+    if (srcIdx < dstIdx) {
+      if (b.nextSibling) {
+        this.layers.insertBefore(a, b.nextSibling);
+      } else {
+        this.layers.appendChild(a);
+      }
+    } else {
+      this.layers.insertBefore(a,b);
+    }
+  },
+
+  deleteLayer : function(idx) {
+    var cc = this.layers.childNodes;
+    idx = cc.length-1-idx;
+    this.layers.removeChild(cc[idx]);
+  },
+
+  setCurrentLayer : function(idx) {
+    var cc = this.layers.childNodes;
+    idx = cc.length-1-idx;
+    for (var i=0; i<cc.length; i++) {
+      cc[i].className = idx == i ? 'current' : '';
+    }
+  }
+});
+
+
 Layer = Klass({
   display : true,
   x : 0,
@@ -16,7 +145,7 @@ Layer = Klass({
 
   copyProperties : function(tgt) {
   },
-  
+
   getBoundingBox : function() {
     return null;
   },
@@ -55,7 +184,7 @@ CanvasLayer = Klass(Layer, {
     this.canvas = E.canvas(w,h);
     this.ctx = this.canvas.getContext('2d');
   },
-  
+
   getBoundingBox : function() {
     var w = this.canvas.width;
     var h = this.canvas.height;
@@ -167,8 +296,8 @@ TiledLayer = Klass(Layer, {
       if (tile.x+1 > right) right = tile.x+1;
     }
     return {
-      left: this.x+left*this.tileSize, top: this.y+top*this.tileSize, 
-      right: this.x+right*this.tileSize, bottom: this.y+bottom*this.tileSize, 
+      left: this.x+left*this.tileSize, top: this.y+top*this.tileSize,
+      right: this.x+right*this.tileSize, bottom: this.y+bottom*this.tileSize,
       width: (right-left+1)*this.tileSize, height: (bottom-top+1)*this.tileSize
     };
   },

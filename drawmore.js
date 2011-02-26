@@ -45,15 +45,15 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   lineWidth : 1,
   opacity : 1,
-  color : [0,0,0,1],
-  background : [1,1,1,1],
+  color : ColorUtils.colorVec(0,0,0,1),
+  background : ColorUtils.colorVec(1,1,1,1),
   pickRadius : 1,
   current : null,
   prev : null,
 
   defaultLineWidth : 0.75,
-  defaultColor : [0,0,0,1],
-  defaultBackground : [1,1,1,1],
+  defaultColor : ColorUtils.colorVec(0,0,0,1),
+  defaultBackground : ColorUtils.colorVec(1,1,1,1),
 
   brushIndex : 0,
 
@@ -71,17 +71,16 @@ Drawmore = Klass(Undoable, ColorUtils, {
   flippedX : false,
   flippedY : false,
 
-  initialize : function(canvas) {
+  initialize : function(canvas, config) {
     this.canvas = canvas;
+    Object.extend(this, config);
     this.canvas.style.setProperty("image-rendering", "optimizeSpeed", "important");
     this.ctx = canvas.getContext('2d');
     this.canvas.style.cursor = 'url('+E.canvas(1,1).toDataURL()+'),crosshair';
     Undoable.initialize.call(this);
     this.current = {x:0,y:0};
     this.cursor = new BrushCursor();
-    this.layerElement = OL();
-    this.layerElement.className = 'layers';
-    document.body.appendChild(this.layerElement);
+    this.layerWidget = new LayerWidget(this, document.body);
     this.setupDefaultState();
     this.listeners = {};
     this.createListeners();
@@ -93,7 +92,6 @@ Drawmore = Klass(Undoable, ColorUtils, {
     }, 1000);
   },
 
-
   // Draw loop
 
   updateDisplay : function() {
@@ -101,7 +99,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.lastUpdateTime = (new Date()).getTime();
     this.redrawRequested = false;
   },
-  
+
   applyTo : function(ctx, x, y, w, h, flippedX, flippedY, zoom) {
     var px = -x;
     var py = -y;
@@ -175,15 +173,15 @@ Drawmore = Klass(Undoable, ColorUtils, {
     var dataURL = canvas.toDataURL('image/png');
     window.open(dataURL);
   },
-  
+
   exportVisibleImage : function() {
     this.exportCanvas(this.canvas);
   },
-  
+
   exportImage : function() {
     this.exportCanvas(this.getFullImage());
   },
-  
+
   exportCrop : function(x,y,w,h) {
     this.exportCanvas(this.getCroppedImage(x,y,w,h));
   },
@@ -210,7 +208,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     return {
       top:top, left:left, bottom:bottom, right:right,
       width:width, height:height,
-      x: this.flippedX ? right : left, 
+      x: this.flippedX ? right : left,
       y: this.flippedY ? bottom : top
     };
   },
@@ -221,7 +219,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.applyTo(ctx, x, y, w, h, this.flippedX, this.flippedY, 1);
     return exportCanvas;
   },
-  
+
   getFullImage : function() {
     var bbox = this.getBoundingBox();
     return this.getCroppedImage(bbox.left, bbox.top, bbox.width, bbox.height);
@@ -249,12 +247,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.clearHistory();
     this.setupDefaultState();
   },
-  
+
   setupEmptyState : function() {
     this.layers = [];
     this.layerUID = 0;
-    while (this.layerElement.firstChild)
-      this.layerElement.removeChild(this.layerElement.firstChild);
+    this.layerWidget.clear();
     this.palette = [];
     this.constraints = [];
     this.brushes = [];
@@ -340,7 +337,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.layers = state.layers.map(function(l){ return l.copy(); });
     this.strokeLayer = state.strokeLayer.copy();
     this.layerUID = state.layerUID;
-    this.rebuildLayerElement();
+    this.layerWidget.rebuild();
     this.setCurrentLayer(state.currentLayerIndex);
     for (var i=0; i<state.palette.length; i++)
       this.setPaletteColor(i, state.palette[i]);
@@ -403,7 +400,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     }
     var self = this;
     this.canvas.addEventListener('contextmenu', function(ev) {
-      Event.stop(ev);
+      ev.preventDefault();
     }, false);
   },
 
@@ -414,7 +411,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       }
     }
     this.canvas.removeEventListener('contextmenu', function(ev) {
-      Event.stop(ev);
+      ev.preventDefault();
     }, false);
   },
 
@@ -436,6 +433,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
     };
 
     this.listeners['mousemove'] = function(ev) {
+      if (ev.target == draw.canvas) {
+        draw.cursor.show();
+      } else {
+        draw.cursor.hide();
+      }
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
       if (draw.panning)
         draw.keepPanning();
@@ -463,7 +465,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
           draw.drawLine(draw.prev, draw.current);
         }
         draw.prev = draw.current;
-        Event.stop(ev);
+        ev.preventDefault();
       }
     };
 
@@ -539,7 +541,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
             draw.drawLine(draw.prev, draw.current);
           }
           draw.prev = draw.current;
-          Event.stop(ev);
+          ev.preventDefault();
         }
       }
     };
@@ -609,7 +611,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
           draw.pickColor(draw.current, draw.pickRadius);
 
         } else if (Key.match(ev, draw.keyBindings.toggleUI)) {
-          Event.stop(ev);
+          ev.preventDefault();
         }
       }
     };
@@ -628,7 +630,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
         } else if (Key.match(ev, draw.keyBindings.toggleUI)) {
           draw.toggleUI();
-          Event.stop(ev);
+          ev.preventDefault();
 
         } else if (Key.match(ev, draw.keyBindings.toggleHelp)) {
           draw.toggleHelp();
@@ -862,31 +864,15 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   // Layers
 
-  newLayer : function(zIndex) {
+  newLayer : function() {
     var layer = new TiledLayer();
-    layer.zIndex = zIndex || 0;
-    this.pushLayer(layer);
-    this.addHistoryState({methodName:'newLayer', args:[zIndex], breakpoint:true});
-    return layer;
-  },
-
-  pushLayer : function(layer) {
-    var i=0;
-    for (; i<this.layers.length; i++) {
-      if (this.layers[i].zIndex > layer.zIndex)
-        break;
-    }
-    this.layers.splice(i,0, layer);
+    this.layers.push(layer);
     layer.uid = this.layerUID;
     this.layerUID++;
-    
-    var cc = this.layerElement.childNodes;
-    var li = LI("LAYER "+layer.uid);
-    li.uid = layer.uid;
-    if (i == cc.length-1)
-      this.layerElement.appendChild(li);
-    else
-      this.layerElement.insertBefore(li, cc[i]);
+    this.layerWidget.newLayer(layer.uid);
+    this.addHistoryState({methodName:'newLayer', args:[], breakpoint:true});
+    this.setCurrentLayer(this.layers.length-1);
+    return layer;
   },
 
   moveLayer : function(srcIdx, dstIdx) {
@@ -902,20 +888,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     }
     this.addHistoryState({methodName:'moveLayer', args:[srcIdx, dstIdx], breakpoint:true});
     this.requestRedraw();
-    
-    var cc = this.layerElement.childNodes;
-    var a = cc[srcIdx];
-    var b = cc[dstIdx];
-    this.layerElement.removeChild(a);
-    if (srcIdx < dstIdx) {
-      if (b.nextSibling) {
-        this.layerElement.insertBefore(a, b.nextSibling);
-      } else {
-        this.layerElement.appendChild(a);
-      }
-    } else {
-      this.layerElement.insertBefore(a,b);
-    }
+
+    this.layerWidget.moveLayer(srcIdx, dstIdx);
   },
 
   deleteLayer : function(i) {
@@ -926,24 +900,26 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.setCurrentLayer(this.currentLayerIndex-1);
     }
     this.layers.splice(i,1);
+    if (i == this.currentLayerIndex) {
+      this.setCurrentLayer(this.currentLayerIndex);
+    }
     this.addHistoryState({methodName:'deleteLayer', args:[i], breakpoint:true});
     this.requestRedraw();
-    
-    this.layerElement.removeChild(this.layerElement.childNodes[i]);
+
+    this.layerWidget.deleteLayer(i);
+  },
+
+  deleteCurrentLayer : function() {
+    this.deleteLayer(this.currentLayerIndex);
   },
 
   setCurrentLayer : function(i) {
-    var cc = this.layerElement.childNodes;
-    var cl = cc[this.currentLayerIndex];
-    if (cl) cl.className = '';
-    
     this.currentLayer = this.layers[i];
     this.currentLayerIndex = i;
     this.addHistoryState({methodName:'setCurrentLayer', args:[i], breakpoint:true});
     this.requestRedraw();
-    
-    var cl = cc[this.currentLayerIndex];
-    if (cl) cl.className = 'current';
+
+    this.layerWidget.setCurrentLayer(i);
   },
 
   clear : function() {
@@ -952,17 +928,6 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.requestRedraw();
   },
 
-  rebuildLayerElement : function() {
-    while (this.layerElement.firstChild)
-      this.layerElement.removeChild(this.layerElement.firstChild);
-    for (var i=0; i<this.layers.length; i++) {
-      var layer = this.layers[i];
-      var li = LI("LAYER "+layer.uid);
-      li.uid = layer.uid;
-      this.layerElement.appendChild(li);
-    }
-  },
-  
   flipX : function() {
     this.flippedX = !this.flippedX;
     this.requestRedraw();

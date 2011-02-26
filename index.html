@@ -73,7 +73,7 @@
         var colorPicker = new ColorPicker(picker, 128, 128, function(c) {
           draw.setColor(c);
         });
-        
+
         var colorDrag = function(ev) {
           ev.dataTransfer.effectAllowed = 'copy';
           ev.dataTransfer.dropEffect = 'copy';
@@ -81,7 +81,7 @@
           ev.dataTransfer.setDragImage(ev.target, 20, 20);
         };
         var preventDefault = function(ev) { ev.preventDefault(); };
-        
+
         var fg = byId('foregroundColor');
         fg.setAttribute('draggable', 'true');
         fg.addEventListener('dragstart', colorDrag, false);
@@ -91,7 +91,7 @@
             draw.setColor(ev.dataTransfer.getData('text/plain'));
           ev.preventDefault();
         }, false);
-        
+
         var bg = byId('backgroundColor');
         bg.setAttribute('draggable', 'true');
         bg.addEventListener('dragstart', colorDrag, false);
@@ -104,7 +104,7 @@
         bg.addEventListener('click', function(ev) {
           draw.setColor(this.style.backgroundColor);
           if (ev)
-            Event.stop(ev);
+            ev.preventDefault();
         }, false);
 
         var ps = byClass('paletteColor');
@@ -127,7 +127,7 @@
             return function(ev) {
               draw.setColor(draw.palette[i]);
               if (ev)
-                Event.stop(ev);
+                ev.preventDefault();
             };
           })(i), false);
         }
@@ -137,43 +137,44 @@
           ps[i].onclick = function(ev){
             draw.setLineWidth(this.getAttribute('value'));
             if (ev)
-              Event.stop(ev);
+              ev.preventDefault();
           };
         }
 
-        draw = new Drawmore(c);
-        draw.colorPicker = colorPicker;
-        draw.onopacitychange = function(o) {
-          var s = [];
-          for (var i=0; i<Math.round(o*8); i++){
-            s.push("`");
+        draw = new Drawmore(c, {
+          colorPicker : colorPicker,
+          onopacitychange : function(o) {
+            var s = [];
+            for (var i=0; i<Math.round(o*8); i++){
+              s.push("`");
+            }
+            byId('foregroundColor').textContent = s.join("");
+          },
+          oncolorchange : function(c) {
+            var s = ColorUtils.colorToStyle(c);
+            var h = ColorUtils.colorToHex(c);
+            byId('colorName').textContent = h;
+            byId('foregroundColor').style.backgroundColor = s;
+          },
+          onbackgroundchange : function(c) {
+            var s = ColorUtils.colorToStyle(c);
+            byId('backgroundColor').style.backgroundColor = s;
+          },
+          toggleUI : function(){
+            var f = byId('fileIO');
+            var p = byId('colorPicker');
+            if (f.style.display != 'none') {
+              f.style.display = p.style.display = 'none';
+            } else {
+              f.style.display = 'block';
+              p.style.display = 'inline-block';
+            }
+          },
+          toggleHelp : function() {
+            var h = byId('help');
+            h.style.display = h.style.display == 'block' ? 'none' : 'block';
           }
-          byId('foregroundColor').textContent = s.join("");
-        };
-        draw.oncolorchange = function(c) {
-          var s = ColorUtils.colorToStyle(c);
-          var h = ColorUtils.colorToHex(c);
-          byId('colorName').textContent = h;
-          byId('foregroundColor').style.backgroundColor = s;
-        }
-        draw.onbackgroundchange = function(c) {
-          var s = ColorUtils.colorToStyle(c);
-          byId('backgroundColor').style.backgroundColor = s;
-        }
-        draw.toggleUI = function(){
-          var f = byId('fileIO');
-          var p = byId('colorPicker');
-          if (f.style.display != 'none') {
-            f.style.display = p.style.display = 'none';
-          } else {
-            f.style.display = 'block';
-            p.style.display = 'inline-block';
-          }
-        };
-        draw.toggleHelp = function() {
-          var h = byId('help');
-          h.style.display = h.style.display == 'block' ? 'none' : 'block';
-        };
+        });
         var prefs = window.localStorage && localStorage.savedDrawmoreState;
         var loaded = false;
         if (prefs) {
@@ -184,13 +185,13 @@
             console.log("Failed to load saved Drawmore state", e);
           }
         }
-        if (!loaded) {
-          //draw.applySaveObject(DefaultImage);
+        if (!loaded && typeof DefaultImage == 'object') {
+          draw.applySaveObject(DefaultImage);
         }
 
         byId('helpToggle').onclick = function(ev){
           draw.toggleHelp();
-          Event.stop(ev);
+          ev.preventDefault();
         };
       }, false);
 
@@ -215,28 +216,42 @@
         top: 0px;
         left: 0px;
       }
-      .layers {
+      .layerWidget {
         position: fixed;
-        bottom: 20px;
+        bottom: 4px;
         left: 4px;
         background-color: rgba(0,0,0,0.2);
         padding: 4px;
+      }
+      .layerWidget button {
+        width: 20px;
+        height: 20px;
+        padding: 0px;
+        margin: 0px;
+        margin-right: 2px;
+      }
+      .layers {
         list-style: none;
         margin: 0px;
+        padding: 0px;
       }
       .layers li {
+        cursor: move;
+        width: 160px;
         display: block;
         list-style: none;
         margin: 0px;
         margin-bottom: 2px;
-        padding: 8px;
-        background: white;
-        color: black;
-        border: 1px solid #808080;
+        padding: 4px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        font-size: 12px;
+        background: rgba(255,255,255,0.5);
+        color: #808080;
       }
       .layers .current {
-        background: red;
-        color: white;
+        background: rgba(255,255,255,0.8);
+        color: black;
       }
       #palette {
         position: absolute;
@@ -278,7 +293,7 @@
         vertical-align: bottom;
         text-indent: 2px;
         font-size: 9px;
-        text-shadow: 1px 1px 0px white;
+        text-shadow: 1px 1px 0px rgba(255,255,255,0.8);
       }
       #backgroundColor {
         width: 40px;
@@ -294,6 +309,7 @@
         box-shadow: 0px 1px 3px rgba(0,0,0,0.5);
         border-top: 1px solid rgba(255,255,255,0.3);
         border-left: 1px solid rgba(255,255,255,0.3);
+        cursor: pointer;
         z-index: 0;
       }
       #colorPicker {
@@ -331,7 +347,7 @@
       #helpToggle {
         font-size: 12px;
         text-transform: uppercase;
-        letter-spacing: 3px;
+        letter-spacing: 2px;
         cursor: pointer;
         position: absolute;
         left: 12px;
@@ -391,7 +407,7 @@
       <button id="replay">Replay</button>
     </div>
     <div id="palette">
-      <div id="colorName"></div>
+      <div id="colorName">#</div>
       <div id="backgroundColor"></div>
       <div id="foregroundColor"></div>
 
@@ -410,7 +426,7 @@
       <div class="brushWidth" value="3"></div>
       <div class="brushWidth" value="2"></div>
       <div class="brushWidth" value="1"></div>
-	  
+
       <div id="colorPicker"></div>
     </div>
     <div id="helpToggle">Help</div>
