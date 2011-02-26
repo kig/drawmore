@@ -35,6 +35,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
     palette8: ['8'],
     palette9: ['9'],
 
+    layerAbove: ['q'],
+    layerBelow: ['a'],
+    duplicateCurrentLayer: ['c'],
+    toggleCurrentLayer: ['v'],
+
     toggleUI: [Key.TAB, '0'],
     toggleHelp: [191] // question mark
   },
@@ -446,6 +451,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
       if (draw.panning)
         draw.keepPanning();
+      if (draw.moving)
+        draw.keepMoving();
       if (draw.resizingBrush) {
         draw.keepResizingBrush();
       } else {
@@ -494,7 +501,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
         }
         ev.preventDefault();
       } else if (Mouse.state[Mouse.MIDDLE] && ev.target == draw.canvas) {
-        draw.startPanning();
+        if (ev.shiftKey)
+          draw.startMoving();
+        else
+          draw.startPanning();
         ev.preventDefault();
       } else if (Mouse.state[Mouse.RIGHT] && ev.target == draw.canvas) {
         draw.startResizingBrush();
@@ -513,6 +523,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       }
       if (ev.button == Mouse.MIDDLE) {
         draw.stopPanning();
+        draw.stopMoving();
       }
       draw.endStroke();
     };
@@ -592,13 +603,17 @@ Drawmore = Klass(Undoable, ColorUtils, {
             draw.redo(true);
           else
             draw.undo(true);
+          ev.preventDefault();
         }
       } else if (!ev.altKey && !ev.ctrlKey) {
         if (Key.match(ev, draw.keyBindings.brushResize)) {
           draw.startResizingBrush();
 
         } else if (Key.match(ev, draw.keyBindings.pan)) {
-          draw.startPanning();
+          if (ev.shiftKey)
+            draw.startMoving();
+          else
+            draw.startPanning();
 
         } else if (Key.match(ev, draw.keyBindings.undo)) {
           if (ev.shiftKey)
@@ -623,6 +638,35 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
     this.listeners['keyup'] = function(ev) {
       draw.stopResizingBrush();
+      if (ev.altKey && !ev.ctrlKey) {
+        if (Key.match(ev, draw.keyBindings.clear)) {
+          draw.deleteCurrentLayer();
+          ev.preventDefault();
+
+        } else if (Key.match(ev, draw.keyBindings.flip)) {
+          if (ev.shiftKey)
+            draw.flipCurrentLayerVertically();
+          else
+            draw.flipCurrentLayerHorizontally();
+          ev.preventDefault();
+
+        } else if (Key.match(ev, draw.keyBindings.layerAbove)) {
+          draw.newLayer();
+          ev.preventDefault();
+        } else if (Key.match(ev, draw.keyBindings.layerBelow)) {
+          draw.newLayerBelow();
+          ev.preventDefault();
+
+        } else if (Key.match(ev, draw.keyBindings.duplicateCurrentLayer)) {
+          draw.duplicateCurrentLayer();
+          ev.preventDefault();
+
+        } else if (Key.match(ev, draw.keyBindings.toggleCurrentLayer)) {
+          draw.toggleCurrentLayer();
+          ev.preventDefault();
+
+        }
+      }
       if (!ev.altKey && !ev.ctrlKey) {
         if (Key.match(ev, draw.keyBindings.clear)) {
           draw.clear();
@@ -632,6 +676,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
         } else if (Key.match(ev, draw.keyBindings.pan)) {
           draw.stopPanning();
+          draw.stopMoving();
 
         } else if (Key.match(ev, draw.keyBindings.toggleUI)) {
           draw.toggleUI();
@@ -666,6 +711,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
             draw.flipY();
           else
             draw.flipX();
+
+        } else if (Key.match(ev, draw.keyBindings.layerAbove)) {
+          draw.layerAbove();
+        } else if (Key.match(ev, draw.keyBindings.layerBelow)) {
+          draw.layerBelow();
 
         } else if (Key.match(ev, draw.keyBindings.opacity1)) {
           draw.setOpacity(0.125);
@@ -762,6 +812,36 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.setZoom(1);
     this.setLineWidth(this.lineWidth * f);
     this.setPan(0,0);
+  },
+
+
+  // Moving layers
+
+  startMoving : function() {
+    if (this.moving) return;
+    this.moving = true;
+    this.moveStart = this.current;
+  },
+
+  keepMoving : function() {
+    if (!this.moving) return;
+    var dx = this.current.x - this.moveStart.x;
+    var dy = this.current.y - this.moveStart.y;
+    this.moveStart = this.current;
+    dx *= this.flippedX ? -1 : 1;
+    dy *= this.flippedY ? -1 : 1;
+    this.moveCurrentLayer(dx*this.zoom,dy*this.zoom);
+  },
+
+  stopMoving : function() {
+    if (!this.moving) return;
+    this.moving = false;
+    var dx = this.current.x - this.moveStart.x;
+    var dy = this.current.y - this.moveStart.y;
+    this.moveStart = null;
+    dx *= this.flippedX ? -1 : 1;
+    dy *= this.flippedY ? -1 : 1;
+    this.moveCurrentLayer(dx*this.zoom,dy*this.zoom);
   },
 
 
@@ -869,19 +949,55 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   // Layers
 
+  layerAbove : function() {
+    this.setCurrentLayer(this.currentLayerIndex+1);
+  },
+
+  layerBelow : function() {
+    this.setCurrentLayer(this.currentLayerIndex-1);
+  },
+
+  toggleCurrentLayer : function() {
+    this.toggleLayer(this.currentLayerIndex);
+  },
+
+  flipCurrentLayerHorizontally : function() {
+    this.currentLayer.flipX();
+    this.requestRedraw();
+    this.addHistoryState({methodName:'flipCurrentLayerHorizontally', args:[], breakpoint:true});
+  },
+
+  flipCurrentLayerVertically : function() {
+    this.currentLayer.flipY();
+    this.requestRedraw();
+    this.addHistoryState({methodName:'flipCurrentLayerVertically', args:[], breakpoint:true});
+  },
+
   moveCurrentLayer : function(dx, dy) {
     if (this.currentLayer) {
       this.currentLayer.x += dx;
       this.currentLayer.y += dy;
       this.requestRedraw();
+      var l = this.history.last();
+      if (l.methodName == 'moveCurrentLayer') {
+        l.args[0] += dx;
+        l.args[1] += dy;
+      } else {
+        this.addHistoryState({methodName:'moveCurrentLayer', args:[dx,dy], breakpoint:true});
+      }
     }
   },
 
-  newLayer : function() {
+  createLayerObject : function() {
     var layer = new TiledLayer();
     layer.name = "Layer " + this.layerUID;
     layer.uid = this.layerUID;
     this.layerUID++;
+    return layer;
+  },
+
+  newLayer : function() {
+    var layer = this.createLayerObject();
     if (this.layers.length == 0) {
       this.layers.push(layer);
       this.setCurrentLayer(this.layers.length-1, false);
@@ -891,6 +1007,42 @@ Drawmore = Klass(Undoable, ColorUtils, {
     }
     this.layerWidget.requestRedraw();
     this.addHistoryState({methodName:'newLayer', args:[], breakpoint:true});
+    return layer;
+  },
+
+  newLayerBelow : function() {
+    var layer = this.createLayerObject();
+    if (this.layers.length == 0) {
+      this.layers.push(layer);
+      this.setCurrentLayer(this.layers.length-1, false);
+    } else {
+      this.layers.splice(this.currentLayerIndex,0,layer);
+      this.setCurrentLayer(this.currentLayerIndex, false);
+    }
+    this.layerWidget.requestRedraw();
+    this.addHistoryState({methodName:'newLayerBelow', args:[], breakpoint:true});
+    return layer;
+  },
+
+  duplicateCurrentLayer : function() {
+    var layer = this.currentLayer.copy();
+    var m = layer.name.match(/ \(copy( \d+)?\)$/);
+    if (m) {
+      m[1] = m[1] || 0;
+      var cidx = parseInt(m[1])+1;
+      layer.name = layer.name.replace(/copy( \d+)?\)$/, 'copy '+cidx);
+    } else {
+      layer.name += " (copy)";
+    }
+    if (this.layers.length == 0) {
+      this.layers.push(layer);
+      this.setCurrentLayer(this.layers.length-1, false);
+    } else {
+      this.layers.splice(this.currentLayerIndex+1,0,layer);
+      this.setCurrentLayer(this.currentLayerIndex+1, false);
+    }
+    this.layerWidget.requestRedraw();
+    this.addHistoryState({methodName:'duplicateCurrentLayer', args:[], breakpoint:true});
     return layer;
   },
 
@@ -967,6 +1119,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setCurrentLayer : function(i, recordHistory) {
+    i = Math.clamp(i, 0, this.layers.length-1);
     this.currentLayer = this.layers[i];
     this.currentLayerIndex = i;
     if (recordHistory != false) {

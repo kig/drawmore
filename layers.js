@@ -11,7 +11,10 @@ LayerWidget = Klass({
     this.element.appendChild(
       DIV(
         BUTTON("+", {onclick: function(ev) {self.app.newLayer();}}),
-        BUTTON("-", {onclick: function(ev) {self.app.deleteCurrentLayer();}})
+        BUTTON("-", {onclick: function(ev) {self.app.deleteCurrentLayer();}}),
+        BUTTON("x2", {onclick: function(ev) {self.app.duplicateCurrentLayer();}}),
+        BUTTON("\u2b0c", {onclick: function(ev) {self.app.flipCurrentLayerHorizontally();}}),
+        BUTTON("\u2b0d", {onclick: function(ev) {self.app.flipCurrentLayerVertically();}})
       )
     );
     this.container = container;
@@ -193,7 +196,8 @@ Layer = Klass({
     return null;
   },
 
-  flip : function() {},
+  flipX : function() {},
+  flipY : function() {},
 
   applyTo : function(ctx){
     if (this.display) {
@@ -243,7 +247,7 @@ CanvasLayer = Klass(Layer, {
   },
 
   compositeTo : function(ctx, opacity) {
-    ctx.drawImage(this.canvas, 0, 0);
+    ctx.drawImage(this.canvas, this.x, this.y);
   },
 
   beginPath : function() {
@@ -301,15 +305,26 @@ CanvasLayer = Klass(Layer, {
 
   drawImage : function(image, x, y) {
     this.ctx.globalAlpha = this.globalAlpha;
-    this.ctx.drawImage(image,x,y);
+    this.ctx.drawImage(image,x-this.x,y-this.x);
   },
 
-  flip : function() {
+  flipX : function() {
     this.ctx.save();
     this.ctx.globalAlpha = 1;
     this.ctx.globalCompositeOperation = 'copy';
     this.ctx.translate(this.canvas.width,0);
     this.ctx.scale(-1,1);
+    this.ctx.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.globalCompositeOperation = 'source-over';
+    this.ctx.restore();
+  },
+
+  flipY : function() {
+    this.ctx.save();
+    this.ctx.globalAlpha = 1;
+    this.ctx.globalCompositeOperation = 'copy';
+    this.ctx.translate(0,this.canvas.height);
+    this.ctx.scale(1,-1);
     this.ctx.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height);
     this.ctx.globalCompositeOperation = 'source-over';
     this.ctx.restore();
@@ -345,6 +360,72 @@ TiledLayer = Klass(Layer, {
     };
   },
 
+  flipX : function() {
+    var newTiles = {};
+    var bbox = this.getBoundingBox();
+    var cx = (bbox.left-this.x) + 0.5*((bbox.right-this.x)-(bbox.left-this.x));
+    var tcx = Math.floor(cx / this.tileSize);
+    var dx = cx % this.tileSize;
+    this.x -= dx ? this.tileSize-dx : 0;
+    // flip individual tiles
+    // flip tile coords around bbox center
+    for (var f in this.tiles) {
+      var tile = this.tiles[f];
+      tile.x = Math.floor(-(tile.x - tcx) + tcx)-1;
+      var ctx = tile.context;
+      var canvas = tile.canvas;
+      if (tile.snapshotted) {
+        tile.canvas = E.canvas(this.tileSize, this.tileSize);
+        tile.context = tile.canvas.getContext('2d');
+        ctx = tile.context;
+      }
+      ctx.save();
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'copy';
+      ctx.translate(this.tileSize,0);
+      ctx.scale(-1,1);
+      ctx.drawImage(canvas,0,0);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.restore();
+      var p=((tile.x + 0x8000) & 0xffff) | (((tile.y + 0x8000) & 0xffff) << 16);
+      newTiles[p] = tile;
+    }
+    this.tiles = newTiles;
+  },
+
+  flipY : function() {
+    var newTiles = {};
+    var bbox = this.getBoundingBox();
+    var cy = (bbox.top-this.y) + 0.5*((bbox.bottom-this.y)-(bbox.top-this.y));
+    var tcy = Math.floor(cy / this.tileSize);
+    var dy = cy % this.tileSize;
+    this.y -= dy ? this.tileSize-dy : 0;
+    // flip individual tiles
+    // flip tile coords around bbox center
+    for (var f in this.tiles) {
+      var tile = this.tiles[f];
+      tile.y = Math.floor(-(tile.y - tcy) + tcy)-1;
+      var ctx = tile.context;
+      var canvas = tile.canvas;
+      if (tile.snapshotted) {
+        tile.canvas = E.canvas(this.tileSize, this.tileSize);
+        tile.context = tile.canvas.getContext('2d');
+        ctx = tile.context;
+      }
+      ctx.save();
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'copy';
+      ctx.translate(0,this.tileSize);
+      ctx.scale(1,-1);
+      ctx.drawImage(canvas,0,0);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.restore();
+      var p=((tile.x + 0x8000) & 0xffff) | (((tile.y + 0x8000) & 0xffff) << 16);
+      newTiles[p] = tile;
+    }
+    this.tiles = newTiles;
+  },
+
   copyProperties : function(tgt) {
     tgt.tiles = {};
     for (var f in this.tiles) {
@@ -354,6 +435,8 @@ TiledLayer = Klass(Layer, {
   },
 
   drawImage: function(img, x, y) {
+    x-=this.x;
+    y-=this.y;
     var ftx = Math.floor(x / this.tileSize);
     var fty = Math.floor(y / this.tileSize);
     var ltx = Math.floor((x+img.width) / this.tileSize);
@@ -402,7 +485,7 @@ TiledLayer = Klass(Layer, {
   compositeTo : function(ctx) {
     for (var f in this.tiles) {
       var t = this.tiles[f];
-      ctx.drawImage(t.canvas, t.x*this.tileSize, t.y*this.tileSize);
+      ctx.drawImage(t.canvas, this.x+t.x*this.tileSize, this.y+t.y*this.tileSize);
     }
   },
 
