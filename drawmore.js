@@ -98,10 +98,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.applyTo(this.ctx, -this.panX, -this.panY, this.width, this.height, this.flippedX, this.flippedY, this.zoom);
     this.lastUpdateTime = (new Date()).getTime();
     this.redrawRequested = false;
-    if (this.layerWidget.needRebuild)
-      this.layerWidget.rebuild();
-    if (this.colorPicker.needRebuild)
-      this.colorPicker.rebuild();
+    this.layerWidget.redraw();
+    this.colorPicker.redraw();
   },
 
   applyTo : function(ctx, x, y, w, h, flippedX, flippedY, zoom) {
@@ -255,7 +253,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   setupEmptyState : function() {
     this.layers = [];
     this.layerUID = 0;
-    this.layerWidget.requestRebuild();
+    this.layerWidget.requestRedraw();
     this.palette = [];
     this.constraints = [];
     this.brushes = [];
@@ -340,7 +338,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.layers = state.layers.map(function(l){ return l.copy(); });
     this.strokeLayer = state.strokeLayer.copy();
     this.layerUID = state.layerUID;
-    this.layerWidget.requestRebuild();
+    this.layerWidget.requestRedraw();
     this.setCurrentLayer(state.currentLayerIndex);
     for (var i=0; i<state.palette.length; i++)
       this.setPaletteColor(i, state.palette[i]);
@@ -871,6 +869,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   // Layers
 
+  moveCurrentLayer : function(dx, dy) {
+    if (this.currentLayer) {
+      this.currentLayer.x += dx;
+      this.currentLayer.y += dy;
+      this.requestRedraw();
+    }
+  },
+
   newLayer : function() {
     var layer = new TiledLayer();
     layer.name = "Layer " + this.layerUID;
@@ -883,27 +889,27 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.layers.splice(this.currentLayerIndex+1,0,layer);
       this.setCurrentLayer(this.currentLayerIndex+1, false);
     }
-    this.layerWidget.requestRebuild();
+    this.layerWidget.requestRedraw();
     this.addHistoryState({methodName:'newLayer', args:[], breakpoint:true});
     return layer;
   },
 
   renameLayer : function(idx, name) {
     this.layers[idx].name = name;
-    this.layerWidget.requestRebuild();
+    this.layerWidget.requestRedraw();
     this.addHistoryState({methodName:'renameLayer', args:[idx, name], breakpoint:true});
   },
 
   hideLayer : function(idx) {
     this.layers[idx].display = false;
-    this.layerWidget.requestRebuild();
+    this.layerWidget.requestRedraw();
     this.requestRedraw();
     this.addHistoryState({methodName:'hideLayer', args:[idx], breakpoint:true});
   },
 
   showLayer : function(idx) {
     this.layers[idx].display = true;
-    this.layerWidget.requestRebuild();
+    this.layerWidget.requestRedraw();
     this.requestRedraw();
     this.addHistoryState({methodName:'showLayer', args:[idx], breakpoint:true});
   },
@@ -936,7 +942,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.addHistoryState({methodName:'moveLayer', args:[srcIdx, dstIdx], breakpoint:true});
     this.requestRedraw();
 
-    this.layerWidget.requestRebuild();
+    this.layerWidget.requestRedraw();
   },
 
   deleteLayer : function(i) {
@@ -953,7 +959,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.addHistoryState({methodName:'deleteLayer', args:[i], breakpoint:true});
     this.requestRedraw();
 
-    this.layerWidget.requestRebuild();
+    this.layerWidget.requestRedraw();
   },
 
   deleteCurrentLayer : function() {
@@ -973,7 +979,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     }
     this.requestRedraw();
 
-    this.layerWidget.requestRebuild();
+    this.layerWidget.requestRedraw();
   },
 
   clear : function() {

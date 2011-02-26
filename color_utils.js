@@ -528,7 +528,7 @@ ColorPicker = Klass(ColorUtils, {
 
   setHue : function(hue, signal) {
     this.hue = hue;
-    this.requestRebuild();
+    this.requestRedraw();
     if (signal == true) {
       this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
       this.signalChange();
@@ -545,16 +545,22 @@ ColorPicker = Klass(ColorUtils, {
     return (a*180/Math.PI) % 360;
   },
 
-  requestRebuild : function() {
-    this.needRebuild = true;
+  requestRedraw : function() {
+    this.needRedraw = true;
     if (this.app)
       this.app.requestRedraw();
   },
 
-  rebuild : function() {
+  updateDisplay : function() {
     this.redrawHueCanvas();
     this.redrawSVCanvas();
-    this.needRebuild = false;
+  },
+
+  redraw : function() {
+    if (this.needRedraw) {
+      this.updateDisplay();
+      this.needRedraw = false;
+    }
   },
 
   redrawHueCanvas : function() {

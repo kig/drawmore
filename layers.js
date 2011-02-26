@@ -146,11 +146,11 @@ LayerWidget = Klass({
     return li;
   },
 
-  requestRebuild : function() {
-    this.needRebuild = true;
+  requestRedraw : function() {
+    this.needRedraw = true;
   },
 
-  rebuild : function() {
+  updateDisplay : function() {
     var layers = this.app.layers;
     this.clear();
     for (var i=0; i<layers.length; i++) {
@@ -159,7 +159,13 @@ LayerWidget = Klass({
       if (this.app.currentLayerIndex == i)
         this.layers.firstChild.className = 'current';
     }
-    this.needRebuild = false;
+  },
+
+  redraw : function() {
+    if (this.needRedraw) {
+      this.updateDisplay();
+      this.needRedraw = false;
+    }
   }
 });
 
