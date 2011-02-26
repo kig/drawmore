@@ -70,7 +70,7 @@ PolygonBrush = Klass(Brush, {
     var t = transform;
     ctx.subPolygon(this.ccwSort(this.path.map(function(p){
       var px = p.x * t[0] + p.y * t[1];
-      var py = p.x * t[2] + p.y * t[2];
+      var py = p.x * t[2] + p.y * t[3];
       return {x: px*r+x, y: py*r+y};
     })));
     ctx.fill(color);
