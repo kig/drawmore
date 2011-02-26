@@ -547,6 +547,8 @@ ColorPicker = Klass(ColorUtils, {
 
   requestRebuild : function() {
     this.needRebuild = true;
+    if (this.app)
+      this.app.requestRedraw();
   },
 
   rebuild : function() {

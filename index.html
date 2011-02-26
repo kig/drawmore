@@ -198,10 +198,13 @@
           toggleUI : function(){
             var f = byId('fileIO');
             var p = byId('colorPicker');
+            var l = byClass('layerWidget');
             if (f.style.display != 'none') {
               f.style.display = p.style.display = 'none';
+              l.forEach(function(e){ e.style.display = 'none'; });
             } else {
               f.style.display = 'block';
+              l.forEach(function(e){ e.style.display = 'block'; });
               p.style.display = 'inline-block';
             }
           },
@@ -210,6 +213,7 @@
             h.style.display = h.style.display == 'block' ? 'none' : 'block';
           }
         });
+        colorPicker.app = draw;
         var prefs = window.localStorage && localStorage.savedDrawmoreState;
         var loaded = false;
         if (prefs) {
@@ -255,8 +259,8 @@
         position: fixed;
         bottom: 4px;
         left: 4px;
-        background-color: rgba(0,0,0,0.2);
         padding: 4px;
+        width: 148px;
       }
       .layerWidget button {
         width: 20px;
@@ -266,13 +270,18 @@
         margin-right: 2px;
       }
       .layers {
+        background: rgba(0,0,0,0.1);
+        width: 160px;
         list-style: none;
         margin: 0px;
+        margin-bottom: 2px;
         padding: 0px;
+        max-height: 100%;
+        display: block;
       }
       .layers li {
-        cursor: move;
-        width: 160px;
+        cursor: pointer;
+        width: 130px;
         display: block;
         list-style: none;
         margin: 0px;
@@ -280,13 +289,24 @@
         padding: 4px;
         padding-top: 2px;
         padding-bottom: 2px;
+        padding-right: 26px;
         font-size: 12px;
-        background: rgba(255,255,255,0.5);
-        color: #808080;
+        background: rgba(255,255,255,0.2);
+        color: rgba(0,0,0,0.5);
+        vertical-align: bottom;
       }
       .layers .current {
         background: rgba(255,255,255,0.8);
         color: black;
+      }
+      .layers input[type=checkbox] {
+        opacity: 0.3;
+        vertical-align: bottom;
+        margin: 0px;
+        margin-right: 8px;
+      }
+      .layers .current input[type=checkbox] {
+        opacity: 1;
       }
       #palette {
         position: absolute;

@@ -28,7 +28,25 @@ LayerWidget = Klass({
           var i = cc.indexOf(c);
           var clen = cc.length;
           srcIdx = clen-1-i;
-          dstIdx = srcIdx - Math.round((ev.clientY-c.downY) / c.clientHeight);
+          var dy = (ev.clientY-c.downY);
+          var myTop = c.offsetTop;
+          var myBottom = c.offsetTop + c.offsetHeight;
+          dstIdx = srcIdx;
+          for (var j=0; j<cc.length; j++) {
+            var mid = (cc[j].offsetTop+cc[j].offsetHeight/2);
+            if (dy < 0) { // going upwards, compare top to mid
+              if (myTop < mid) {
+                dstIdx = clen-1-j;
+                break;
+              }
+            } else { // going down
+              if (mid > myBottom) {
+                dstIdx = clen-1-j+1;
+                break;
+              }
+              if (j == cc.length-1) dstIdx = 0;
+            }
+          }
           dstIdx = Math.clamp(dstIdx, 0, clen-1);
           ev.preventDefault();
         }
@@ -59,9 +77,49 @@ LayerWidget = Klass({
       this.layers.removeChild(this.layers.firstChild);
   },
 
-  __newLayer : function(name) {
+  indexOf : function(layer) {
+    var cc = toArray(this.layers.childNodes);
+    var idx = cc.length-1-cc.indexOf(layer);
+    return idx;
+  },
+
+  __newLayer : function(layer) {
     var self = this;
-    var li = LI(name, {
+    var li = LI(
+      CHECKBOX({
+        checked: layer.display,
+        onclick: function(ev) {
+          self.app.toggleLayer(self.indexOf(this.parentNode));
+          ev.stopPropagation();
+        }
+      }),
+      SPAN(layer.name, {
+        contentEditable: true,
+        tabIndex: -1,
+        style: {cursor: 'text'},
+        onchange: function(ev) {
+          self.app.renameLayer(self.indexOf(this.parentNode), this.textContent);
+        },
+        onblur : function(ev) {
+          self.app.renameLayer(self.indexOf(this.parentNode), this.textContent);
+        },
+        onmousedown : function(ev) {
+          this.focus();
+          ev.stopPropagation();
+        },
+        onkeydown : function(ev) {
+          if (Key.match(ev, [Key.ENTER, Key.ESC])) {
+            this.blur();
+          }
+          ev.stopPropagation();
+        },
+        onkeyup : function(ev) {
+          ev.stopPropagation();
+        },
+        onclick : function(ev) {
+          ev.stopPropagation();
+        }
+      }), {
       onmousedown : function(ev) {
         this.down = true;
         this.eatClick = false;
@@ -74,15 +132,13 @@ LayerWidget = Klass({
         if (this.eatClick) {
           this.eatClick = false;
         } else {
-          var cc = toArray(this.parentNode.childNodes);
-          var idx = cc.length-1-cc.indexOf(this);
-          self.app.setCurrentLayer(idx);
+          self.app.setCurrentLayer(self.indexOf(this));
         }
         ev.preventDefault();
       }
     });
     li.style.position = 'relative';
-    li.name = name;
+    li.name = layer.name;
     if (this.layers.firstChild)
       this.layers.insertBefore(li, this.layers.firstChild);
     else
@@ -99,7 +155,7 @@ LayerWidget = Klass({
     this.clear();
     for (var i=0; i<layers.length; i++) {
       var layer = layers[i];
-      this.__newLayer(layer.name);
+      this.__newLayer(layer);
       if (this.app.currentLayerIndex == i)
         this.layers.firstChild.className = 'current';
     }

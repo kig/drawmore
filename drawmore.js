@@ -873,13 +873,46 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   newLayer : function() {
     var layer = new TiledLayer();
-    this.layers.push(layer);
     layer.name = "Layer " + this.layerUID;
+    layer.uid = this.layerUID;
     this.layerUID++;
+    if (this.layers.length == 0) {
+      this.layers.push(layer);
+      this.setCurrentLayer(this.layers.length-1, false);
+    } else {
+      this.layers.splice(this.currentLayerIndex+1,0,layer);
+      this.setCurrentLayer(this.currentLayerIndex+1, false);
+    }
     this.layerWidget.requestRebuild();
-    this.setCurrentLayer(this.layers.length-1, false);
     this.addHistoryState({methodName:'newLayer', args:[], breakpoint:true});
     return layer;
+  },
+
+  renameLayer : function(idx, name) {
+    this.layers[idx].name = name;
+    this.layerWidget.requestRebuild();
+    this.addHistoryState({methodName:'renameLayer', args:[idx, name], breakpoint:true});
+  },
+
+  hideLayer : function(idx) {
+    this.layers[idx].display = false;
+    this.layerWidget.requestRebuild();
+    this.requestRedraw();
+    this.addHistoryState({methodName:'hideLayer', args:[idx], breakpoint:true});
+  },
+
+  showLayer : function(idx) {
+    this.layers[idx].display = true;
+    this.layerWidget.requestRebuild();
+    this.requestRedraw();
+    this.addHistoryState({methodName:'showLayer', args:[idx], breakpoint:true});
+  },
+
+  toggleLayer : function(idx) {
+    if (this.layers[idx].display)
+      this.hideLayer(idx);
+    else
+      this.showLayer(idx);
   },
 
   moveLayer : function(srcIdx, dstIdx) {
