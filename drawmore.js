@@ -98,6 +98,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.applyTo(this.ctx, -this.panX, -this.panY, this.width, this.height, this.flippedX, this.flippedY, this.zoom);
     this.lastUpdateTime = (new Date()).getTime();
     this.redrawRequested = false;
+    if (this.layerWidget.needRebuild)
+      this.layerWidget.rebuild();
+    if (this.colorPicker.needRebuild)
+      this.colorPicker.rebuild();
   },
 
   applyTo : function(ctx, x, y, w, h, flippedX, flippedY, zoom) {
@@ -251,7 +255,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   setupEmptyState : function() {
     this.layers = [];
     this.layerUID = 0;
-    this.layerWidget.clear();
+    this.layerWidget.requestRebuild();
     this.palette = [];
     this.constraints = [];
     this.brushes = [];
@@ -282,8 +286,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.addPolygonBrush([{x:1, y:0}, {x:0,y:-1}, {x:-1,y:0}, {x:0,y:1}]);
     this.setBrush(0);
     this.setupPalette();
-    this.newLayer(0);
-    this.setCurrentLayer(0);
+    this.newLayer();
     this.setColor(this.defaultColor);
     this.setBackground(this.defaultBackground);
     this.setLineWidth(this.defaultLineWidth);
@@ -337,7 +340,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.layers = state.layers.map(function(l){ return l.copy(); });
     this.strokeLayer = state.strokeLayer.copy();
     this.layerUID = state.layerUID;
-    this.layerWidget.rebuild();
+    this.layerWidget.requestRebuild();
     this.setCurrentLayer(state.currentLayerIndex);
     for (var i=0; i<state.palette.length; i++)
       this.setPaletteColor(i, state.palette[i]);
@@ -376,12 +379,16 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   applySaveObject : function(obj) {
-    this.setupEmptyState();
     this.clearHistory();
+    this.setupEmptyState();
     for (var i=0; i<obj.history.length; i++) {
       if (obj.history[i] != null) {
         this.applyHistoryState(obj.history[i]);
-        this.history.last().breakpoint = obj.history[i].breakpoint;
+        var l = this.history[this.history.length-1];
+        if (l != null)
+          l.breakpoint = obj.history[i].breakpoint;
+      } else {
+        this.addHistoryBarrier();
       }
     }
     this.gotoHistoryState(obj.historyIndex);
@@ -867,11 +874,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
   newLayer : function() {
     var layer = new TiledLayer();
     this.layers.push(layer);
-    layer.uid = this.layerUID;
+    layer.name = "Layer " + this.layerUID;
     this.layerUID++;
-    this.layerWidget.newLayer(layer.uid);
+    this.layerWidget.requestRebuild();
+    this.setCurrentLayer(this.layers.length-1, false);
     this.addHistoryState({methodName:'newLayer', args:[], breakpoint:true});
-    this.setCurrentLayer(this.layers.length-1);
     return layer;
   },
 
@@ -886,15 +893,22 @@ Drawmore = Klass(Undoable, ColorUtils, {
         this.layers[i] = this.layers[i-1];
       this.layers[dstIdx] = tmp;
     }
+    if (srcIdx == this.currentLayerIndex) {
+      this.setCurrentLayer(dstIdx, false);
+    } else if (srcIdx < this.currentLayerIndex && dstIdx >= this.currentLayerIndex) {
+      this.setCurrentLayer(this.currentLayerIndex-1, false);
+    } else if (srcIdx > this.currentLayerIndex && dstIdx <= this.currentLayerIndex) {
+      this.setCurrentLayer(this.currentLayerIndex+1, false);
+    }
     this.addHistoryState({methodName:'moveLayer', args:[srcIdx, dstIdx], breakpoint:true});
     this.requestRedraw();
 
-    this.layerWidget.moveLayer(srcIdx, dstIdx);
+    this.layerWidget.requestRebuild();
   },
 
   deleteLayer : function(i) {
     if (i < this.currentLayerIndex) {
-      this.setCurrentLayer(this.currentLayerIndex-1);
+      this.setCurrentLayer(this.currentLayerIndex-1, false);
     }
     if (i == this.layers.length-1 && i == this.currentLayerIndex) {
       this.setCurrentLayer(this.currentLayerIndex-1, false);
@@ -906,20 +920,27 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.addHistoryState({methodName:'deleteLayer', args:[i], breakpoint:true});
     this.requestRedraw();
 
-    this.layerWidget.deleteLayer(i);
+    this.layerWidget.requestRebuild();
   },
 
   deleteCurrentLayer : function() {
     this.deleteLayer(this.currentLayerIndex);
   },
 
-  setCurrentLayer : function(i, breakpoint) {
+  setCurrentLayer : function(i, recordHistory) {
     this.currentLayer = this.layers[i];
     this.currentLayerIndex = i;
-    this.addHistoryState({methodName:'setCurrentLayer', args:[i], breakpoint:breakpoint});
+    if (recordHistory != false) {
+      // collapse multiple setCurrentLayer calls into a single history event
+      var last = this.history.last();
+      if (last && last.methodName == 'setCurrentLayer')
+        last.args[0] = i;
+      else
+        this.addHistoryState({methodName: 'setCurrentLayer', args:[i], breakpoint:true});
+    }
     this.requestRedraw();
 
-    this.layerWidget.setCurrentLayer(i);
+    this.layerWidget.requestRebuild();
   },
 
   clear : function() {
@@ -978,6 +999,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       np.r *= np.pressure;
     if (this.pressureControlsOpacity)
       np.opacity *= np.pressure;
+    np.brushTransform = this.getBrushTransform();
     np.absolute = true;
     return np;
   },
@@ -989,35 +1011,32 @@ Drawmore = Klass(Undoable, ColorUtils, {
     ];
   },
 
-  drawPoint : function(xy, brushTransform) {
+  drawPoint : function(xy) {
     if (!this.strokeInProgress) return;
     if (!xy.absolute)
       xy = this.getAbsolutePoint(xy);
-    brushTransform = brushTransform != null ? brushTransform : this.getBrushTransform();
     this.brush.drawPoint(
       this.strokeLayer, this.colorStyle,
       xy.x, xy.y, xy.r,
-      brushTransform
+      xy.brushTransform
     );
-    this.addHistoryState({methodName: 'drawPoint', args:[xy, brushTransform]});
+    this.addHistoryState({methodName: 'drawPoint', args:[xy]});
     this.requestRedraw();
   },
 
-  drawLine : function(a, b, brushTransform) {
+  drawLine : function(a, b) {
     if (!this.strokeInProgress) return;
     if (!a.absolute)
       a = this.getAbsolutePoint(a);
     if (!b.absolute)
       b = this.getAbsolutePoint(b);
-    brushTransform = brushTransform != null ? brushTransform : this.getBrushTransform();
     this.brush.drawLine(
       this.strokeLayer, this.colorStyle,
       a.x, a.y, a.r,
       b.x, b.y, b.r,
-      brushTransform
+      a.brushTransform
     );
-    var s = {methodName: 'drawLine', args:[a, b, brushTransform]}
-    this.addHistoryState(s);
+    this.addHistoryState({methodName: 'drawLine', args:[a, b]});
     this.requestRedraw();
   },
 
@@ -1081,7 +1100,12 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.cursor.update(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
     if (this.colorPicker)
       this.colorPicker.setColor(this.color, false);
-    this.addHistoryState({methodName: 'setColor', args:[this.color]});
+    // collapse multiple setColor calls into a single history event
+    var last = this.history.last();
+    if (last && last.methodName == 'setColor')
+      last.args[0] = this.color;
+    else
+      this.addHistoryState({methodName: 'setColor', args:[this.color]});
   },
 
   setOpacity : function(o) {
@@ -1091,7 +1115,12 @@ Drawmore = Klass(Undoable, ColorUtils, {
     if (this.onopacitychange)
       this.onopacitychange(o);
     this.cursor.update(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
-    this.addHistoryState({methodName: 'setOpacity', args:[this.opacity]});
+    // collapse multiple setOpacity calls into a single history event
+    var last = this.history.last();
+    if (last && last.methodName == 'setOpacity')
+      last.args[0] = this.opacity;
+    else
+      this.addHistoryState({methodName: 'setOpacity', args:[this.opacity]});
   },
 
   setLineWidth : function(w) {

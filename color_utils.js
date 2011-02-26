@@ -526,6 +526,15 @@ ColorPicker = Klass(ColorUtils, {
     }
   },
 
+  setHue : function(hue, signal) {
+    this.hue = hue;
+    this.requestRebuild();
+    if (signal == true) {
+      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
+      this.signalChange();
+    }
+  },
+
   hueAtMouseCoords : function(xy) {
     var w2 = this.hueCanvas.width/2;
     var h2 = this.hueCanvas.height/2;
@@ -534,6 +543,16 @@ ColorPicker = Klass(ColorUtils, {
     var a = Math.PI/2 + Math.atan2(dy,dx);
     if (a < 0) a += 2*Math.PI;
     return (a*180/Math.PI) % 360;
+  },
+
+  requestRebuild : function() {
+    this.needRebuild = true;
+  },
+
+  rebuild : function() {
+    this.redrawHueCanvas();
+    this.redrawSVCanvas();
+    this.needRebuild = false;
   },
 
   redrawHueCanvas : function() {
@@ -580,12 +599,10 @@ ColorPicker = Klass(ColorUtils, {
     hc.restore();
   },
 
-  setHue : function(hue, signal) {
+  redrawSVCanvas : function() {
     var w = this.canvas.width;
     var h = this.canvas.height;
-    this.hue = hue;
-    this.redrawHueCanvas();
-    var rgb = this.hsva2rgba(hue, 1, 1, 1);
+    var rgb = this.hsva2rgba(this.hue, 1, 1, 1);
     var g = this.ctx.createLinearGradient(0, 0, w-1, 0);
     g.addColorStop(0, 'white');
     g.addColorStop(1, this.colorToStyle(rgb));
@@ -593,9 +610,5 @@ ColorPicker = Klass(ColorUtils, {
     this.ctx.fillRect(0,0,w,h);
     this.ctx.fillStyle = this.valueGradient;
     this.ctx.fillRect(0,0,w,h);
-    if (signal == true) {
-      this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
-      this.signalChange();
-    }
   }
 });

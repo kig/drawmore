@@ -44,6 +44,7 @@ LayerWidget = Klass({
         var dy = y-self.active.downY;
         if (Math.abs(dy) > 3) {
           self.active.dragging = true;
+          self.active.eatClick = true;
         }
         if (self.active.dragging) {
           self.active.style.top = dy + 'px';
@@ -58,25 +59,30 @@ LayerWidget = Klass({
       this.layers.removeChild(this.layers.firstChild);
   },
 
-  newLayer : function(uid) {
+  __newLayer : function(name) {
     var self = this;
-    var li = LI("LAYER "+uid, {
+    var li = LI(name, {
       onmousedown : function(ev) {
         this.down = true;
+        this.eatClick = false;
         this.downY = ev.clientY;
         if (self.active == null)
           self.active = this;
         ev.preventDefault();
       },
       onclick : function(ev) {
-        var cc = toArray(this.parentNode.childNodes);
-        var idx = cc.length-1-cc.indexOf(this);
-        self.app.setCurrentLayer(idx);
+        if (this.eatClick) {
+          this.eatClick = false;
+        } else {
+          var cc = toArray(this.parentNode.childNodes);
+          var idx = cc.length-1-cc.indexOf(this);
+          self.app.setCurrentLayer(idx);
+        }
         ev.preventDefault();
       }
     });
     li.style.position = 'relative';
-    li.uid = uid;
+    li.name = name;
     if (this.layers.firstChild)
       this.layers.insertBefore(li, this.layers.firstChild);
     else
@@ -84,45 +90,20 @@ LayerWidget = Klass({
     return li;
   },
 
+  requestRebuild : function() {
+    this.needRebuild = true;
+  },
+
   rebuild : function() {
     var layers = this.app.layers;
     this.clear();
     for (var i=0; i<layers.length; i++) {
       var layer = layers[i];
-      this.newLayer(i, layer.uid);
+      this.__newLayer(layer.name);
+      if (this.app.currentLayerIndex == i)
+        this.layers.firstChild.className = 'current';
     }
-  },
-
-  moveLayer : function(srcIdx, dstIdx) {
-    var cc = this.layers.childNodes;
-    srcIdx = cc.length-1-srcIdx;
-    dstIdx = cc.length-1-dstIdx;
-    var a = cc[srcIdx];
-    var b = cc[dstIdx];
-    this.layers.removeChild(a);
-    if (srcIdx < dstIdx) {
-      if (b.nextSibling) {
-        this.layers.insertBefore(a, b.nextSibling);
-      } else {
-        this.layers.appendChild(a);
-      }
-    } else {
-      this.layers.insertBefore(a,b);
-    }
-  },
-
-  deleteLayer : function(idx) {
-    var cc = this.layers.childNodes;
-    idx = cc.length-1-idx;
-    this.layers.removeChild(cc[idx]);
-  },
-
-  setCurrentLayer : function(idx) {
-    var cc = this.layers.childNodes;
-    idx = cc.length-1-idx;
-    for (var i=0; i<cc.length; i++) {
-      cc[i].className = idx == i ? 'current' : '';
-    }
+    this.needRebuild = false;
   }
 });
 
