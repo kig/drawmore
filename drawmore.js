@@ -897,11 +897,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.setCurrentLayer(this.currentLayerIndex-1);
     }
     if (i == this.layers.length-1 && i == this.currentLayerIndex) {
-      this.setCurrentLayer(this.currentLayerIndex-1);
+      this.setCurrentLayer(this.currentLayerIndex-1, false);
     }
     this.layers.splice(i,1);
     if (i == this.currentLayerIndex) {
-      this.setCurrentLayer(this.currentLayerIndex);
+      this.setCurrentLayer(this.currentLayerIndex, false);
     }
     this.addHistoryState({methodName:'deleteLayer', args:[i], breakpoint:true});
     this.requestRedraw();
@@ -913,10 +913,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.deleteLayer(this.currentLayerIndex);
   },
 
-  setCurrentLayer : function(i) {
+  setCurrentLayer : function(i, breakpoint) {
     this.currentLayer = this.layers[i];
     this.currentLayerIndex = i;
-    this.addHistoryState({methodName:'setCurrentLayer', args:[i], breakpoint:true});
+    this.addHistoryState({methodName:'setCurrentLayer', args:[i], breakpoint:breakpoint});
     this.requestRedraw();
 
     this.layerWidget.setCurrentLayer(i);

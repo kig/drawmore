@@ -123,16 +123,18 @@ Undoable = Klass({
   playbackHistory : function() {
     var h = this.history;
     this.recordHistory = false;
+    this.setupEmptyState();
+    var oidx = this.historyIndex;
     var i=0;
     var self = this;
     var ival = setInterval(function() {
-      if (i > self.historyIndex) {
+      if (i > oidx) {
         clearInterval(ival);
         self.recordHistory = true;
       } else {
         var t = new Date();
         var j = i;
-        while (new Date() - t < 30 && i <= self.historyIndex && (i-j) < self.playbackRate*10) {
+        while (new Date() - t < 30 && i <= oidx && (i-j) < self.playbackRate*10) {
           var cmd = h[i];
           if (cmd != null)
             self.applyHistoryState(cmd);

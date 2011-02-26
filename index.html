@@ -140,6 +140,39 @@
               ev.preventDefault();
           };
         }
+        var styleRex = /^(#[0-9a-f]{6}|rgba\(\s*(\d{1,3},\s*){3}\d(\.\d+)?\s*\)|rgb\(\s*(\d{1,3},\s*){2}\d{1,3}\s*\))$/i;
+        var updateColor = function(ev) {
+          this.editing = true;
+          if (styleRex.test(this.value)) {
+            this.style.color = 'rgba(0,0,0,0.2)';
+            var vc = draw.styleToColor(this.value);
+            var c = draw.color;
+            if (vc[0]!=c[0] || vc[1]!=c[1] || vc[2]!=c[2]) {
+              draw.setColor(this.value);
+            }
+          } else {
+            this.style.color = 'rgba(255,0,0,0.2)';
+          }
+          if (Key.match(ev, [Key.ENTER, Key.ESC])) {
+            this.editing = false;
+            this.blur();
+            this.style.color = 'rgba(0,0,0,0.2)';
+            this.value = ColorUtils.colorToHex(draw.color);
+          }
+          ev.stopPropagation();
+        }
+        byId('colorName').addEventListener('focus', updateColor, false);
+        byId('colorName').addEventListener('keydown', updateColor, false);
+        byId('colorName').addEventListener('keyup', updateColor, false);
+        byId('colorName').addEventListener('textentry', updateColor, false);
+        byId('colorName').addEventListener('change', function(){
+          this.editing = false;
+          this.blur();
+          this.style.color = 'rgba(0,0,0,0.2)';
+        }, false);
+        byId('colorName').addEventListener('blur', function(){
+          this.editing = false;
+        }, false);
 
         draw = new Drawmore(c, {
           colorPicker : colorPicker,
@@ -153,7 +186,9 @@
           oncolorchange : function(c) {
             var s = ColorUtils.colorToStyle(c);
             var h = ColorUtils.colorToHex(c);
-            byId('colorName').textContent = h;
+            var cn = byId('colorName');
+            if (!cn.editing)
+              cn.value = h;
             byId('foregroundColor').style.backgroundColor = s;
           },
           onbackgroundchange : function(c) {
@@ -268,6 +303,13 @@
         position: absolute;
       }
       #colorName, #bgColorName {
+        border: 0px;
+        background: transparent;
+        margin: 0px;
+        padding: 0px;
+        padding-right:2px;
+        text-align: right;
+        width: 54px;
         display: inline-block;
         text-transform: uppercase;
         color: rgba(0,0,0,0.2);
@@ -407,7 +449,7 @@
       <button id="replay">Replay</button>
     </div>
     <div id="palette">
-      <div id="colorName">#</div>
+      <input type="text" id="colorName" value="#"></input>
       <div id="backgroundColor"></div>
       <div id="foregroundColor"></div>
 
