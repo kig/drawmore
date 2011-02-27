@@ -1077,7 +1077,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     if (m) {
       m[1] = m[1] || 0;
       var cidx = parseInt(m[1])+1;
-      layer.name = layer.name.replace(/copy( \d+)?\)$/, 'copy '+cidx);
+      layer.name = layer.name.replace(/copy( \d+)?\)$/, 'copy '+cidx+')');
     } else {
       layer.name += " (copy)";
     }
