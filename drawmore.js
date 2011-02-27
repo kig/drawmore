@@ -58,8 +58,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   defaultLineWidth : 0.75,
   defaultColor : ColorUtils.colorVec(0,0,0,1),
-  defaultBackground : ColorUtils.colorVec(1,1,1,1),
-
+  defaultBackground : ColorUtils.colorVec(0.933,0.914,0.882,1),
   brushIndex : 0,
 
   minimumBrushSize : 0.75,
