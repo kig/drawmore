@@ -8,8 +8,11 @@
     <script src="cursors.js"></script>
     <script src="color_utils.js"></script>
     <script src="layers.js"></script>
+    <script src="layers.js"></script>
     <script src="brushes.js"></script>
     <script src="constraints.js"></script>
+    <script src="selection.js"></script>
+    <script src="layerwidget.js"></script>
     <script src="drawmore.js"></script>
     <script src="upload_util.js"></script>
     <!--<script src="defaultImage.js"></script>-->
@@ -270,7 +273,7 @@
         bottom: 4px;
         left: 4px;
         padding: 4px;
-        width: 148px;
+        width: 172px;
       }
       .layerWidget button {
         width: 20px;
@@ -280,8 +283,8 @@
         margin-right: 2px;
       }
       .layers {
-        background: rgba(0,0,0,0.1);
-        width: 160px;
+        background: rgba(0,0,0,0.2);
+        width: 154px;
         list-style: none;
         margin: 0px;
         margin-bottom: 2px;
@@ -291,7 +294,7 @@
       }
       .layers li {
         cursor: pointer;
-        width: 130px;
+        width: 124px;
         display: block;
         list-style: none;
         margin: 0px;
@@ -431,14 +434,15 @@
       #help {
         z-index: 10;
         display: none;
-        position: absolute;
+        position: fixed;
         left: 56px;
-        top: 4px;
+        top: 0px;
+        bottom: 0px;
+        overflow-y: auto;
         text-align: left;
         padding: 14px;
-        padding-top: 6px;
+        padding-top: 10px;
         padding-bottom: 8px;
-        border-radius: 10px;
         background-color: rgba(255,255,255,0.8);
       }
       #help p {
@@ -504,6 +508,10 @@
     <div id="help">
       <h3>Use the Keyboard, Luke!</h3>
       <p>left-handed keys parenthesized</p>
+
+      <h4>Drawing</h4>
+      <p><b>LMB</b> draws</p>
+      <p><b>alt-LMB</b> erases</p>
 
       <h4>Navigation</h4>
       <p><b>space</b> and <b>MMB</b> pan the canvas</p>

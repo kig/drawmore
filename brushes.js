@@ -6,9 +6,9 @@ Brush = Klass({
   bottom : 0.5,
 
   initialize : function() {},
-  drawLine : function(ctx, color, x1, y1, r1, x2, y2, r2) {},
-  drawPoint : function(ctx, color, x, y, r) {
-    this.drawLine(ctx, color, x,y,r, x,y,r);
+  drawLine : function(ctx, color, composite, x1, y1, r1, x2, y2, r2) {},
+  drawPoint : function(ctx, color, composite, x, y, r) {
+    this.drawLine(ctx, color, composite, x,y,r, x,y,r);
   },
 
   copy : function(){
@@ -65,7 +65,7 @@ PolygonBrush = Klass(Brush, {
     return path;
   },
 
-  drawPoint : function(ctx, color, x, y, r, transform) {
+  drawPoint : function(ctx, color, composite, x, y, r, transform) {
     ctx.beginPath();
     var t = transform;
     ctx.subPolygon(this.ccwSort(this.path.map(function(p){
@@ -73,7 +73,7 @@ PolygonBrush = Klass(Brush, {
       var py = p.x * t[2] + p.y * t[3];
       return {x: px*r+x, y: py*r+y};
     })));
-    ctx.fill(color);
+    ctx.fill(color, composite);
   },
 
   ccwSort : function(points) {
@@ -98,9 +98,9 @@ PolygonBrush = Klass(Brush, {
   // draw brush at each endpoint
   // for each brush path segment, draw a quad from
   // one endpoint to the other
-  drawLine : function(ctx, color, x1, y1, r1, x2, y2, r2, transform) {
+  drawLine : function(ctx, color, composite, x1, y1, r1, x2, y2, r2, transform) {
     if (this.stipple) {
-      this.drawPoint(ctx, color, x2, y2, r2);
+      this.drawPoint(ctx, color, composite, x2, y2, r2);
       return;
     }
     ctx.beginPath();
@@ -129,17 +129,17 @@ PolygonBrush = Klass(Brush, {
         {x:x2+u.x*r2, y:y2+u.y*r2}
       ]));
     }
-    ctx.fill(color);
+    ctx.fill(color, composite);
   }
 });
 
 
 RoundBrush = Klass(Brush, {
-  drawPoint : function(ctx, color, x1, y1, r1) {
-    ctx.drawArc(x1, y1, r1, 0, Math.PI*2, color);
+  drawPoint : function(ctx, color, composite, x1, y1, r1) {
+    ctx.drawArc(x1, y1, r1, 0, Math.PI*2, color, composite);
   },
 
-  drawLine : function(ctx, color, x1, y1, r1, x2, y2, r2) {
+  drawLine : function(ctx, color, composite, x1, y1, r1, x2, y2, r2) {
     ctx.beginPath();
     ctx.subArc(x1, y1, (Math.max(0.1,r1-0.5)), 0, Math.PI*2);
     ctx.subArc(x2, y2, (Math.max(0.1,r2-0.5)), 0, Math.PI*2);
@@ -158,7 +158,7 @@ RoundBrush = Klass(Brush, {
       {x: Math.cos(a+da)*r2+x2, y: Math.sin(a+da)*r2+y2}
     ];
     ctx.subPolygon(points);
-    ctx.fill(color);
+    ctx.fill(color, composite);
   }
 });
 
@@ -180,7 +180,7 @@ ImageBrush = Klass(Brush, {
   },
 
   // draw brush image every spacing*image.radius
-  drawLine : function(ctx, color, x1, y1, r1, x2, y2, r2) {
+  drawLine : function(ctx, color, composite, x1, y1, r1, x2, y2, r2) {
     var dx = x2-x1;
     var dy = y2-y1;
     var d = Math.sqrt(dx*dx+dy*dy);
@@ -195,7 +195,7 @@ ImageBrush = Klass(Brush, {
       var y = y1*(1-f) + y2*f;
       var s = r / max;
       var w = w*s, h = h*s;
-      ctx.drawImage(this.image, x-w/2, y-h/2, w, h);
+      ctx.drawImage(this.image, x-w/2, y-h/2, w, h, composite);
       i += Math.max(0.5, this.spacing * r);
     }
   }

@@ -127,9 +127,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
       ctx.webkitImageSmoothingEnabled = false;
       ctx.imageSmoothingEnabled = false;
       for (var i=0; i<this.layers.length; i++) {
-        this.layers[i].applyTo(ctx, x, y, w, h, zoom);
+        this.layers[i].applyTo(ctx);
         if (i == this.currentLayerIndex && this.strokeLayer.display) {
-          this.strokeLayer.applyTo(ctx,x,y,w,h,zoom);
+          this.strokeLayer.applyTo(ctx,this.erasing ? 'destination-out' : 'source-over');
         }
       }
     ctx.restore();
@@ -487,6 +487,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
       draw.cursor.moveTo(draw.current.x, draw.current.y);
       if (Mouse.state[Mouse.LEFT] && ev.target == draw.canvas) {
         draw.mousedown = true;
+        if (ev.altKey)
+          draw.erasing = true;
         draw.beginStroke();
         if (ev.shiftKey && draw.mouseup) {
           if (draw.constraint != null) {
@@ -526,6 +528,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
         draw.stopMoving();
       }
       draw.endStroke();
+      draw.erasing = false;
     };
 
     this.listeners['touchmove'] = function(ev) {
@@ -1189,12 +1192,13 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.requestRedraw();
   },
 
-  endStroke : function() {
+  endStroke : function(erasing) {
+    if (erasing == null) erasing = this.erasing;
     if (!this.strokeInProgress) return;
     this.strokeInProgress = false;
-    this.strokeLayer.applyTo(this.currentLayer);
+    this.strokeLayer.applyTo(this.currentLayer, erasing ? 'destination-out' : 'source-over');
     this.strokeLayer.hide();
-    this.addHistoryState({methodName: 'endStroke', args: []});
+    this.addHistoryState({methodName: 'endStroke', args: [erasing]});
     this.requestRedraw();
   },
 
@@ -1226,7 +1230,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     if (!xy.absolute)
       xy = this.getAbsolutePoint(xy);
     this.brush.drawPoint(
-      this.strokeLayer, this.colorStyle,
+      this.strokeLayer, this.colorStyle, 'source-over',
       xy.x, xy.y, xy.r,
       xy.brushTransform
     );
@@ -1241,7 +1245,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     if (!b.absolute)
       b = this.getAbsolutePoint(b);
     this.brush.drawLine(
-      this.strokeLayer, this.colorStyle,
+      this.strokeLayer, this.colorStyle, 'source-over',
       a.x, a.y, a.r,
       b.x, b.y, b.r,
       a.brushTransform

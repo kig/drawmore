@@ -1,185 +1,12 @@
-LayerWidget = Klass({
-
-  initialize : function(app, container) {
-    this.app = app;
-    this.element = DIV();
-    this.element.className = 'layerWidget';
-    this.layers = OL();
-    this.layers.className = 'layers';
-    this.element.appendChild(this.layers);
-    var self = this;
-    this.element.appendChild(
-      DIV(
-        BUTTON("+", {onclick: function(ev) {self.app.newLayer();}}),
-        BUTTON("-", {onclick: function(ev) {self.app.deleteCurrentLayer();}}),
-        BUTTON("x2", {onclick: function(ev) {self.app.duplicateCurrentLayer();}}),
-        BUTTON("\u2b0c", {onclick: function(ev) {self.app.flipCurrentLayerHorizontally();}}),
-        BUTTON("\u2b0d", {onclick: function(ev) {self.app.flipCurrentLayerVertically();}})
-      )
-    );
-    this.container = container;
-    this.container.appendChild(this.element);
-    window.addEventListener('mouseup', function(ev){
-      if (self.active) {
-        var dropped = false;
-        var srcIdx,dstIdx;
-        var c = self.active;
-        self.active = null;
-        if (c.dragging) {
-          dropped = true;
-          var cc = toArray(self.layers.childNodes);
-          var i = cc.indexOf(c);
-          var clen = cc.length;
-          srcIdx = clen-1-i;
-          var dy = (ev.clientY-c.downY);
-          var myTop = c.offsetTop;
-          var myBottom = c.offsetTop + c.offsetHeight;
-          dstIdx = srcIdx;
-          for (var j=0; j<cc.length; j++) {
-            var mid = (cc[j].offsetTop+cc[j].offsetHeight/2);
-            if (dy < 0) { // going upwards, compare top to mid
-              if (myTop < mid) {
-                dstIdx = clen-1-j;
-                break;
-              }
-            } else { // going down
-              if (mid > myBottom) {
-                dstIdx = clen-1-j+1;
-                break;
-              }
-              if (j == cc.length-1) dstIdx = 0;
-            }
-          }
-          dstIdx = Math.clamp(dstIdx, 0, clen-1);
-          ev.preventDefault();
-        }
-        c.style.top = '0px';
-        c.dragging = c.down = false;
-        if (dropped)
-          self.app.moveLayer(srcIdx, dstIdx);
-      }
-    }, false);
-    window.addEventListener('mousemove', function(ev) {
-      if (self.active) {
-        var y = ev.clientY;
-        var dy = y-self.active.downY;
-        if (Math.abs(dy) > 3) {
-          self.active.dragging = true;
-          self.active.eatClick = true;
-        }
-        if (self.active.dragging) {
-          self.active.style.top = dy + 'px';
-        }
-      }
-      ev.preventDefault();
-    }, false);
-  },
-
-  clear : function() {
-    while (this.layers.firstChild)
-      this.layers.removeChild(this.layers.firstChild);
-  },
-
-  indexOf : function(layer) {
-    var cc = toArray(this.layers.childNodes);
-    var idx = cc.length-1-cc.indexOf(layer);
-    return idx;
-  },
-
-  __newLayer : function(layer) {
-    var self = this;
-    var li = LI(
-      CHECKBOX({
-        checked: layer.display,
-        onclick: function(ev) {
-          self.app.toggleLayer(self.indexOf(this.parentNode));
-          ev.stopPropagation();
-        }
-      }),
-      SPAN(layer.name, {
-        contentEditable: true,
-        tabIndex: -1,
-        style: {cursor: 'text'},
-        onchange: function(ev) {
-          self.app.renameLayer(self.indexOf(this.parentNode), this.textContent);
-        },
-        onblur : function(ev) {
-          self.app.renameLayer(self.indexOf(this.parentNode), this.textContent);
-        },
-        onmousedown : function(ev) {
-          this.focus();
-          ev.stopPropagation();
-        },
-        onkeydown : function(ev) {
-          if (Key.match(ev, [Key.ENTER, Key.ESC])) {
-            this.blur();
-          }
-          ev.stopPropagation();
-        },
-        onkeyup : function(ev) {
-          ev.stopPropagation();
-        },
-        onclick : function(ev) {
-          ev.stopPropagation();
-        }
-      }), {
-      onmousedown : function(ev) {
-        this.down = true;
-        this.eatClick = false;
-        this.downY = ev.clientY;
-        if (self.active == null)
-          self.active = this;
-        ev.preventDefault();
-      },
-      onclick : function(ev) {
-        if (this.eatClick) {
-          this.eatClick = false;
-        } else {
-          self.app.setCurrentLayer(self.indexOf(this));
-        }
-        ev.preventDefault();
-      }
-    });
-    li.style.position = 'relative';
-    li.name = layer.name;
-    if (this.layers.firstChild)
-      this.layers.insertBefore(li, this.layers.firstChild);
-    else
-      this.layers.appendChild(li);
-    return li;
-  },
-
-  requestRedraw : function() {
-    this.needRedraw = true;
-  },
-
-  updateDisplay : function() {
-    var layers = this.app.layers;
-    this.clear();
-    for (var i=0; i<layers.length; i++) {
-      var layer = layers[i];
-      this.__newLayer(layer);
-      if (this.app.currentLayerIndex == i)
-        this.layers.firstChild.className = 'current';
-    }
-  },
-
-  redraw : function() {
-    if (this.needRedraw) {
-      this.updateDisplay();
-      this.needRedraw = false;
-    }
-  }
-});
-
-
 Layer = Klass({
   display : true,
+  isLayer : true,
   x : 0,
   y : 0,
   opacity : 1,
   zIndex : 0,
   globalAlpha : 1,
+  globalCompositeOperation : 'source-over',
 
   initialize : function(){},
 
@@ -199,14 +26,17 @@ Layer = Klass({
   flipX : function() {},
   flipY : function() {},
 
-  applyTo : function(ctx){
+  applyTo : function(ctx, composite){
     if (this.display) {
-      ctx.globalAlpha = this.opacity;
-      this.compositeTo(ctx);
+      var a = ctx.globalAlpha;
+      var c = ctx.globalCompositeOperation;
+      this.compositeTo(ctx, this.opacity, composite);
+      ctx.globalAlpha = a;
+      ctx.globalCompositeOperation = c;
     }
   },
 
-  compositeTo : function(ctx) {
+  compositeTo : function(ctx, opacity, composite) {
   },
 
   show : function(){
@@ -219,9 +49,11 @@ Layer = Klass({
 
   clear : function(){},
 
-  drawPolygon : function(path, color) {},
+  drawPolygon : function(path, color, composite) {},
 
-  drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {}
+  drawArc : function(x,y,r,a1,a2, color, composite, lineWidth, stroke, closed) {},
+
+  drawImage : function(image, x, y, w, h, composite) {}
 
 });
 
@@ -246,7 +78,9 @@ CanvasLayer = Klass(Layer, {
     tgt.ctx.globalCompositeOperation = 'source-over';
   },
 
-  compositeTo : function(ctx, opacity) {
+  compositeTo : function(ctx, opacity, composite) {
+    ctx.globalAlpha = opacity;
+    ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
     ctx.drawImage(this.canvas, this.x, this.y);
   },
 
@@ -258,16 +92,18 @@ CanvasLayer = Klass(Layer, {
     this.ctx.beginPath();
   },
 
-  fill : function(color) {
+  fill : function(color, composite) {
     this.ctx.fillStyle = color;
     this.ctx.globalAlpha = this.globalAlpha;
+    this.ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
     this.ctx.fill();
   },
 
-  stroke : function(color, lineWidth) {
+  stroke : function(color, lineWidth, composite) {
     this.ctx.lineWidth = lineWidth;
     this.ctx.strokeStyle = color;
     this.ctx.globalAlpha = this.globalAlpha;
+    this.ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
     this.ctx.stroke();
   },
 
@@ -287,25 +123,31 @@ CanvasLayer = Klass(Layer, {
       this.ctx.closePath();
   },
 
-  drawPolygon : function(path, color) {
+  drawPolygon : function(path, color, composite) {
     this.beginPath();
     this.subPolygon(path);
-    this.fill(color);
+    this.fill(color, composite);
   },
 
-  drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {
+  drawArc : function(x,y,r,a1,a2, color, composite, lineWidth, stroke, closed) {
     this.beginPath();
     this.subArc(x,y,r,a1,a2,closed);
     if (stroke) {
-      this.stroke(color, lineWidth);
+      this.stroke(color, lineWidth, composite);
     } else {
-      this.fill(color);
+      this.fill(color, composite);
     }
   },
 
-  drawImage : function(image, x, y) {
+  drawImage : function(image, x, y, w, h, composite) {
     this.ctx.globalAlpha = this.globalAlpha;
-    this.ctx.drawImage(image,x-this.x,y-this.x);
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
+    if (w && h)
+      this.ctx.drawImage(image,x-this.x,y-this.x);
+    else
+      this.ctx.drawImage(image,x-this.x,y-this.x,w,h);
+    this.ctx.restore();
   },
 
   flipX : function() {
@@ -434,7 +276,8 @@ TiledLayer = Klass(Layer, {
     }
   },
 
-  drawImage: function(img, x, y) {
+  drawImage: function(img, x, y, w, h, composite) {
+    composite = composite || this.globalCompositeOperation;
     x-=this.x;
     y-=this.y;
     var ftx = Math.floor(x / this.tileSize);
@@ -446,7 +289,11 @@ TiledLayer = Klass(Layer, {
         // optimize: skip if img is transparent here
         var ctx = this.getTileCtx(tx,ty);
         ctx.globalAlpha = this.globalAlpha;
-        ctx.drawImage(img,x-tx*this.tileSize,y-ty*this.tileSize);
+        ctx.globalCompositeOperation = composite;
+        if (w && h)
+          ctx.drawImage(img,x-tx*this.tileSize,y-ty*this.tileSize,w,h);
+        else
+          ctx.drawImage(img,x-tx*this.tileSize,y-ty*this.tileSize);
       }
     }
   },
@@ -482,7 +329,9 @@ TiledLayer = Klass(Layer, {
     this.tiles = {};
   },
 
-  compositeTo : function(ctx) {
+  compositeTo : function(ctx, opacity, composite) {
+    ctx.globalAlpha = opacity;
+    ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
     for (var f in this.tiles) {
       var t = this.tiles[f];
       ctx.drawImage(t.canvas, this.x+t.x*this.tileSize, this.y+t.y*this.tileSize);
@@ -502,13 +351,15 @@ TiledLayer = Klass(Layer, {
     }
   },
 
-  fill : function(color) {
+  fill : function(color, composite) {
+    composite = composite || this.globalCompositeOperation;
     for (var f in this.tiles) {
       var t = this.tiles[f];
       if (t.hasNewPath) {
         var c = t.context;
         c.fillStyle = color;
         c.globalAlpha = this.globalAlpha;
+        c.globalCompositeOperation = composite;
         c.fill();
         t.hasNewPath = false;
       }
@@ -516,7 +367,8 @@ TiledLayer = Klass(Layer, {
     }
   },
 
-  stroke : function(color, lineWidth) {
+  stroke : function(color, lineWidth, composite) {
+    composite = composite || this.globalCompositeOperation;
     for (var f in this.tiles) {
       var t = this.tiles[f];
       if (t.hasNewPath) {
@@ -524,6 +376,7 @@ TiledLayer = Klass(Layer, {
         c.strokeStyle = color;
         c.lineWidth = lineWidth;
         c.globalAlpha = this.globalAlpha;
+        c.globalCompositeOperation = composite;
         c.stroke();
         t.hasNewPath = false;
       }
@@ -594,19 +447,19 @@ TiledLayer = Klass(Layer, {
     }
   },
 
-  drawPolygon : function(path, color) {
+  drawPolygon : function(path, color, composite) {
     this.beginPath();
     this.subPolygon(path);
-    this.fill(color);
+    this.fill(color, composite);
   },
 
-  drawArc : function(x,y,r,a1,a2, color, lineWidth, stroke, closed) {
+  drawArc : function(x,y,r,a1,a2, color, composite, lineWidth, stroke, closed) {
     this.beginPath();
     this.subArc(x,y,r,a1,a2,closed);
     if (stroke) {
-      this.stroke(color, lineWidth);
+      this.stroke(color, lineWidth, composite);
     } else {
-      this.fill(color);
+      this.fill(color, composite);
     }
   }
 
