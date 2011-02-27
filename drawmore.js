@@ -128,31 +128,34 @@ Drawmore = Klass(Undoable, ColorUtils, {
     ctx.save();
       ctx.fillStyle = this.colorToStyle(this.background);
       ctx.fillRect(0,0,w,h);
-      ctx.translate(px, py);
+      var xs = 1, ys = 1;
       if (flippedX) {
-        ctx.translate(-2*px+w, 0);
-        ctx.scale(-1,1);
+        px = px + -2*px+w;
+        xs = -1;
       }
       if (flippedY) {
-        ctx.translate(0, -2*py+h);
-        ctx.scale(1,-1);
+        py = py + -2*py+h;
+        ys = -1;
       }
-      ctx.scale(zoom, zoom);
+      ctx.translate(px, py);
+      ctx.scale(zoom*xs, zoom*ys);
       ctx.mozImageSmoothingEnabled = false;
       ctx.webkitImageSmoothingEnabled = false;
       ctx.imageSmoothingEnabled = false;
+      this.tempLayer.x = x;
+      this.tempLayer.y = y;
+      this.tempLayer.compensateZoom = zoom;
       for (var i=0; i<this.layers.length; i++) {
         var layer = this.layers[i];
         if (i == this.currentLayerIndex && this.strokeLayer.display) {
-          if (this.erasing) {
-            layer = layer.copy();
-            this.strokeLayer.applyTo(layer, this.erasing ? 'destination-out' : 'source-over');
-          } else {
-            layer.applyTo(ctx);
-            layer = this.strokeLayer;
-          }
+          layer.appendChild(this.strokeLayer);
+          this.strokeLayer.globalCompositeOperation = this.erasing ? 'destination-out' : 'source-over';
+        } else if (this.strokeLayer.parentNode == layer) {
+          layer.removeChild(this.strokeLayer);
         }
-        layer.applyTo(ctx);
+        if (layer.childNodes.length > 0)
+          this.tempLayer.clear();
+        layer.applyTo(ctx, null, this.tempLayer);
       }
     ctx.restore();
   },
@@ -327,6 +330,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.height = h;
     this.canvas.width = w;
     this.canvas.height = h;
+    this.tempLayer = new CanvasLayer(w,h);
     this.requestRedraw();
   },
 

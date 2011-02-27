@@ -1,3 +1,11 @@
+
+// a Layer is a composite node
+// it can have subnodes
+
+// when a layer has subnodes, the subnodes are evaluated first,
+// using a temporary layer as the composition target
+
+
 Layer = Klass({
   display : true,
   isLayer : true,
@@ -8,7 +16,12 @@ Layer = Klass({
   globalAlpha : 1,
   globalCompositeOperation : 'source-over',
 
-  initialize : function(){},
+  initialize : function(){
+    this.childNodes = [];
+    this.initializeLayer.apply(this, arguments);
+  },
+
+  initializeLayer : function() {},
 
   copy : function() {
     var l = Object.extend({}, this);
@@ -26,14 +39,35 @@ Layer = Klass({
   flipX : function() {},
   flipY : function() {},
 
-  applyTo : function(ctx, composite){
+  applyTo : function(ctx, composite, tempLayer){
     if (this.display) {
-      var a = ctx.globalAlpha;
-      var c = ctx.globalCompositeOperation;
-      this.compositeTo(ctx, this.opacity, composite);
-      ctx.globalAlpha = a;
-      ctx.globalCompositeOperation = c;
+      var alpha = ctx.globalAlpha;
+      var gco = ctx.globalCompositeOperation;
+      if (this.childNodes.length > 0) {
+        tempLayer = tempLayer || new TiledLayer();
+        this.compositeTo(tempLayer, 1, 'copy');
+        for (var i=0; i<this.childNodes.length; i++) {
+          this.childNodes[i].applyTo(tempLayer);
+        }
+        tempLayer.compositeTo(ctx, this.opacity, composite||this.globalCompositeOperation);
+      } else {
+        this.compositeTo(ctx, this.opacity, composite);
+      }
+      ctx.globalAlpha = alpha;
+      ctx.globalCompositeOperation = gco;
     }
+  },
+
+  appendChild : function(node) {
+    if (node.parentNode)
+      node.parentNode.removeChild(node);
+    node.parentNode = this;
+    this.childNodes.push(node);
+  },
+
+  removeChild : function(node) {
+    this.childNodes.deleteFirst(node);
+    node.parentNode = null;
   },
 
   compositeTo : function(ctx, opacity, composite) {
@@ -59,7 +93,7 @@ Layer = Klass({
 
 
 CanvasLayer = Klass(Layer, {
-  initialize : function(w,h){
+  initializeLayer : function(w,h){
     this.canvas = E.canvas(w,h);
     this.ctx = this.canvas.getContext('2d');
   },
@@ -140,13 +174,13 @@ CanvasLayer = Klass(Layer, {
   },
 
   drawImage : function(image, x, y, w, h, composite) {
-    this.ctx.globalAlpha = this.globalAlpha;
     this.ctx.save();
+    this.ctx.globalAlpha = this.globalAlpha;
     this.ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
     if (w && h)
-      this.ctx.drawImage(image,x-this.x,y-this.x);
+      this.ctx.drawImage(image, x-this.x, y-this.y, w, h);
     else
-      this.ctx.drawImage(image,x-this.x,y-this.x,w,h);
+      this.ctx.drawImage(image, x-this.x, y-this.y);
     this.ctx.restore();
   },
 
@@ -182,7 +216,7 @@ TiledLayer = Klass(Layer, {
 
   tileSize: 64,
 
-  initialize: function() {
+  initializeLayer: function() {
     this.tiles = {};
   },
 
