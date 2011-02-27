@@ -142,10 +142,17 @@ Drawmore = Klass(Undoable, ColorUtils, {
       ctx.webkitImageSmoothingEnabled = false;
       ctx.imageSmoothingEnabled = false;
       for (var i=0; i<this.layers.length; i++) {
-        this.layers[i].applyTo(ctx);
+        var layer = this.layers[i];
         if (i == this.currentLayerIndex && this.strokeLayer.display) {
-          this.strokeLayer.applyTo(ctx,this.erasing ? 'destination-out' : 'source-over');
+          if (this.erasing) {
+            layer = layer.copy();
+            this.strokeLayer.applyTo(layer, this.erasing ? 'destination-out' : 'source-over');
+          } else {
+            layer.applyTo(ctx);
+            layer = this.strokeLayer;
+          }
         }
+        layer.applyTo(ctx);
       }
     ctx.restore();
   },
