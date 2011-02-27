@@ -115,7 +115,10 @@ CanvasLayer = Klass(Layer, {
   compositeTo : function(ctx, opacity, composite) {
     ctx.globalAlpha = opacity;
     ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
+    var s = this.compensateZoom || 1;
+    if (s != 1) { ctx.save(); ctx.scale(1/s, 1/s); }
     ctx.drawImage(this.canvas, this.x, this.y);
+    if (s != 1) { ctx.restore(); }
   },
 
   beginPath : function() {
@@ -175,12 +178,14 @@ CanvasLayer = Klass(Layer, {
 
   drawImage : function(image, x, y, w, h, composite) {
     this.ctx.save();
+    var s = this.compensateZoom || 1;
+    this.ctx.scale(s, s);
     this.ctx.globalAlpha = this.globalAlpha;
     this.ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
     if (w && h)
-      this.ctx.drawImage(image, x-this.x, y-this.y, w, h);
+      this.ctx.drawImage(image, (x-1/s*this.x), (y-1/s*this.y), w, h);
     else
-      this.ctx.drawImage(image, x-this.x, y-this.y);
+      this.ctx.drawImage(image, (x-1/s*this.x), (y-1/s*this.y));
     this.ctx.restore();
   },
 
