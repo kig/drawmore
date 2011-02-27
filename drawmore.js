@@ -81,7 +81,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     Object.extend(this, config);
     this.canvas.style.setProperty("image-rendering", "optimizeSpeed", "important");
     this.ctx = canvas.getContext('2d');
-    this.canvas.style.cursor = 'url('+E.canvas(1,1).toDataURL()+'),crosshair';
+    var c = this.getCSSCursor();
+    this.canvas.style.cursor = 'url('+c.toDataURL()+') 1 1,crosshair';
     Undoable.initialize.call(this);
     this.current = {x:0,y:0};
     this.cursor = new BrushCursor();
@@ -95,6 +96,20 @@ Drawmore = Klass(Undoable, ColorUtils, {
       // ctrl-R messes with the r key when reloading
       self.disableColorPick = false;
     }, 1000);
+  },
+
+  getCSSCursor : function() {
+    var cssCursor = E.canvas(3,3);
+    var ctx = cssCursor.getContext('2d');
+    ctx.beginPath();
+    ctx.arc(1,1,1,0,Math.PI*2,false);
+    ctx.lineWidth = 0.75;
+    ctx.strokeStyle = 'white';
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.fillStyle = 'black';
+    ctx.fillRect(1,1,1,1);
+    return cssCursor;
   },
 
   // Draw loop
