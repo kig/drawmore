@@ -399,6 +399,49 @@
         top: 36px;
         right: 0px;
       }
+      #refSearchToggle {
+        position: absolute;
+        font-size: 9px;
+        left: 300px;
+        top: 0px;
+        cursor: pointer;
+        -webkit-transition-property: left;
+        -webkit-transition-duration: 0.5s;
+        -moz-transition-property: left;
+        -moz-transition-duration: 0.5s;
+        transition-property: left;
+        transition-duration: 0.5s;
+      }
+      #refContainer {
+        -webkit-transition-property: width;
+        -webkit-transition-duration: 0.5s;
+        -moz-transition-property: width;
+        -moz-transition-duration: 0.5s;
+        transition-property: width;
+        transition-duration: 0.5s;
+        display: block;
+        margin: 0px;
+        padding: 0px;
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        width: 0px;
+        overflow-x: hidden;
+      }
+      #refSearch {
+        top: 256px;
+        right: 0px;
+        position: absolute;
+        width: 330px;
+        margin: 0px;
+        padding: 0px;
+        text-align: right;
+      }
+      #refSearch input {
+        width: 300px;
+        margin-top: 2px;
+        margin: 0px;
+      }
       .paletteColor {
         width: 20px;
         height: 20px;
@@ -506,6 +549,55 @@
       <div class="brushWidth" value="1"></div>
 
       <div id="colorPicker"></div>
+      <div id="refSearch" src="">
+        <div id="refSearchToggle">Refs</div>
+        <div id="refContainer">
+          <object width="300" height="300"> 
+            <param name="flashvars" value="offsite=true&lang=en-us&page_show_url=%2Fphotos%2Ftags%2Frandom%2Fshow%2F&page_show_back_url=%2Fphotos%2Ftags%2Frandom%2F&tags=random&jump_to=&start_index="></param>
+            <param name="movie" value="http://www.flickr.com/apps/slideshow/show.swf?v=71649"></param>
+            <param name="allowFullScreen" value="true"></param>
+          </object>
+          <input id="refSearchInput" type="text" value="random" onchange="RefSearch.searchTag(this.value);return false;">
+        </div>
+        <script type="text/javascript">
+          byId('refSearchInput').onkeyup = function(ev) {
+            ev.stopPropagation();
+          };
+          byId('refSearchInput').onkeydown = function(ev) {
+            if (Key.match(ev, Key.ENTER)) {
+              RefSearch.searchTag(this.value);
+            }
+            ev.stopPropagation();
+          };
+          byId('refSearchToggle').onclick = function(ev) {
+            var rc = byId('refContainer');
+            this.style.left = rc.style.width == '300px' ? '300px' : '0px';
+            rc.style.width = rc.style.width == '300px' ? '0px' : '300px';
+            Event.stop(ev);
+          };
+          RefSearch = {
+            searchTag : function(tag) {
+              var object = byId('refSearch').getElementsByTagName('object')[0];
+              var etag = encodeURIComponent(tag);
+              var newObject = OBJECT(
+                PARAM({
+                  name:'flashvars', 
+                  value: (
+                    'offsite=true&lang=en-us&page_show_url=%2Fphotos%2Ftags%2F'+etag+
+                    '%2Fshow%2F&page_show_back_url=%2Fphotos%2Ftags%2F'+etag+
+                    '%2F&tags='+etag+
+                    '&jump_to=&start_index='
+                  )
+                }),
+                PARAM({ name:'movie', value:'http://www.flickr.com/apps/slideshow/show.swf?v=71649' }),
+                PARAM({ name:'allowFullScreen', value:'true' }),
+              {width:300, height:300});
+              object.parentNode.insertBefore(newObject, object);
+              object.parentNode.removeChild(object);
+            }
+          };
+        </script>
+      </div>
     </div>
     <div id="helpToggle">Help</div>
     <div id="help">
