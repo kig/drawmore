@@ -442,6 +442,21 @@
         margin-top: 2px;
         margin: 0px;
       }
+      #inspirator {
+        top: 586px;
+        right: 4px;
+        position: absolute;
+        font-size: 12px;
+        text-align: right;
+      }
+      #inspiratorText {
+        margin: 0px;
+        margin-bottom: 2px;
+      }
+      #inspiratorButton {
+        font-size: 9px;
+        margin: 0px;
+      }
       .paletteColor {
         width: 20px;
         height: 20px;
@@ -594,6 +609,30 @@
               {width:300, height:300});
               object.parentNode.insertBefore(newObject, object);
               object.parentNode.removeChild(object);
+            }
+          };
+        </script>
+      </div>
+      <div id="inspirator">
+        <div id="inspiratorContainer">
+          <p id="inspiratorText">Draw more!</p>
+          <button id="inspiratorButton">What?</button>
+        </div>
+        <script type="text/javascript">
+          byId('inspiratorButton').onclick = function(ev) {
+            byId('inspiratorText').textContent = Inspirator.randomTheme()+'!';
+            Event.stop(ev);
+          };
+          Inspirator = {
+            nouns : 'animal bird mammal herbivore carnivore fish amphibian reptile human man woman child boy girl plant rock machine tragedy mountain river lake ocean cliff beach plain forest city suburb downtown sky storm sun cloud rain thunder snow hurricane table chair desk hotel restaurant shop mall road street tool'.split(' '),
+            verbs : 'dive swim crawl walk run jump swing glide fly sit help hinder ignore follow avoid read drive eat talk grow shrink risk get lose keep borrow buy sell farm hunt build deconstruct analyze teach understand mistake sleep'.split(' '),
+            randomTheme : function() {
+              var r = Math.random();
+              var s = [];
+              for (var i=0; i<r*4; i++) {
+                s.push( (i%2 ? this.verbs : this.nouns).random() );
+              }
+              return s.join('-');
             }
           };
         </script>
