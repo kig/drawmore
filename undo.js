@@ -1,3 +1,11 @@
+HistoryState = function(methodName, args, breakpoint) {
+  this.methodName = methodName;
+  this.args = args;
+  if (breakpoint)
+    this.breakpoint = breakpoint;
+  this.timeStamp = new Date().getTime();
+};
+
 Undoable = Klass({
   historySnapshotEventCount : 1000,
   playbackRate : 5000, // events per millisecond
