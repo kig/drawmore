@@ -76,6 +76,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
   lastInputTime : -1,
   inputCount : 0,
 
+  compositingTime : 0,
+
   disableColorPick : true,
   flippedX : false,
   flippedY : false,
@@ -136,12 +138,22 @@ Drawmore = Klass(Undoable, ColorUtils, {
     }
     var elapsed = t1-t0;
     this.frameTimes[this.frameCount%this.frameTimes.length] = elapsed;
-    this.lastUpdateTime = t1.getTime();
     this.redrawRequested = false;
     this.layerWidget.redraw();
     this.colorPicker.redraw();
     this.drawFrameTimeHistogram(this.ctx, 12, 38);
+    var t2 = new Date().getTime();
+    this.ctx.save();
+      this.ctx.font = '9px sans-serif';
+      var fpsText = 'frame interval ' + (t2-(this.lastUpdateTime||t2)) + ' ms';
+      this.ctx.fillStyle = 'white';
+      this.ctx.fillText(fpsText, 12+1, 98+9+1);
+      this.ctx.fillStyle = 'black';
+      this.ctx.fillText(fpsText, 12, 98+9);
+    this.ctx.restore();
     this.frameCount++;
+    this.lastUpdateTime = t2;
+    var self = this;
   },
 
   updateInputTime : function() {
