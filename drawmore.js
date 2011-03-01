@@ -813,10 +813,16 @@ Drawmore = Klass(Undoable, ColorUtils, {
           draw.stopResizingBrush();
 
         } else if (Key.match(ev,  draw.keyBindings.opacityUp)) {
-          draw.opacityUp();
+          if (ev.shiftKey)
+            draw.currentLayerOpacityUp();
+          else
+            draw.opacityUp();
 
         } else if (Key.match(ev,  draw.keyBindings.opacityDown)) {
-          draw.opacityDown();
+          if (ev.shiftKey)
+            draw.currentLayerOpacityDown();
+          else
+            draw.opacityDown();
 
         } else if (Key.match(ev,  draw.keyBindings.brushSizeUp)) {
           draw.brushSizeUp();
@@ -1110,6 +1116,19 @@ Drawmore = Klass(Undoable, ColorUtils, {
         this.addHistoryState(new HistoryState('moveCurrentLayer', [dx,dy], true));
       }
     }
+  },
+  
+  setCurrentLayerOpacity : function(opacity) {
+    this.setLayerOpacity(this.currentLayerIndex, opacity);
+    this.layerWidget.requestRedraw();
+  },
+  
+  currentLayerOpacityUp : function() {
+    this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity * 1.5, 1/255, 1));
+  },
+  
+  currentLayerOpacityDown : function() {
+    this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity / 1.5, 0, 1));
   },
   
   setLayerOpacity : function(idx, opacity) {
