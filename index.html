@@ -2,20 +2,22 @@
   <head>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>&#9733; Drawmore &#9733;</title>
-    <script src="magi.js"></script>
-    <script src="file_format.js"></script>
-    <script src="undo.js"></script>
-    <script src="cursors.js"></script>
-    <script src="color_utils.js"></script>
-    <script src="layers.js"></script>
-    <script src="layers.js"></script>
-    <script src="brushes.js"></script>
-    <script src="constraints.js"></script>
-    <script src="selection.js"></script>
-    <script src="layerwidget.js"></script>
-    <script src="drawmore.js"></script>
-    <script src="upload_util.js"></script>
-    <!--<script src="defaultImage.js"></script>-->
+    <script type="text/javascript" src="matrix.js"></script>
+    <script type="text/javascript" src="util.js"></script>
+    <script type="text/javascript" src="file_format.js"></script>
+    <script type="text/javascript" src="undo.js"></script>
+    <script type="text/javascript" src="cursors.js"></script>
+    <script type="text/javascript" src="color_utils.js"></script>
+    <script type="text/javascript" src="layers.js"></script>
+    <script type="text/javascript" src="layers.js"></script>
+    <script type="text/javascript" src="brushes.js"></script>
+    <script type="text/javascript" src="constraints.js"></script>
+    <script type="text/javascript" src="selection.js"></script>
+    <script type="text/javascript" src="layerwidget.js"></script>
+    <script type="text/javascript" src="upload_util.js"></script>
+    <script type="text/javascript" src="inspirator.js"></script>
+    <script type="text/javascript" src="drawmore.js"></script>
+    <!--<script type="text/javascript" src="defaultImage.js"></script>-->
     <script>
 
       window.addEventListener('load', function() {
@@ -245,6 +247,27 @@
           draw.toggleHelp();
           ev.preventDefault();
         };
+
+        byId('refSearchInput').onkeyup = function(ev) {
+          ev.stopPropagation();
+        };
+        byId('refSearchInput').onkeydown = function(ev) {
+          if (Key.match(ev, Key.ENTER)) {
+            RefSearch.searchTag(this.value);
+          }
+          ev.stopPropagation();
+        };
+        byId('refSearchToggle').onclick = function(ev) {
+          var rc = byId('refContainer');
+          this.style.left = rc.style.width == '300px' ? '300px' : '0px';
+          rc.style.width = rc.style.width == '300px' ? '0px' : '300px';
+          Event.stop(ev);
+        };
+        byId('inspiratorButton').onclick = function(ev) {
+          byId('inspiratorText').textContent = Inspirator.randomTheme()+'!';
+          Event.stop(ev);
+        };
+
       }, false);
 
     </script>
@@ -590,75 +613,19 @@
       <div id="refSearch" src="">
         <div id="refSearchToggle">Refs</div>
         <div id="refContainer">
-          <object width="300" height="300"> 
+          <object width="300" height="300">
             <param name="flashvars" value="offsite=true&lang=en-us&page_show_url=%2Fphotos%2Ftags%2Frandom%2Fshow%2F&page_show_back_url=%2Fphotos%2Ftags%2Frandom%2F&tags=random&jump_to=&start_index="></param>
             <param name="movie" value="http://www.flickr.com/apps/slideshow/show.swf?v=71649"></param>
             <param name="allowFullScreen" value="true"></param>
           </object>
           <input id="refSearchInput" type="text" value="random" onchange="RefSearch.searchTag(this.value);return false;">
         </div>
-        <script type="text/javascript">
-          byId('refSearchInput').onkeyup = function(ev) {
-            ev.stopPropagation();
-          };
-          byId('refSearchInput').onkeydown = function(ev) {
-            if (Key.match(ev, Key.ENTER)) {
-              RefSearch.searchTag(this.value);
-            }
-            ev.stopPropagation();
-          };
-          byId('refSearchToggle').onclick = function(ev) {
-            var rc = byId('refContainer');
-            this.style.left = rc.style.width == '300px' ? '300px' : '0px';
-            rc.style.width = rc.style.width == '300px' ? '0px' : '300px';
-            Event.stop(ev);
-          };
-          RefSearch = {
-            searchTag : function(tag) {
-              var object = byId('refSearch').getElementsByTagName('object')[0];
-              var etag = encodeURIComponent(tag);
-              var newObject = OBJECT(
-                PARAM({
-                  name:'flashvars', 
-                  value: (
-                    'offsite=true&lang=en-us&page_show_url=%2Fphotos%2Ftags%2F'+etag+
-                    '%2Fshow%2F&page_show_back_url=%2Fphotos%2Ftags%2F'+etag+
-                    '%2F&tags='+etag+
-                    '&jump_to=&start_index='
-                  )
-                }),
-                PARAM({ name:'movie', value:'http://www.flickr.com/apps/slideshow/show.swf?v=71649' }),
-                PARAM({ name:'allowFullScreen', value:'true' }),
-              {width:300, height:300});
-              object.parentNode.insertBefore(newObject, object);
-              object.parentNode.removeChild(object);
-            }
-          };
-        </script>
       </div>
       <div id="inspirator">
         <div id="inspiratorContainer">
           <p id="inspiratorText">Draw more!</p>
           <button id="inspiratorButton">What?</button>
         </div>
-        <script type="text/javascript">
-          byId('inspiratorButton').onclick = function(ev) {
-            byId('inspiratorText').textContent = Inspirator.randomTheme()+'!';
-            Event.stop(ev);
-          };
-          Inspirator = {
-            nouns : 'animal bird mammal herbivore carnivore fish amphibian reptile human man woman child boy girl plant rock machine tragedy mountain river lake ocean cliff beach plain forest city suburb downtown sky storm sun cloud rain thunder snow hurricane table chair desk hotel restaurant shop mall road street tool'.split(' '),
-            verbs : 'dive swim crawl walk run jump swing glide fly sit help hinder ignore follow avoid read drive eat talk grow shrink risk get lose keep borrow buy sell farm hunt build deconstruct analyze teach understand mistake sleep'.split(' '),
-            randomTheme : function() {
-              var r = Math.random();
-              var s = [];
-              for (var i=0; i<r*4; i++) {
-                s.push( (i%2 ? this.verbs : this.nouns).random() );
-              }
-              return s.join('-');
-            }
-          };
-        </script>
       </div>
     </div>
     <div id="helpToggle">Help</div>
