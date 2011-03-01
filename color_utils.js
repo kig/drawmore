@@ -358,8 +358,8 @@ ColorUtils = Klass({
     return this.xyza2laba(x,y,z,xn,yn,zn,1,dst);
   },
 
-  laba2rgba : function(l,a,b,xn,yn,zn,a,dst) {
-    var xyza = this.laba2xyza(l,a,b,xn,yn,zn,a,dst)
+  laba2rgba : function(l,a,b,xn,yn,zn,A,dst) {
+    var xyza = this.laba2xyza(l,a,b,xn,yn,zn,A,dst)
     return this.xyza2rgba(xyza[0], xyza[1], xyza[2], xyza[3], xyza);
   },
   lab2rgb : function(l,a,b,xn,yn,zn,dst) {
