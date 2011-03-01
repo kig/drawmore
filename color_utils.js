@@ -596,7 +596,7 @@ ColorPicker = Klass(ColorUtils, {
       rgb[3] = 1;
       hc.strokeStyle = this.colorToStyle(rgb);
       hc.beginPath();
-      var a1 = (h-1)*deg2rad-Math.PI*0.5;
+      var a1 = (h-1.5)*deg2rad-Math.PI*0.5;
       var a2 = (h+0.5)*deg2rad-Math.PI*0.5;
       hc.arc(0,0,r, a1, a2, false);
       hc.stroke();
