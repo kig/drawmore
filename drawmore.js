@@ -759,7 +759,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
         } else if (Key.match(ev,  draw.keyBindings.opacityDown)) {
           if (ev.shiftKey)
             draw.currentLayerOpacityDown();
-            
+
         } else if (Key.match(ev, draw.keyBindings.pickColor) && !ev.ctrlKey && !draw.disableColorPick) {
           draw.pickColor(draw.current, draw.pickRadius);
 
@@ -1125,12 +1125,19 @@ Drawmore = Klass(Undoable, ColorUtils, {
       }
     }
   },
-  
+
   mergeDown : function(addHistory) {
     if (this.currentLayerIndex > 0) {
-      this.currentLayer.applyTo(this.layers[this.currentLayerIndex-1]);
-      this.deleteCurrentLayer(false);
-      this.setCurrentLayer(this.currentLayerIndex-1, false);
+      var target = this.createLayerObject();
+      var below = this.layers[this.currentLayerIndex-1];
+      target.name = this.currentLayer.name;
+      below.applyTo(target);
+      this.currentLayer.applyTo(target);
+      var cidx = this.currentLayerIndex;
+      this.deleteLayer(cidx, false);
+      this.deleteLayer(cidx-1, false);
+      this.layers.splice(cidx-1, 0, target);
+      this.setCurrentLayer(cidx-1, false);
       this.addHistoryState(new HistoryState('mergeDown', [], true));
     }
   },
@@ -1159,20 +1166,20 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.setCurrentLayer(this.layers.length-1, false);
     this.addHistoryState(new HistoryState('mergeAll', [], true));
   },
-  
+
   setCurrentLayerOpacity : function(opacity) {
     this.setLayerOpacity(this.currentLayerIndex, opacity);
     this.layerWidget.requestRedraw();
   },
-  
+
   currentLayerOpacityUp : function() {
     this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity * 1.1, 1/255, 1));
   },
-  
+
   currentLayerOpacityDown : function() {
     this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity / 1.1, 0, 1));
   },
-  
+
   setLayerOpacity : function(idx, opacity) {
     var layer = this.layers[idx];
     if (layer) {
