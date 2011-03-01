@@ -5,6 +5,33 @@
 // when a layer has subnodes, the subnodes are evaluated first,
 // using a temporary layer as the composition target
 
+LayerManager = Klass({
+
+  initialize : function() {
+    this.layerIndex = {};
+  },
+
+  addLayer : function(layer) {
+    this.layerIndex[layer.uid] = layer;
+    for (var i=0; i<layer.childNodes.length; i++)
+      this.addLayer(layer.childNodes[i]);
+  },
+  
+  deleteLayer : function(layer) {
+    delete this.layerIndex[layer.uid];
+  },
+
+  rebuild : function(layers) {
+    this.layerIndex = {};
+    for (var i=0; i<layers.length; i++)
+      this.addLayer(layers[i]);
+  },
+  
+  getLayerByUID : function(uid) {
+    return this.layerIndex[uid];
+  }
+
+});
 
 Layer = Klass({
   display : true,
@@ -18,13 +45,50 @@ Layer = Klass({
 
   initialize : function(){
     this.childNodes = [];
+    this.linkedProperties = {};
     this.initializeLayer.apply(this, arguments);
   },
 
   initializeLayer : function() {},
 
+  linkProperty : function(propertyName, layer) {
+    var p = this.linkedProperties[propertyName] || layer.linkedProperties[propertyName];
+    if (!p)
+      p = [layer.uid];
+    p.deleteFirst(this.uid);
+    p.push(this.uid);
+    layer.linkedProperties[propertyName] = this.linkedProperties[propertyName] = p;
+  },
+  
+  unlinkProperty : function(propertyName) {
+    var p = this.linkedProperties[propertyName];
+    if (p) p.deleteFirst(this.uid);
+    delete this.linkedProperties[propertyName];
+  },
+  
+  set : function(propertyName, value) {
+    this[propertyName] = value;
+    var p = this.linkedProperties[propertyName];
+    if (p) {
+      for (var i=0; i<p.length; i++) {
+        this.layerManager.getLayerByUID(p[i])[propertyName] = value;
+      }
+    }
+  },
+  
+  destroy : function() {
+    var props = [];
+    for (var p in this.linkedProperties)
+      props.push(p);
+    for (var i=0; i<props.length; i++)
+      this.unlinkProperty(props[i]);
+  },
+  
   copy : function() {
     var l = Object.extend({}, this);
+    l.linkedProperties = {};
+    for (var p in this.linkedProperties)
+      l.linkedProperties[p] = this.linkedProperties.slice(0);
     this.copyProperties(l);
     return l;
   },

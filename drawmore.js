@@ -84,6 +84,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   initialize : function(canvas, config) {
     this.canvas = canvas;
+    this.layerManager = new LayerManager();
     Object.extend(this, config);
     this.canvas.style.setProperty("image-rendering", "optimizeSpeed", "important");
     this.ctx = canvas.getContext('2d');
@@ -454,6 +455,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.layers = state.layers.map(function(l){ return l.copy(); });
     this.strokeLayer = state.strokeLayer.copy();
     this.layerUID = state.layerUID;
+    this.layerManager.rebuild(this.layers);
     this.layerWidget.requestRedraw();
     this.setCurrentLayer(state.currentLayerIndex);
     for (var i=0; i<state.palette.length; i++)
@@ -849,7 +851,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
         } else if (Key.match(ev, draw.keyBindings.layerAbove)) {
           draw.layerAbove();
         } else if (Key.match(ev, draw.keyBindings.layerBelow)) {
-          draw.layerBelow();
+          if (ev.shiftKey)
+            draw.mergeDown();
+          else
+            draw.layerBelow();
 
         } else if (Key.match(ev, draw.keyBindings.opacity1)) {
           draw.setOpacity(0.125);
@@ -1109,8 +1114,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   moveCurrentLayer : function(dx, dy) {
     if (this.currentLayer) {
-      this.currentLayer.x += dx;
-      this.currentLayer.y += dy;
+      this.currentLayer.set('x', this.currentLayer.x + dx);
+      this.currentLayer.set('y', this.currentLayer.y + dy);
       this.requestRedraw();
       var l = this.history.last();
       if (l.methodName == 'moveCurrentLayer') {
@@ -1120,6 +1125,40 @@ Drawmore = Klass(Undoable, ColorUtils, {
         this.addHistoryState(new HistoryState('moveCurrentLayer', [dx,dy], true));
       }
     }
+  },
+  
+  mergeDown : function(addHistory) {
+    if (this.currentLayerIndex > 0) {
+      this.currentLayer.applyTo(this.layers[this.currentLayerIndex-1]);
+      this.deleteCurrentLayer(false);
+      this.setCurrentLayer(this.currentLayerIndex-1, false);
+      this.addHistoryState(new HistoryState('mergeDown', [], true));
+    }
+  },
+
+  mergeVisible : function() {
+    var target = this.createLayerObject();
+    this.layers.forEach(function(l){ l.applyTo(target); });
+    var firstIdx = null;
+    for (var i=0; i<this.layers.length; i++) {
+      while (i<this.layers.length && this.layers[i].display) {
+        if (firstIdx == null) firstIdx = i;
+        this.deleteLayer(i, false);
+      }
+    }
+    this.layers.splice(firstIdx || 0, 0, target);
+    this.setCurrentLayer(firstIdx, false);
+    this.addHistoryState(new HistoryState('mergeVisible', [], true));
+  },
+
+  mergeAll : function() {
+    var target = this.createLayerObject();
+    this.layers.forEach(function(l){ l.applyTo(target); });
+    while (this.layers.length > 0)
+      this.deleteLayer(this.layers.length-1, false);
+    this.layers.push(target);
+    this.setCurrentLayer(this.layers.length-1, false);
+    this.addHistoryState(new HistoryState('mergeAll', [], true));
   },
   
   setCurrentLayerOpacity : function(opacity) {
@@ -1138,7 +1177,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   setLayerOpacity : function(idx, opacity) {
     var layer = this.layers[idx];
     if (layer) {
-      layer.opacity = opacity;
+      layer.set('opacity', opacity);
       this.requestRedraw();
       var l = this.history.last();
       if (l.methodName == 'setLayerOpacity' && l.args[0] == idx) {
@@ -1154,6 +1193,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     layer.name = "Layer " + this.layerUID;
     layer.uid = this.layerUID;
     this.layerUID++;
+    this.layerManager.addLayer(layer);
+    layer.layerManager = this.layerManager;
     return layer;
   },
 
@@ -1168,7 +1209,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
     }
     x = x || 0;
     y = y || 0;
-    layer.drawImage(img, x, y);
+    layer.drawImage(img, 0, 0);
+    layer.set('x', x);
+    layer.set('y', y);
     this.layers.push(layer);
     this.setCurrentLayer(this.layers.length-1, false);
     this.layerWidget.requestRedraw();
@@ -1204,7 +1247,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   duplicateCurrentLayer : function() {
-    var layer = this.currentLayer.copy();
+    var layer = this.currentLayer.copy(false);
     var m = layer.name.match(/ \(copy( \d+)?\)$/);
     if (m) {
       m[1] = m[1] || 0;
@@ -1232,14 +1275,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   hideLayer : function(idx) {
-    this.layers[idx].display = false;
+    this.layers[idx].set('display', false);
     this.layerWidget.requestRedraw();
     this.requestRedraw();
     this.addHistoryState(new HistoryState('hideLayer', [idx], true));
   },
 
   showLayer : function(idx) {
-    this.layers[idx].display = true;
+    this.layers[idx].set('display', true);
     this.layerWidget.requestRedraw();
     this.requestRedraw();
     this.addHistoryState(new HistoryState('showLayer', [idx], true));
@@ -1276,25 +1319,28 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.layerWidget.requestRedraw();
   },
 
-  deleteLayer : function(i) {
+  deleteLayer : function(i, addHistory) {
     if (i < this.currentLayerIndex) {
       this.setCurrentLayer(this.currentLayerIndex-1, false);
     }
     if (i == this.layers.length-1 && i == this.currentLayerIndex) {
       this.setCurrentLayer(this.currentLayerIndex-1, false);
     }
-    this.layers.splice(i,1);
+    var layer = this.layers.splice(i,1)[0];
+    layer.destroy();
+    this.layerManager.deleteLayer(layer);
     if (i == this.currentLayerIndex) {
       this.setCurrentLayer(this.currentLayerIndex, false);
     }
-    this.addHistoryState(new HistoryState('deleteLayer', [i], true));
+    if (addHistory != false)
+      this.addHistoryState(new HistoryState('deleteLayer', [i], true));
     this.requestRedraw();
 
     this.layerWidget.requestRedraw();
   },
 
-  deleteCurrentLayer : function() {
-    this.deleteLayer(this.currentLayerIndex);
+  deleteCurrentLayer : function(addHistory) {
+    this.deleteLayer(this.currentLayerIndex, addHistory);
   },
 
   setCurrentLayer : function(i, recordHistory) {
