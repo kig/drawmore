@@ -13,8 +13,8 @@ LayerWidget = Klass({
         BUTTON("+", {title: 'New layer', onclick: function(ev) {self.app.newLayer();}}),
         BUTTON("-", {title: 'Delete layer', onclick: function(ev) {self.app.deleteCurrentLayer();}}),
         BUTTON("x2", {title: 'Duplicate layer', onclick: function(ev) {self.app.duplicateCurrentLayer();}}),
-        BUTTON("\u2194", {title: 'Flip layer horizontally', onclick: function(ev) {self.app.flipCurrentLayerHorizontally();}}),
-        BUTTON("\u2195", {title: 'Flip layer vertically', onclick: function(ev) {self.app.flipCurrentLayerVertically();}}),
+        //BUTTON("\u2194", {title: 'Flip layer horizontally', onclick: function(ev) {self.app.flipCurrentLayerHorizontally();}}),
+        //BUTTON("\u2195", {title: 'Flip layer vertically', onclick: function(ev) {self.app.flipCurrentLayerVertically();}}),
         BUTTON("\u21a7", {title: 'Merge down', onclick: function(ev) {self.app.mergeDown();}}),
         BUTTON("\u21a1", {title: 'Merge visible', onclick: function(ev) {self.app.mergeVisible();}}),
         BUTTON("_", {title: 'Flatten image', onclick: function(ev) {self.app.mergeAll();}})
