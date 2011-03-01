@@ -165,7 +165,7 @@ BrushCursor = Klass({
     }
     ctx.save();
       ctx.translate(w/2, w/2);
-      ctx.rotate(Math.PI+Math.PI/4);
+      ctx.rotate(Math.PI/4);
       ctx.translate(0.5*origDiameter+5, 0);
       ctx.beginPath();
       ctx.strokeStyle = '#888888';
