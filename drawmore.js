@@ -750,6 +750,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
           else
             draw.zoomIn();
 
+        } else if (Key.match(ev,  draw.keyBindings.opacityUp)) {
+          if (ev.shiftKey)
+            draw.currentLayerOpacityUp();
+
+        } else if (Key.match(ev,  draw.keyBindings.opacityDown)) {
+          if (ev.shiftKey)
+            draw.currentLayerOpacityDown();
+            
         } else if (Key.match(ev, draw.keyBindings.pickColor) && !ev.ctrlKey && !draw.disableColorPick) {
           draw.pickColor(draw.current, draw.pickRadius);
 
@@ -813,15 +821,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
           draw.stopResizingBrush();
 
         } else if (Key.match(ev,  draw.keyBindings.opacityUp)) {
-          if (ev.shiftKey)
-            draw.currentLayerOpacityUp();
-          else
+          if (!ev.shiftKey)
             draw.opacityUp();
 
         } else if (Key.match(ev,  draw.keyBindings.opacityDown)) {
-          if (ev.shiftKey)
-            draw.currentLayerOpacityDown();
-          else
+          if (!ev.shiftKey)
             draw.opacityDown();
 
         } else if (Key.match(ev,  draw.keyBindings.brushSizeUp)) {
@@ -1124,11 +1128,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
   
   currentLayerOpacityUp : function() {
-    this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity * 1.5, 1/255, 1));
+    this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity * 1.1, 1/255, 1));
   },
   
   currentLayerOpacityDown : function() {
-    this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity / 1.5, 0, 1));
+    this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity / 1.1, 0, 1));
   },
   
   setLayerOpacity : function(idx, opacity) {
