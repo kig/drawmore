@@ -1135,8 +1135,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.requestRedraw();
       var l = this.history.last();
       if (l.methodName == 'moveCurrentLayer') {
-        l.args[0] += dx;
-        l.args[1] += dy;
+        this.addHistoryState(new HistoryState('moveCurrentLayer', [dx,dy], false));
       } else {
         this.addHistoryState(new HistoryState('moveCurrentLayer', [dx,dy], true));
       }
