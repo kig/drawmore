@@ -264,7 +264,7 @@
           Event.stop(ev);
         };
         byId('inspiratorButton').onclick = function(ev) {
-          byId('inspiratorText').textContent = Inspirator.randomTheme()+'!';
+          byId('inspiratorText').textContent = Inspirator.randomTheme()+' !';
           Event.stop(ev);
         };
 
@@ -422,8 +422,8 @@
         width: 40px;
         height: 20px;
         display: inline-block;
-        position: absolute;
-        margin-top: 32px;
+        vertical-align: bottom;
+        position: relative;
         margin-bottom: 0px;
         margin-left: 0px;
         margin-right: 8px;
@@ -590,8 +590,8 @@
     </div>
     <div id="palette">
       <input type="text" id="colorName" value="#"/>
-      <div id="backgroundColor"></div>
       <div id="foregroundColor"></div>
+      <div id="backgroundColor"></div>
 
       <div class="paletteColor" color="#000000"></div>
       <div class="paletteColor" color="#ffffff"></div>
