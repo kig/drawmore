@@ -1096,9 +1096,26 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   toggleCurrentLayer : function() {
-    this.toggleLayer(this.currentLayerIndex);
+    this.toggleLayer(this.currentLayer.uid);
   },
 
+  toggleLayerLinkPosition : function(uid) {
+    if (uid != this.currentLayer.uid) {
+      var l = this.layerManager.getLayerByUID(uid);
+      var linked = l.isPropertyLinkedWith('x', this.currentLayer);
+      if (linked) {
+        l.unlinkProperty('x');
+        l.unlinkProperty('y');
+      } else {
+        this.currentLayer.linkProperty('x', l);
+        this.currentLayer.linkProperty('y', l);
+      }
+      this.addHistoryState(new HistoryState('toggleLayerLinkPosition', [uid], true));
+    }
+    this.layerWidget.requestRedraw();
+    this.requestRedraw();
+  },
+  
   flipCurrentLayerHorizontally : function() {
     this.currentLayer.flipX();
     this.requestRedraw();
@@ -1113,8 +1130,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   moveCurrentLayer : function(dx, dy) {
     if (this.currentLayer) {
-      this.currentLayer.set('x', this.currentLayer.x + dx);
-      this.currentLayer.set('y', this.currentLayer.y + dy);
+      this.currentLayer.modify('x', dx);
+      this.currentLayer.modify('y', dy);
       this.requestRedraw();
       var l = this.history.last();
       if (l.methodName == 'moveCurrentLayer') {
@@ -1281,21 +1298,21 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   hideLayer : function(idx) {
-    this.layers[idx].set('display', false);
+    this.layerManager.getLayerByUID(idx).set('display', false);
     this.layerWidget.requestRedraw();
     this.requestRedraw();
     this.addHistoryState(new HistoryState('hideLayer', [idx], true));
   },
 
   showLayer : function(idx) {
-    this.layers[idx].set('display', true);
+    this.layerManager.getLayerByUID(idx).set('display', true);
     this.layerWidget.requestRedraw();
     this.requestRedraw();
     this.addHistoryState(new HistoryState('showLayer', [idx], true));
   },
 
   toggleLayer : function(idx) {
-    if (this.layers[idx].display)
+    if (this.layerManager.getLayerByUID(idx).display)
       this.hideLayer(idx);
     else
       this.showLayer(idx);

@@ -25,6 +25,22 @@ LayerManager = Klass({
     this.layerIndex = {};
     for (var i=0; i<layers.length; i++)
       this.addLayer(layers[i]);
+    var processedLinks = [];
+    for (var i=0; i<layers.length; i++) {
+      var layer = layers[i];
+      for (var p in layer.linkedProperties) {
+        var links = layer.linkedProperties[p];
+        if (!links.processed) {
+          for (var j=0; j<links.length; j++) {
+            this.getLayerByUID(links[j]).linkedProperties[p] = links;
+          }
+          links.processed = true;
+          processedLinks.push(links);
+        }
+      }
+    }
+    for (var i=0; i<processedLinks.length; i++)
+      delete processedLinks[i].processed;
   },
   
   getLayerByUID : function(uid) {
@@ -66,12 +82,32 @@ Layer = Klass({
     delete this.linkedProperties[propertyName];
   },
   
+  isPropertyLinkedWith : function(propertyName, layer) {
+    if (layer === this) return true;
+    var p = this.linkedProperties[propertyName];
+    return layer && p != null && p === layer.linkedProperties[propertyName];
+  },
+  
+  modify : function(propertyName, delta) {
+    this[propertyName] += delta;
+    var p = this.linkedProperties[propertyName];
+    if (p) {
+      var uid = this.uid;
+      for (var i=0; i<p.length; i++) {
+        if (p[i] != uid)
+          this.layerManager.getLayerByUID(p[i])[propertyName] += delta;
+      }
+    }
+  },
+  
   set : function(propertyName, value) {
     this[propertyName] = value;
     var p = this.linkedProperties[propertyName];
     if (p) {
+      var uid = this.uid;
       for (var i=0; i<p.length; i++) {
-        this.layerManager.getLayerByUID(p[i])[propertyName] = value;
+        if (p[i] != uid)
+          this.layerManager.getLayerByUID(p[i])[propertyName] = value;
       }
     }
   },

@@ -148,7 +148,14 @@ LayerWidget = Klass({
       CHECKBOX({
         checked: layer.display,
         onclick: function(ev) {
-          self.app.toggleLayer(self.indexOf(this.parentNode));
+          self.app.toggleLayer(layer.uid);
+          ev.stopPropagation();
+        }
+      }),
+      CHECKBOX({
+        checked: layer.isPropertyLinkedWith('x', self.app.currentLayer),
+        onclick: function(ev) {
+          self.app.toggleLayerLinkPosition(layer.uid);
           ev.stopPropagation();
         }
       }),
