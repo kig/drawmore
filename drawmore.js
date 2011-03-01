@@ -773,11 +773,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       draw.updateInputTime();
       draw.stopResizingBrush();
       if (ev.altKey && !ev.ctrlKey) {
-        if (Key.match(ev, draw.keyBindings.clear)) {
-          draw.deleteCurrentLayer();
-          ev.preventDefault();
-
-        } else if (Key.match(ev, draw.keyBindings.flip)) {
+        if (Key.match(ev, draw.keyBindings.flip)) {
           if (ev.shiftKey)
             draw.flipCurrentLayerVertically();
           else
@@ -803,7 +799,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
       }
       if (!ev.altKey && !ev.ctrlKey) {
         if (Key.match(ev, draw.keyBindings.clear)) {
-          draw.clear();
+          if (ev.shiftKey)
+            draw.deleteCurrentLayer();
+          else
+            draw.clear();
 
         } else if (Key.match(ev, draw.keyBindings.resetView)) {
           draw.resetView();
