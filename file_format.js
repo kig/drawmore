@@ -46,18 +46,6 @@ JSONDrawHistorySerializer = Klass({
   }
 });
 
-OldJSONDrawHistorySerializer = Klass(JSONDrawHistorySerializer, {
-  magic: 'SRBL',
-  majorVersion: 0,
-  minorVersion: 0,
-
-  extension: 'jsrbl',
-
-  getVersionTag : function() {
-    return [this.magic, this.majorVersion, this.minorVersion, ''].join(",")
-  }
-});
-
 /**
   Binary file format for Scribble event history.
   ~2.5 bytes per event uncompressed. ~0.6 bytes per event gzipped.
@@ -580,163 +568,11 @@ BinaryDrawHistorySerializer = Klass(JSONDrawHistorySerializer, {
 });
 
 
-OldBinaryDrawHistorySerializer = Klass(BinaryDrawHistorySerializer, {
-  majorVersion: 1,
-  minorVersion: 0,
-
-  getVersionTag : function() {
-    return [this.magic, this.majorVersion, this.minorVersion, ''].join(",")
-  },
-
-  serializeBody : function(saveObj) {
-    var history = saveObj.history;
-    var output = [
-      this.encodeInt16(saveObj.width),
-      this.encodeInt16(saveObj.height),
-      this.encodeInt32(saveObj.historyIndex)
-    ];
-    for (var i=0; i<history.length; i++) {
-      var e = history[i];
-      var cmd = this.commandCodes[e.methodName];
-      if (e.methodName == 'drawLine') {
-        // delta-encode a string of drawLine actions
-        var coords = [e.args[0], e.args[1]];
-        e = history[i+1];
-        while (e && e.methodName == 'drawLine') {
-          if (this.canDeltaEncode(coords, e.args, e.breakpoint))
-            coords.push(e.args[1]);
-          else
-            break;
-          i++;
-          e = history[i+1];
-        }
-        var deltaString = this.deltaEncode(coords);
-        output.push(this.encodeUInt8(cmd), this.encodeUInt16(deltaString.length), deltaString);
-        continue;
-      } else {
-        var args = this.encodeArgs(e.methodName, e.args);
-        output.push(this.encodeUInt8(cmd), args);
-      }
-    }
-    return output.join("");
-  },
-
-  deserializeBody : function(string) {
-    var saveObj = {};
-    var output = [];
-    var obj = {};
-    saveObj.width = this.readInt16(string, 0);
-    saveObj.height = this.readInt16(string, 2);
-    saveObj.historyIndex = this.readInt32(string, 4);
-    saveObj.history = output;
-    for (var i=8; i<string.length;) {
-      i += this.readCommand(string, i, obj);
-      if (obj.methodName == 'drawLine') {
-        var coords = this.decodeDeltas(obj.args[0]);
-        for (var j=0; j<coords.length; j++) {
-          output.push({methodName: 'drawLine', args: coords[j]});
-        }
-        if (coords.length == 1) {
-          output.last().breakpoint = true;
-        }
-      } else {
-        var o = {methodName: obj.methodName, args: obj.args};
-        if (this.breakpointMethod[obj.methodName])
-          o.breakpoint = true;
-        output.push(o);
-      }
-    }
-    return saveObj;
-  },
-
-  encodeArgs : function(methodName, args) {
-    switch (methodName) {
-      case 'setColor':
-      case 'setBackground':
-        return this.encodeColor(args[0]);
-      case 'setLineWidth':
-        return this.encodeUInt16(args[0]*4);
-      case 'setLineCap':
-        return this.encodeUInt8(this.lineCapCodes[args[0]]);
-      case 'setOpacity':
-        return this.encodeColorComponent(args[0]);
-      case 'clear':
-        return '';
-      case 'drawPoint':
-        return [
-          this.encodeInt16(args[0].x),
-          this.encodeInt16(args[0].y)
-        ].join('');
-      case 'drawLine': throw (new Error("encodeArgs: called with drawLine"));
-      default: throw (new Error("encodeArgs: unknown method "+methodName));
-    }
-  },
-
-  readArgs : function(methodName, args, string, offset) {
-    switch (methodName) {
-      case 'setColor':
-      case 'setBackground':
-        args.push(this.readColor(string, offset));
-        return 16;
-      case 'setLineWidth':
-        args.push(this.readUInt16(string, offset)/4);
-        return 2;
-      case 'setLineCap':
-        args.push(this.lineCaps[this.readUInt8(string, offset)]);
-        return 1;
-      case 'setOpacity':
-        args.push(this.readColorComponent(string, offset));
-        return 4;
-      case 'clear':
-        return 0;
-      case 'drawPoint':
-        var x = this.readInt16(string, offset);
-        var y = this.readInt16(string, offset+2);
-        args.push({x:x, y:y});
-        return 4;
-      case 'drawLine':
-        var len = this.readUInt16(string, offset);
-        args.push(string.substring(offset+2, offset+2+len));
-        return 2+len;
-      default: throw (new Error("readArgs: unknown method "+methodName));
-    }
-  },
-
-  encodeColor : function(rgba) {
-    var self = this;
-    return rgba.map(function(c){
-      return self.encodeColorComponent(c);
-    }).join('');
-  },
-
-  readColor : function(string, offset) {
-    return [
-      this.readColorComponent(string, offset),
-      this.readColorComponent(string, offset+4),
-      this.readColorComponent(string, offset+8),
-      this.readColorComponent(string, offset+12)
-    ];
-  },
-
-  encodeColorComponent : function(c) {
-    return this.encodeInt32(Math.round((c-0.5)*0x8000));
-  },
-
-  readColorComponent : function(string, offset) {
-    return this.readInt32(string, offset) / 0x8000 + 0.5;
-  }
-});
-
-
-
-
 DrawmoreFile = {
 
   serializers : [
     BinaryDrawHistorySerializer,
-    OldBinaryDrawHistorySerializer,
-    JSONDrawHistorySerializer,
-    OldJSONDrawHistorySerializer
+    JSONDrawHistorySerializer
   ],
 
   defaultSerializer : JSONDrawHistorySerializer,
