@@ -153,6 +153,7 @@ LayerWidget = Klass({
         }
       }),
       CHECKBOX({
+        disabled: layer === self.app.currentLayer,
         checked: layer.isPropertyLinkedWith('x', self.app.currentLayer),
         onclick: function(ev) {
           self.app.toggleLayerLinkPosition(layer.uid);
