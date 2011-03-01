@@ -293,6 +293,7 @@
         display: block;
       }
       .layers li {
+        position: relative;
         cursor: pointer;
         width: 124px;
         display: block;
@@ -300,13 +301,14 @@
         margin: 0px;
         margin-bottom: 2px;
         padding: 4px;
-        padding-top: 2px;
+        padding-top: 6px;
         padding-bottom: 2px;
+        padding-bottom: 4px;
         padding-right: 26px;
         font-size: 12px;
         border: 1px solid rgba(0,0,0,0.15);
         border-bottom: 1px solid rgba(0,0,0,0.5);
-        border-top: 1px solid rgba(0,0,0,0.15);
+        border-top: 1px solid rgba(0,0,0,0.5);
         background: rgba(255,255,255,0.4);
         color: rgba(0,0,0,0.6);
         vertical-align: bottom;
@@ -322,6 +324,26 @@
       }
       .layers .current input[type=checkbox] {
         opacity: 1;
+      }
+      .layerOpacitySlider {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 154px;
+        height: 4px;
+        display: block;
+        margin-bottom: 2px;
+        background-color: #888;
+      }
+      .layerOpacityKnob {
+        background-color: #ddd;
+        display: block;
+        position: absolute;
+        width: 20px;
+        height: 3px;
+        border-bottom: 1px solid #bbb;
+        top: 0px;
+        left: 134px;
       }
       #palette {
         position: absolute;

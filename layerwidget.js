@@ -58,6 +58,13 @@ LayerWidget = Klass({
         if (dropped)
           self.app.moveLayer(srcIdx, dstIdx);
       }
+      if (self.activeOpacity) {
+        var dx = ev.clientX-self.activeOpacity.downX;
+        self.activeOpacity.downX = ev.clientX;
+        self.activeOpacity.move(dx);
+        self.app.setLayerOpacity(self.activeOpacity.layerIndex, self.activeOpacity.opacity);
+        self.activeOpacity = null;
+      }
     }, false);
     window.addEventListener('mousemove', function(ev) {
       if (self.active) {
@@ -70,6 +77,12 @@ LayerWidget = Klass({
         if (self.active.dragging) {
           self.active.style.top = dy + 'px';
         }
+      }
+      if (self.activeOpacity) {
+        var dx = ev.clientX-self.activeOpacity.downX;
+        self.activeOpacity.downX = ev.clientX;
+        self.activeOpacity.move(dx);
+        self.app.setLayerOpacity(self.activeOpacity.layerIndex, self.activeOpacity.opacity);
       }
       ev.preventDefault();
     }, false);
@@ -89,6 +102,32 @@ LayerWidget = Klass({
   __newLayer : function(layer) {
     var self = this;
     var li = LI(
+      DIV(
+        {
+          className: 'layerOpacitySlider'
+        },
+        DIV(
+          {
+            opacity : layer.opacity,
+            style: { left: (layer.opacity*134)+'px' },
+            className: 'layerOpacityKnob',
+            onmousedown : function(ev){
+              var cc = toArray(self.layers.childNodes);
+              var i = cc.indexOf(this.parentNode.parentNode);
+              var clen = cc.length;
+              var idx = clen-1-i;
+              this.layerIndex = idx;
+              self.activeOpacity = this;
+              this.downX = ev.clientX;
+              Event.stop(ev);
+            },
+            move : function(dx) {
+              this.opacity = Math.clamp(this.opacity + (dx / 134), 0, 1);
+              this.style.left = (this.opacity*134)+'px';
+            }
+          }
+        )
+      ),
       CHECKBOX({
         checked: layer.display,
         onclick: function(ev) {

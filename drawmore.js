@@ -1111,6 +1111,20 @@ Drawmore = Klass(Undoable, ColorUtils, {
       }
     }
   },
+  
+  setLayerOpacity : function(idx, opacity) {
+    var layer = this.layers[idx];
+    if (layer) {
+      layer.opacity = opacity;
+      this.requestRedraw();
+      var l = this.history.last();
+      if (l.methodName == 'setLayerOpacity' && l.args[0] == idx) {
+        l.args[1] = opacity;
+      } else {
+        this.addHistoryState(new HistoryState('setLayerOpacity', [idx, opacity], true));
+      }
+    }
+  },
 
   createLayerObject : function() {
     var layer = new TiledLayer();
