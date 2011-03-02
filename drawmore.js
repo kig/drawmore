@@ -51,6 +51,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   lineWidth : 1,
   opacity : 1,
   color : ColorUtils.colorVec(0,0,0,1),
+  colorStyle: 'rgba(0,0,0,1)',
   background : ColorUtils.colorVec(1,1,1,1),
   pickRadius : 1,
   current : null,
@@ -1115,7 +1116,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.layerWidget.requestRedraw();
     this.requestRedraw();
   },
-  
+
   flipCurrentLayerHorizontally : function() {
     this.currentLayer.flipX();
     this.requestRedraw();
