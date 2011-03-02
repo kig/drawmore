@@ -35,6 +35,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
     palette8: ['8'],
     palette9: ['9'],
 
+    nudgeLayerUp : [Key.UP],
+    nudgeLayerDown : [Key.DOWN],
+    nudgeLayerLeft : [Key.LEFT],
+    nudgeLayerRight : [Key.RIGHT],
+
     layerAbove: ['q'],
     layerBelow: ['a'],
     duplicateCurrentLayer: ['c'],
@@ -543,6 +548,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     var draw = this;
 
     this.listeners['mousewheel'] = function(ev) {
+      if (ev.target != draw.canvas)
+        return;
       draw.updateInputTime();
       if (ev.wheelDelta > 0)
         draw.zoomIn();
@@ -551,6 +558,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     };
 
     this.listeners['DOMMouseScroll'] = function(ev) {
+      if (ev.target != draw.canvas)
+        return;
       draw.updateInputTime();
       if (ev.detail < 0)
         draw.zoomIn();
@@ -760,6 +769,15 @@ Drawmore = Klass(Undoable, ColorUtils, {
         } else if (Key.match(ev,  draw.keyBindings.opacityDown)) {
           if (ev.shiftKey)
             draw.currentLayerOpacityDown();
+
+        } else if (Key.match(ev, draw.keyBindings.nudgeLayerUp)) {
+          draw.moveCurrentLayer(0, -1*(ev.shiftKey ? 10 : 1));
+        } else if (Key.match(ev, draw.keyBindings.nudgeLayerDown)) {
+          draw.moveCurrentLayer(0, 1*(ev.shiftKey ? 10 : 1));
+        } else if (Key.match(ev, draw.keyBindings.nudgeLayerLeft)) {
+          draw.moveCurrentLayer(-1*(ev.shiftKey ? 10 : 1), 0);
+        } else if (Key.match(ev, draw.keyBindings.nudgeLayerRight)) {
+          draw.moveCurrentLayer(1*(ev.shiftKey ? 10 : 1), 0);
 
         } else if (Key.match(ev, draw.keyBindings.pickColor) && !ev.ctrlKey && !draw.disableColorPick) {
           draw.pickColor(draw.current, draw.pickRadius);
@@ -1391,7 +1409,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
     this.layerWidget.requestRedraw();
   },
-  
+
   setCurrentLayerByUID : function(uid, recordHistory) {
     var idx = this.layers.indexOf(this.layerManager.getLayerByUID(uid));
     this.setCurrentLayer(idx, recordHistory);
