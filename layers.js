@@ -16,7 +16,7 @@ LayerManager = Klass({
     for (var i=0; i<layer.childNodes.length; i++)
       this.addLayer(layer.childNodes[i]);
   },
-  
+
   deleteLayer : function(layer) {
     delete this.layerIndex[layer.uid];
   },
@@ -42,7 +42,7 @@ LayerManager = Klass({
     for (var i=0; i<processedLinks.length; i++)
       delete processedLinks[i].processed;
   },
-  
+
   getLayerByUID : function(uid) {
     return this.layerIndex[uid];
   }
@@ -75,19 +75,19 @@ Layer = Klass({
     p.push(this.uid);
     layer.linkedProperties[propertyName] = this.linkedProperties[propertyName] = p;
   },
-  
+
   unlinkProperty : function(propertyName) {
     var p = this.linkedProperties[propertyName];
     if (p) p.deleteFirst(this.uid);
     delete this.linkedProperties[propertyName];
   },
-  
+
   isPropertyLinkedWith : function(propertyName, layer) {
     if (layer === this) return true;
     var p = this.linkedProperties[propertyName];
     return layer && p != null && p === layer.linkedProperties[propertyName];
   },
-  
+
   modify : function(propertyName, delta) {
     this[propertyName] += delta;
     var p = this.linkedProperties[propertyName];
@@ -99,7 +99,7 @@ Layer = Klass({
       }
     }
   },
-  
+
   set : function(propertyName, value) {
     this[propertyName] = value;
     var p = this.linkedProperties[propertyName];
@@ -111,7 +111,7 @@ Layer = Klass({
       }
     }
   },
-  
+
   destroy : function() {
     var props = [];
     for (var p in this.linkedProperties)
@@ -119,7 +119,7 @@ Layer = Klass({
     for (var i=0; i<props.length; i++)
       this.unlinkProperty(props[i]);
   },
-  
+
   copy : function() {
     var l = Object.extend({}, this);
     l.linkedProperties = {};
@@ -145,7 +145,7 @@ Layer = Klass({
       var gco = ctx.globalCompositeOperation;
       if (this.childNodes.length > 0) {
         tempLayer = tempLayer || new TiledLayer();
-        this.compositeTo(tempLayer, 1, 'copy');
+        this.compositeTo(tempLayer, 1);
         for (var i=0; i<this.childNodes.length; i++) {
           this.childNodes[i].applyTo(tempLayer);
         }
