@@ -1,7 +1,11 @@
+<!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>&#9733; Drawmore &#9733;</title>
+    <link rel="stylesheet" href="layerwidget.css" type="text/css"></link>
+    <link rel="stylesheet" href="inspirator.css" type="text/css"></link>
     <script type="text/javascript" src="matrix.js"></script>
     <script type="text/javascript" src="util.js"></script>
     <script type="text/javascript" src="file_format.js"></script>
@@ -247,6 +251,8 @@
           draw.toggleHelp();
           ev.preventDefault();
         };
+        
+        /*
 
         byId('refSearchInput').onkeyup = function(ev) {
           ev.stopPropagation();
@@ -267,6 +273,8 @@
           byId('inspiratorText').textContent = Inspirator.randomTheme()+' !';
           Event.stop(ev);
         };
+        
+        */
 
       }, false);
 
@@ -295,80 +303,16 @@
         position: fixed;
         bottom: 4px;
         left: 4px;
-        padding: 4px;
-        width: 172px;
       }
-      .layerWidget button {
-        width: 24px;
-        height: 24px;
-        padding: 0px;
-        padding-bottom: 1px;
-        margin: 0px;
-        font-size: 12px;
-      }
-      .layers {
-        background: rgba(0,0,0,0.3);
-        width: 156px;
-        list-style: none;
-        margin: 0px;
-        margin-bottom: 2px;
-        padding: 0px;
-        max-height: 100%;
-        display: block;
-      }
-      .layers li {
-        position: relative;
-        cursor: pointer;
-        width: 124px;
-        display: block;
-        list-style: none;
-        margin: 0px;
-        margin-bottom: 2px;
-        padding: 4px;
-        padding-top: 6px;
-        padding-bottom: 2px;
-        padding-bottom: 4px;
-        padding-right: 26px;
-        font-size: 12px;
-        border: 1px solid rgba(0,0,0,0.15);
-        border-bottom: 1px solid rgba(0,0,0,0.5);
-        border-top: 1px solid rgba(0,0,0,0.5);
-        background: rgba(255,255,255,0.4);
-        color: rgba(0,0,0,0.6);
-        vertical-align: bottom;
-      }
-      .layers .current {
-        background: rgba(255,255,255,0.8);
-        color: black;
-      }
-      .layers input[type=checkbox] {
-        vertical-align: bottom;
-        margin: 0px;
-        margin-right: 8px;
-      }
-      .layers .current input[type=checkbox] {
-        opacity: 1;
-      }
-      .layerOpacitySlider {
+
+      #fileIO {
+        text-align: right;
+        z-index: 10;
+        bottom: 4px;
+        right: 4px;
         position: absolute;
-        top: 0px;
-        left: 0px;
-        width: 154px;
-        height: 4px;
-        display: block;
-        margin-bottom: 2px;
-        background-color: #888;
       }
-      .layerOpacityKnob {
-        background-color: #ddd;
-        display: block;
-        position: absolute;
-        width: 20px;
-        height: 3px;
-        border-bottom: 1px solid #bbb;
-        top: 0px;
-        left: 134px;
-      }
+      
       #palette {
         position: absolute;
         top: 4px;
@@ -376,12 +320,15 @@
         z-index: 10;
         vertical-align: top;
       }
-      #fileIO {
-        text-align: right;
-        z-index: 10;
-        bottom: 4px;
-        right: 4px;
+      #colorPicker {
+        margin-bottom: 0px;
+        display: inline-block;
+        vertical-align: bottom;
+        margin-right: 11px;
+        height: 0px;
         position: absolute;
+        top: 36px;
+        right: 0px;
       }
       #colorName, #bgColorName {
         border: 0px;
@@ -435,74 +382,6 @@
         cursor: pointer;
         z-index: 0;
       }
-      #colorPicker {
-        margin-bottom: 0px;
-        display: inline-block;
-        vertical-align: bottom;
-        margin-right: 11px;
-        height: 0px;
-        position: absolute;
-        top: 36px;
-        right: 0px;
-      }
-      #refSearchToggle {
-        position: absolute;
-        font-size: 9px;
-        left: 300px;
-        top: 0px;
-        cursor: pointer;
-        -webkit-transition-property: left;
-        -webkit-transition-duration: 0.5s;
-        -moz-transition-property: left;
-        -moz-transition-duration: 0.5s;
-        transition-property: left;
-        transition-duration: 0.5s;
-      }
-      #refContainer {
-        -webkit-transition-property: width;
-        -webkit-transition-duration: 0.5s;
-        -moz-transition-property: width;
-        -moz-transition-duration: 0.5s;
-        transition-property: width;
-        transition-duration: 0.5s;
-        display: block;
-        margin: 0px;
-        padding: 0px;
-        position: absolute;
-        top: 0px;
-        right: 0px;
-        width: 0px;
-        overflow-x: hidden;
-      }
-      #refSearch {
-        top: 256px;
-        right: 0px;
-        position: absolute;
-        width: 330px;
-        margin: 0px;
-        padding: 0px;
-        text-align: right;
-      }
-      #refSearch input {
-        width: 300px;
-        margin-top: 2px;
-        margin: 0px;
-      }
-      #inspirator {
-        top: 586px;
-        right: 4px;
-        position: absolute;
-        font-size: 12px;
-        text-align: right;
-      }
-      #inspiratorText {
-        margin: 0px;
-        margin-bottom: 2px;
-      }
-      #inspiratorButton {
-        font-size: 9px;
-        margin: 0px;
-      }
       .paletteColor {
         width: 20px;
         height: 20px;
@@ -525,6 +404,7 @@
         cursor: pointer;
         display: none;
       }
+      
       #helpToggle {
         font-size: 12px;
         text-transform: uppercase;
@@ -610,6 +490,7 @@
       <div class="brushWidth" value="1"></div>
 
       <div id="colorPicker"></div>
+      <!--
       <div id="refSearch" src="">
         <div id="refSearchToggle">Refs</div>
         <div id="refContainer">
@@ -627,6 +508,7 @@
           <button id="inspiratorButton">What?</button>
         </div>
       </div>
+      -->
     </div>
     <div id="helpToggle">Help</div>
     <div id="help">
