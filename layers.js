@@ -71,8 +71,10 @@ Layer = Klass({
     var p = this.linkedProperties[propertyName] || layer.linkedProperties[propertyName];
     if (!p)
       p = [layer.uid];
-    p.deleteFirst(this.uid);
-    p.push(this.uid);
+    if (p.indexOf(this.uid) == -1)
+      p.push(this.uid);
+    if (p.indexOf(layer.uid) == -1)
+      p.push(layer.uid);
     layer.linkedProperties[propertyName] = this.linkedProperties[propertyName] = p;
   },
 
@@ -124,7 +126,7 @@ Layer = Klass({
     var l = Object.extend({}, this);
     l.linkedProperties = {};
     for (var p in this.linkedProperties)
-      l.linkedProperties[p] = this.linkedProperties.slice(0);
+      l.linkedProperties[p] = this.linkedProperties[p].slice(0);
     this.copyProperties(l);
     return l;
   },
