@@ -4,9 +4,8 @@
 }
 .layerWidget button {
   width: 24px;
-  height: 24px;
-  padding: 0px;
-  padding-bottom: 1px;
+  height: 20px;
+  padding: 1px;
   margin: 0px;
   font-size: 12px;
 }
@@ -28,10 +27,9 @@
   list-style: none;
   margin: 0px;
   margin-bottom: 2px;
-  padding: 4px;
-  padding-top: 6px;
+  padding: 2px;
+  padding-top: 4px;
   padding-bottom: 2px;
-  padding-bottom: 4px;
   padding-right: 26px;
   font-size: 12px;
   border: 1px solid rgba(0,0,0,0.15);
@@ -48,10 +46,12 @@
 .layers input[type=checkbox] {
   vertical-align: bottom;
   margin: 0px;
-  margin-right: 8px;
 }
 .layers .current input[type=checkbox] {
   opacity: 1;
+}
+.layers span {
+  margin-left: 8px;
 }
 .layerOpacitySlider {
   cursor: pointer;

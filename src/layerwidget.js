@@ -174,6 +174,7 @@ LayerWidget = Klass({
       SPAN(layer.name, {
         contentEditable: true,
         tabIndex: -1,
+        spellcheck: false,
         style: {cursor: 'text'},
         onchange: function(ev) {
           self.app.renameLayer(layer.uid, this.textContent);
@@ -191,8 +192,8 @@ LayerWidget = Klass({
           }
           ev.stopPropagation();
         },
-        onkeyup : Event.cancel,
-        onclick : Event.cancel
+        onkeyup : function(ev) {ev.stopPropagation()},
+        onclick : function(ev) {ev.stopPropagation()}
       }), {
       onmousedown : function(ev) {
         this.down = true;
