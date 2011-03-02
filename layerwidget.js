@@ -10,14 +10,14 @@ LayerWidget = Klass({
     var self = this;
     this.element.appendChild(
       DIV(
-        BUTTON("+", {title: 'New layer', onclick: function(ev) {self.app.newLayer();}}),
-        BUTTON("-", {title: 'Delete layer', onclick: function(ev) {self.app.deleteCurrentLayer();}}),
-        BUTTON("x2", {title: 'Duplicate layer', onclick: function(ev) {self.app.duplicateCurrentLayer();}}),
-        //BUTTON("\u2194", {title: 'Flip layer horizontally', onclick: function(ev) {self.app.flipCurrentLayerHorizontally();}}),
-        //BUTTON("\u2195", {title: 'Flip layer vertically', onclick: function(ev) {self.app.flipCurrentLayerVertically();}}),
-        BUTTON("\u21a7", {title: 'Merge down', onclick: function(ev) {self.app.mergeDown();}}),
-        BUTTON("\u21a1", {title: 'Merge visible', onclick: function(ev) {self.app.mergeVisible();}}),
-        BUTTON("_", {title: 'Flatten image', onclick: function(ev) {self.app.mergeAll();}})
+        BUTTON("+", {title: 'New layer', onclick: function(ev) {self.app.newLayer();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("-", {title: 'Delete layer', onclick: function(ev) {self.app.deleteCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("x2", {title: 'Duplicate layer', onclick: function(ev) {self.app.duplicateCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
+        //BUTTON("\u2194", {title: 'Flip layer horizontally', onclick: function(ev) {self.app.flipCurrentLayerHorizontally();this.blur();}, onkeyup: Event.cancel}),
+        //BUTTON("\u2195", {title: 'Flip layer vertically', onclick: function(ev) {self.app.flipCurrentLayerVertically();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("\u21a7", {title: 'Merge down', onclick: function(ev) {self.app.mergeDown();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("\u21a1", {title: 'Merge visible', onclick: function(ev) {self.app.mergeVisible();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("_", {title: 'Flatten image', onclick: function(ev) {self.app.mergeAll();this.blur();}, onkeyup: Event.cancel})
       )
     );
     this.container = container;
@@ -150,7 +150,8 @@ LayerWidget = Klass({
         onclick: function(ev) {
           self.app.toggleLayer(layer.uid);
           ev.stopPropagation();
-        }
+        },
+        onkeydown : Event.cancel
       }),
       CHECKBOX({
         disabled: layer === self.app.currentLayer,
@@ -158,7 +159,8 @@ LayerWidget = Klass({
         onclick: function(ev) {
           self.app.toggleLayerLinkPosition(layer.uid);
           ev.stopPropagation();
-        }
+        },
+        onkeydown : Event.cancel
       }),
       SPAN(layer.name, {
         contentEditable: true,
@@ -180,12 +182,8 @@ LayerWidget = Klass({
           }
           ev.stopPropagation();
         },
-        onkeyup : function(ev) {
-          ev.stopPropagation();
-        },
-        onclick : function(ev) {
-          ev.stopPropagation();
-        }
+        onkeyup : Event.cancel,
+        onclick : Event.cancel
       }), {
       onmousedown : function(ev) {
         this.down = true;
