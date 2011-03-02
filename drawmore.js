@@ -1185,7 +1185,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setCurrentLayerOpacity : function(opacity) {
-    this.setLayerOpacity(this.currentLayerIndex, opacity);
+    this.setLayerOpacity(this.currentLayer.uid, opacity);
     this.layerWidget.requestRedraw();
   },
 
@@ -1197,16 +1197,16 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity / 1.1, 0, 1));
   },
 
-  setLayerOpacity : function(idx, opacity) {
-    var layer = this.layers[idx];
+  setLayerOpacity : function(uid, opacity) {
+    var layer = this.layerManager.getLayerByUID(uid);
     if (layer) {
       layer.set('opacity', opacity);
       this.requestRedraw();
       var l = this.history.last();
-      if (l.methodName == 'setLayerOpacity' && l.args[0] == idx) {
+      if (l.methodName == 'setLayerOpacity' && l.args[0] == uid) {
         l.args[1] = opacity;
       } else {
-        this.addHistoryState(new HistoryState('setLayerOpacity', [idx, opacity], true));
+        this.addHistoryState(new HistoryState('setLayerOpacity', [uid, opacity], true));
       }
     }
   },
@@ -1291,34 +1291,38 @@ Drawmore = Klass(Undoable, ColorUtils, {
     return layer;
   },
 
-  renameLayer : function(idx, name) {
-    this.layers[idx].name = name;
+  renameLayer : function(uid, name) {
+    this.layerManager.getLayerByUID(uid).name = name;
     this.layerWidget.requestRedraw();
-    this.addHistoryState(new HistoryState('renameLayer', [idx, name], true));
+    this.addHistoryState(new HistoryState('renameLayer', [uid, name], true));
   },
 
-  hideLayer : function(idx) {
-    this.layerManager.getLayerByUID(idx).set('display', false);
-    this.layerWidget.requestRedraw();
-    this.requestRedraw();
-    this.addHistoryState(new HistoryState('hideLayer', [idx], true));
-  },
-
-  showLayer : function(idx) {
-    this.layerManager.getLayerByUID(idx).set('display', true);
+  hideLayer : function(uid) {
+    this.layerManager.getLayerByUID(uid).set('display', false);
     this.layerWidget.requestRedraw();
     this.requestRedraw();
-    this.addHistoryState(new HistoryState('showLayer', [idx], true));
+    this.addHistoryState(new HistoryState('hideLayer', [uid], true));
   },
 
-  toggleLayer : function(idx) {
-    if (this.layerManager.getLayerByUID(idx).display)
-      this.hideLayer(idx);
+  showLayer : function(uid) {
+    this.layerManager.getLayerByUID(uid).set('display', true);
+    this.layerWidget.requestRedraw();
+    this.requestRedraw();
+    this.addHistoryState(new HistoryState('showLayer', [uid], true));
+  },
+
+  toggleLayer : function(uid) {
+    if (this.layerManager.getLayerByUID(uid).display)
+      this.hideLayer(uid);
     else
-      this.showLayer(idx);
+      this.showLayer(uid);
   },
 
-  moveLayer : function(srcIdx, dstIdx) {
+  moveLayer : function(srcUID, dstUID) {
+    var src = this.layerManager.getLayerByUID(srcUID);
+    var dst = this.layerManager.getLayerByUID(dstUID);
+    var srcIdx = this.layers.indexOf(src);
+    var dstIdx = this.layers.indexOf(dst);
     var tmp = this.layers[srcIdx];
     if (srcIdx < dstIdx) {
       for (var i=srcIdx; i<dstIdx; i++)
@@ -1336,7 +1340,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     } else if (srcIdx > this.currentLayerIndex && dstIdx <= this.currentLayerIndex) {
       this.setCurrentLayer(this.currentLayerIndex+1, false);
     }
-    this.addHistoryState(new HistoryState('moveLayer', [srcIdx, dstIdx], true));
+    this.addHistoryState(new HistoryState('moveLayer', [srcUID, dstUID], true));
     this.requestRedraw();
 
     this.layerWidget.requestRedraw();
@@ -1362,6 +1366,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.layerWidget.requestRedraw();
   },
 
+  deleteLayerByUID : function(uid, recordHistory) {
+    var idx = this.layers.indexOf(this.layerManager.getLayerByUID(uid));
+    this.deleteLayer(idx, recordHistory);
+  },
+
   deleteCurrentLayer : function(addHistory) {
     this.deleteLayer(this.currentLayerIndex, addHistory);
   },
@@ -1381,6 +1390,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.requestRedraw();
 
     this.layerWidget.requestRedraw();
+  },
+  
+  setCurrentLayerByUID : function(uid, recordHistory) {
+    var idx = this.layers.indexOf(this.layerManager.getLayerByUID(uid));
+    this.setCurrentLayer(idx, recordHistory);
   },
 
   clear : function() {

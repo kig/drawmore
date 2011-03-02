@@ -25,8 +25,9 @@ LayerWidget = Klass({
     window.addEventListener('mouseup', function(ev){
       if (self.active) {
         var dropped = false;
-        var srcIdx,dstIdx;
+        var srcIdx,dstIdx,srcUID,dstUID;
         var c = self.active;
+        srcUID = c.layerUID;
         self.active = null;
         if (c.dragging) {
           dropped = true;
@@ -54,18 +55,19 @@ LayerWidget = Klass({
             }
           }
           dstIdx = Math.clamp(dstIdx, 0, clen-1);
+          dstUID = self.app.layers[dstIdx].uid;
           ev.preventDefault();
         }
         c.style.top = '0px';
         c.dragging = c.down = false;
         if (dropped)
-          self.app.moveLayer(srcIdx, dstIdx);
+          self.app.moveLayer(srcUID, dstUID);
       }
       if (self.activeOpacity) {
         var dx = ev.clientX-self.activeOpacity.downX;
         self.activeOpacity.downX = ev.clientX;
         self.activeOpacity.move(dx);
-        self.app.setLayerOpacity(self.activeOpacity.layerIndex, self.activeOpacity.opacity);
+        self.app.setLayerOpacity(self.activeOpacity.layerUID, self.activeOpacity.opacity);
         self.activeOpacity = null;
       }
     }, false);
@@ -85,7 +87,7 @@ LayerWidget = Klass({
         var dx = ev.clientX-self.activeOpacity.downX;
         self.activeOpacity.downX = ev.clientX;
         self.activeOpacity.move(dx);
-        self.app.setLayerOpacity(self.activeOpacity.layerIndex, self.activeOpacity.opacity);
+        self.app.setLayerOpacity(self.activeOpacity.layerUID, self.activeOpacity.opacity);
       }
       ev.preventDefault();
     }, false);
@@ -112,7 +114,7 @@ LayerWidget = Klass({
             this.firstChild.makeActive(ev);
             var x = Mouse.getRelativeCoords(this,ev).x-10;
             this.firstChild.setOpacity(x/134);
-            self.app.setLayerOpacity(self.activeOpacity.layerIndex, self.activeOpacity.opacity);
+            self.app.setLayerOpacity(self.activeOpacity.layerUID, self.activeOpacity.opacity);
             Event.stop(ev);
           }
         },
@@ -126,11 +128,7 @@ LayerWidget = Klass({
               Event.stop(ev);
             },
             makeActive : function(ev) {
-              var cc = toArray(self.layers.childNodes);
-              var i = cc.indexOf(this.parentNode.parentNode);
-              var clen = cc.length;
-              var idx = clen-1-i;
-              this.layerIndex = idx;
+              this.layerUID = layer.uid;
               self.activeOpacity = this;
               if (ev)
                 this.downX = ev.clientX;
@@ -167,10 +165,10 @@ LayerWidget = Klass({
         tabIndex: -1,
         style: {cursor: 'text'},
         onchange: function(ev) {
-          self.app.renameLayer(self.indexOf(this.parentNode), this.textContent);
+          self.app.renameLayer(layer.uid, this.textContent);
         },
         onblur : function(ev) {
-          self.app.renameLayer(self.indexOf(this.parentNode), this.textContent);
+          self.app.renameLayer(layer.uid, this.textContent);
         },
         onmousedown : function(ev) {
           this.focus();
@@ -189,6 +187,7 @@ LayerWidget = Klass({
         this.down = true;
         this.eatClick = false;
         this.downY = ev.clientY;
+        this.layerUID = layer.uid;
         if (self.active == null)
           self.active = this;
         ev.preventDefault();
@@ -197,7 +196,7 @@ LayerWidget = Klass({
         if (this.eatClick) {
           this.eatClick = false;
         } else {
-          self.app.setCurrentLayer(self.indexOf(this));
+          self.app.setCurrentLayerByUID(layer.uid);
         }
         ev.preventDefault();
       }
