@@ -210,11 +210,12 @@
             var f = byId('fileIO');
             var p = byId('colorPicker');
             var l = byClass('layerWidget');
+            var inspirator = byId('TheInspirator');
             if (f.style.display != 'none') {
-              f.style.display = p.style.display = 'none';
+              inspirator.style.display = f.style.display = p.style.display = 'none';
               l.forEach(function(e){ e.style.display = 'none'; });
             } else {
-              f.style.display = 'block';
+              inspirator.style.display = f.style.display = 'block';
               l.forEach(function(e){ e.style.display = 'block'; });
               p.style.display = 'inline-block';
             }
@@ -251,29 +252,22 @@
           ev.preventDefault();
         };
 
-        /*
-
         byId('refSearchInput').onkeyup = function(ev) {
           ev.stopPropagation();
         };
         byId('refSearchInput').onkeydown = function(ev) {
           if (Key.match(ev, Key.ENTER)) {
             RefSearch.searchTag(this.value);
+            this.blur();
+          } else if (Key.match(ev, Key.ESC)) {
+            this.blur();
           }
           ev.stopPropagation();
         };
-        byId('refSearchToggle').onclick = function(ev) {
-          var rc = byId('refContainer');
-          this.style.left = rc.style.width == '300px' ? '300px' : '0px';
-          rc.style.width = rc.style.width == '300px' ? '0px' : '300px';
-          Event.stop(ev);
-        };
         byId('inspiratorButton').onclick = function(ev) {
-          byId('inspiratorText').textContent = Inspirator.randomTheme()+' !';
+          byId('inspiratorText').textContent = Inspirator.randomTheme()+'!';
           Event.stop(ev);
         };
-
-        */
 
       }, false);
 
@@ -457,6 +451,20 @@
         font-weight: semi-bold;
         color: #381;
       }
+      #TheInspirator {
+        position: fixed;
+        z-index: 11;
+        right: 0px;
+        top: 240px;
+        width: 300px;
+        -webkit-transition-property: width;
+        -webkit-transition-duration: 0.5s;
+        -moz-transition-property: width;
+        -moz-transition-duration: 0.5s;
+        transition-property: width;
+        transition-duration: 0.5s;
+        overflow-x: hidden;
+      }
     </style>
   </head>
   <body>
@@ -489,16 +497,16 @@
       <div class="brushWidth" value="1"></div>
 
       <div id="colorPicker"></div>
-      <!--
+    </div>
+    <div id="TheInspirator">
       <div id="refSearch" src="">
-        <div id="refSearchToggle">Refs</div>
         <div id="refContainer">
           <object width="300" height="300">
-            <param name="flashvars" value="offsite=true&lang=en-us&page_show_url=%2Fphotos%2Ftags%2Frandom%2Fshow%2F&page_show_back_url=%2Fphotos%2Ftags%2Frandom%2F&tags=random&jump_to=&start_index="></param>
-            <param name="movie" value="http://www.flickr.com/apps/slideshow/show.swf?v=71649"></param>
-            <param name="allowFullScreen" value="true"></param>
+<!--             <param name="flashvars" value="offsite=true&lang=en-us&page_show_url=%2Fphotos%2Ftags%2Frandom%2Fshow%2F&page_show_back_url=%2Fphotos%2Ftags%2Frandom%2F&tags=random&jump_to=&start_index="></param> -->
+<!--             <param name="movie" value="http://www.flickr.com/apps/slideshow/show.swf?v=71649"></param> -->
+<!--             <param name="allowFullScreen" value="true"></param> -->
           </object>
-          <input id="refSearchInput" type="text" value="random" onchange="RefSearch.searchTag(this.value);return false;">
+          <input id="refSearchInput" spellcheck="false" type="text" value="" placeholder="Search for refs" onchange="RefSearch.searchTag(this.value);return false;">
         </div>
       </div>
       <div id="inspirator">
@@ -507,7 +515,6 @@
           <button id="inspiratorButton">What?</button>
         </div>
       </div>
-      -->
     </div>
     <div id="helpToggle">Help</div>
     <div id="help">

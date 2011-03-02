@@ -1,56 +1,47 @@
-#refSearchToggle {
-  position: absolute;
-  font-size: 9px;
-  left: 300px;
-  top: 0px;
-  cursor: pointer;
-  -webkit-transition-property: left;
-  -webkit-transition-duration: 0.5s;
-  -moz-transition-property: left;
-  -moz-transition-duration: 0.5s;
-  transition-property: left;
-  transition-duration: 0.5s;
-}
 #refContainer {
-  -webkit-transition-property: width;
-  -webkit-transition-duration: 0.5s;
-  -moz-transition-property: width;
-  -moz-transition-duration: 0.5s;
-  transition-property: width;
-  transition-duration: 0.5s;
   display: block;
   margin: 0px;
   padding: 0px;
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  width: 0px;
-  overflow-x: hidden;
+  position: relative;
+  width: 300px;
+}
+#refContainer object {
+  display: block;
+  margin: 0px;
+  padding: 0px;
+  background-color: rgba(0,0,0,0.8);
 }
 #refSearch {
-  top: 256px;
-  right: 0px;
-  position: absolute;
-  width: 330px;
+  position: relative;
+  width: 300px;
   margin: 0px;
   padding: 0px;
   text-align: right;
 }
 #refSearch input {
-  width: 300px;
-  margin-top: 2px;
+  display: block;
+  width: 288px;
+  margin-top: 0px;
   margin: 0px;
+  text-align: right;
+  border-radius: 0px 0px 0px 8px;
+  border: 0px;
+  background-color: rgba(0,0,0,0.8);
+  color: #eeeeee;
+  padding-left: 8px;
+  padding-right: 4px;
+  padding-bottom: 2px;
+  margin-bottom: 8px;
 }
 #inspirator {
-  top: 586px;
-  right: 4px;
-  position: absolute;
+  margin-right: 4px;
   font-size: 12px;
   text-align: right;
 }
 #inspiratorText {
   margin: 0px;
   margin-bottom: 2px;
+  margin-right: 1px;
 }
 #inspiratorButton {
   font-size: 9px;
