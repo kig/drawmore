@@ -438,6 +438,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
   getState : function() {
     var cs = this.constraints.slice(0);
     cs.deleteFirst(this.constraint);
+    if (this.strokeLayer.parentNode) {
+      this.strokeLayer.parentNode.removeChild(this.strokeLayer);
+    }
     return {
       pickRadius : this.pickRadius,
       brushIndex : this.brushIndex,
@@ -452,7 +455,12 @@ Drawmore = Klass(Undoable, ColorUtils, {
       constraints: cs,
       layerUID: this.layerUID,
       strokeInProgress : this.strokeInProgress,
-      layers : this.layers.map(function(l){ return l.copy(); }),
+      layers : this.layers.map(function(l){
+        if (l.parentNode)
+          return l.uid;
+        else
+          return l.copy();
+      }),
       currentLayerIndex : this.currentLayerIndex,
       strokeLayer : this.strokeLayer.copy()
     };
@@ -464,10 +472,18 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.pickRadius = state.pickRadius;
     this.brushes = state.brushes.map(function(l){ return l.copy(); });
     this.setBrush(state.brushIndex);
-    this.layers = state.layers.map(function(l){ return l.copy(); });
+    this.layers = state.layers.map(function(l){
+      if (l.isLayer) return l.copy();
+      else return l;
+    });
     this.strokeLayer = state.strokeLayer.copy();
     this.layerUID = state.layerUID;
-    this.layerManager.rebuild(this.layers);
+    this.layerManager.rebuild(this.layers.filter(function(l){ return l.isLayer; }));
+    var layerManager = this.layerManager;
+    this.layers = this.layers.map(function(l){
+      if (l.isLayer) return l;
+      else return layerManager.getLayerByUID(l);
+    });
     this.layerWidget.requestRedraw();
     this.setCurrentLayer(state.currentLayerIndex);
     for (var i=0; i<state.palette.length; i++)

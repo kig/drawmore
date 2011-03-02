@@ -21,8 +21,17 @@ LayerManager = Klass({
     delete this.layerIndex[layer.uid];
   },
 
+  flattenLayers : function(l, a) {
+    for (var i=0; i<l.length; i++) {
+      a.push(l[i]);
+      this.flattenLayers(l[i].childNodes, a);
+    }
+    return a;
+  },
+
   rebuild : function(layers) {
     this.layerIndex = {};
+    var layers = this.flattenLayers(layers, []);
     for (var i=0; i<layers.length; i++)
       this.addLayer(layers[i]);
     var processedLinks = [];
@@ -128,6 +137,7 @@ Layer = Klass({
     for (var p in this.linkedProperties)
       l.linkedProperties[p] = this.linkedProperties[p].slice(0);
     this.copyProperties(l);
+    this.childNodes = this.childNodes.map(function(c) { return c.copy(); });
     return l;
   },
 
