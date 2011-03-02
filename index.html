@@ -268,6 +268,13 @@
           byId('inspiratorText').textContent = Inspirator.randomTheme()+'!';
           Event.stop(ev);
         };
+        byId('TheInspiratorToggle').onclick = function(ev) {
+          var s = byId('TheInspirator').style;
+          var expanded = s.width != '0px';
+          this.textContent = expanded ? '<<' : '>>';
+          this.style.borderRadius = expanded ? '8px 0px 0px 8px' : '8px 0px 0px 0px';
+          s.width = expanded ? '0px' : '300px';
+        };
 
       }, false);
 
@@ -455,7 +462,7 @@
         position: fixed;
         z-index: 11;
         right: 0px;
-        top: 240px;
+        top: 260px;
         width: 300px;
         -webkit-transition-property: width;
         -webkit-transition-duration: 0.5s;
@@ -464,6 +471,29 @@
         transition-property: width;
         transition-duration: 0.5s;
         overflow-x: hidden;
+        white-space: nowrap;
+      }
+      #TheInspiratorToggle {
+        position: fixed;
+        z-index: 11;
+        font-size: 12px;
+        height: 16px;
+        top: 240px;
+        right: 0px;
+        background-color: rgba(0,0,0,0.8);
+        color: #eeeeee;
+        padding-top: 1px;
+        padding-bottom: 3px;
+        padding-left: 8px;
+        padding-right: 4px;
+        border-radius: 8px 0px 0px 0px;
+        cursor: pointer;
+        -webkit-transition-property: border-radius;
+        -webkit-transition-duration: 0.5s;
+        -moz-transition-property: border-radius;
+        -moz-transition-duration: 0.5s;
+        transition-property: border-radius;
+        transition-duration: 0.5s;
       }
     </style>
   </head>
@@ -499,6 +529,9 @@
       <div id="colorPicker"></div>
     </div>
     <div id="TheInspirator">
+      <div id="TheInspiratorToggle">
+        >>
+      </div>
       <div id="refSearch" src="">
         <div id="refContainer">
           <object width="300" height="300">
