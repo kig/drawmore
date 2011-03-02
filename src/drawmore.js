@@ -240,7 +240,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
         var layer = this.layers[i];
         if (i == this.currentLayerIndex && this.strokeLayer.display) {
           layer.appendChild(this.strokeLayer);
-          this.strokeLayer.globalCompositeOperation = this.erasing ? 'destination-out' : 'source-over';
+          var composite = (this.erasing ? 'destination-out' :
+            (layer.opacityLocked ? 'source-atop' : 'source-over')
+          );
+          this.strokeLayer.globalCompositeOperation = composite;
         } else if (this.strokeLayer.parentNode == layer) {
           layer.removeChild(this.strokeLayer);
         }
@@ -867,7 +870,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
             draw.flipX();
 
         } else if (Key.match(ev, draw.keyBindings.layerAbove)) {
-          draw.layerAbove();
+          if (ev.shiftKey)
+            draw.toggleCurrentLayerOpacityLocked();
+          else
+            draw.layerAbove();
         } else if (Key.match(ev, draw.keyBindings.layerBelow)) {
           if (ev.shiftKey)
             draw.mergeDown();
@@ -1116,6 +1122,18 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   toggleCurrentLayer : function() {
     this.toggleLayer(this.currentLayer.uid);
+  },
+
+  toggleCurrentLayerOpacityLocked : function() {
+    this.toggleLayerOpacityLocked(this.currentLayer.uid);
+  },
+
+  toggleLayerOpacityLocked : function(uid) {
+    var layer = this.layerManager.getLayerByUID(uid);
+    layer.opacityLocked = !layer.opacityLocked;
+    this.addHistoryState(new HistoryState('toggleLayerOpacityLocked', [uid], true));
+    this.layerWidget.requestRedraw();
+    this.requestRedraw();
   },
 
   toggleLayerLinkPosition : function(uid) {
@@ -1455,7 +1473,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
     if (erasing == null) erasing = this.erasing;
     if (!this.strokeInProgress) return;
     this.strokeInProgress = false;
-    this.strokeLayer.applyTo(this.currentLayer, erasing ? 'destination-out' : 'source-over');
+    var composite = (erasing ? 'destination-out' :
+      (this.currentLayer.opacityLocked ? 'source-atop' : 'source-over')
+    );
+    this.strokeLayer.applyTo(this.currentLayer, composite);
     this.strokeLayer.hide();
     this.addHistoryState(new HistoryState('endStroke',  [erasing]));
     this.requestRedraw();

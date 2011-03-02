@@ -145,6 +145,7 @@ LayerWidget = Klass({
       ),
       CHECKBOX({
         checked: layer.display,
+        title: 'Visibility',
         onclick: function(ev) {
           self.app.toggleLayer(layer.uid);
           ev.stopPropagation();
@@ -154,8 +155,18 @@ LayerWidget = Klass({
       CHECKBOX({
         disabled: layer === self.app.currentLayer,
         checked: layer.isPropertyLinkedWith('x', self.app.currentLayer),
+        title: 'Link position',
         onclick: function(ev) {
           self.app.toggleLayerLinkPosition(layer.uid);
+          ev.stopPropagation();
+        },
+        onkeydown : Event.cancel
+      }),
+      CHECKBOX({
+        checked: layer.opacityLocked,
+        title: 'Opacity lock',
+        onclick: function(ev) {
+          self.app.toggleLayerOpacityLocked(layer.uid);
           ev.stopPropagation();
         },
         onkeydown : Event.cancel

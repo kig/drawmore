@@ -22,7 +22,7 @@
 }
 .layers li {
   position: relative;
-  cursor: pointer;
+  cursor: move;
   width: 124px;
   display: block;
   list-style: none;
@@ -54,6 +54,7 @@
   opacity: 1;
 }
 .layerOpacitySlider {
+  cursor: pointer;
   position: absolute;
   top: 0px;
   left: 0px;
