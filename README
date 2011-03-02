@@ -14,6 +14,15 @@ Goals:
 1) Efficient drawing workflow
   - From an empty canvas to picture posted on the web
 
+Guidelines:
+Eyes on the cursor.
+All non-canvas pixels need to be active area.
+Corners are hard to reach with a drawing tablet.
+No pointless numbers.
+No windows you have to drag around.
+Minimize UI state.
+Sub-16 ms UI lag.
+
 
 2011 (c) Ilmari Heikkinen 
 ilmari.heikkinen@gmail.com
