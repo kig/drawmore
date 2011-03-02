@@ -147,7 +147,7 @@ Layer = Klass({
       var gco = ctx.globalCompositeOperation;
       if (this.childNodes.length > 0) {
         tempLayer = tempLayer || new TiledLayer();
-        this.compositeTo(tempLayer, 1);
+        this.compositeTo(tempLayer, 1, 'source-over');
         for (var i=0; i<this.childNodes.length; i++) {
           this.childNodes[i].applyTo(tempLayer);
         }

@@ -107,6 +107,9 @@ LayerWidget = Klass({
   __newLayer : function(layer) {
     var self = this;
     var li = LI(
+      {
+        className: layer.parentNode ? 'grouped' : ''
+      },
       DIV(
         {
           className: 'layerOpacitySlider',
@@ -233,7 +236,7 @@ LayerWidget = Klass({
       var layer = layers[i];
       this.__newLayer(layer);
       if (this.app.currentLayerIndex == i)
-        this.layers.firstChild.className = 'current';
+        this.layers.firstChild.className += ' current';
     }
   },
 

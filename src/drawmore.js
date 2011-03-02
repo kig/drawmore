@@ -44,6 +44,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     layerBelow: ['a'],
     duplicateCurrentLayer: ['c'],
     toggleCurrentLayer: ['v'],
+    groupLayer: ['g'],
 
     toggleUI: [Key.TAB, '0'],
     toggleHelp: [191] // question mark
@@ -247,9 +248,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
         } else if (this.strokeLayer.parentNode == layer) {
           layer.removeChild(this.strokeLayer);
         }
-        if (layer.childNodes.length > 0)
-          this.tempLayer.clear();
-        layer.applyTo(ctx, null, this.tempLayer);
+        if (!layer.parentNode) {
+          if (layer.childNodes.length > 0)
+            this.tempLayer.clear();
+          layer.applyTo(ctx, null, this.tempLayer);
+        }
       }
     ctx.restore();
   },
@@ -809,6 +812,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
           draw.newLayerBelow();
           ev.preventDefault();
 
+        } else if (Key.match(ev,  draw.keyBindings.groupLayer)) {
+          draw.toggleCurrentLayerGrouping();
+
         } else if (Key.match(ev, draw.keyBindings.duplicateCurrentLayer)) {
           draw.duplicateCurrentLayer();
           ev.preventDefault();
@@ -1111,6 +1117,41 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
 
   // Layers
+
+  groupLayer : function(srcUID, groupUID) {
+    var layer = this.layerManager.getLayerByUID(srcUID);
+    var group = this.layerManager.getLayerByUID(groupUID);
+    group.appendChild(layer);
+    layer.globalCompositeOperation = 'source-atop';
+  },
+
+  ungroupLayer : function(uid) {
+    var layer = this.layerManager.getLayerByUID(uid);
+    layer.parentNode.removeChild(layer);
+    layer.globalCompositeOperation = 'source-over';
+  },
+
+  toggleCurrentLayerGrouping : function() {
+    var uid = this.currentLayer.uid;
+    if (this.currentLayerIndex > 0) {
+      if (this.currentLayer.parentNode) {
+        var idx = this.currentLayerIndex+1;
+        while (idx < this.layers.length && this.layers[idx].parentNode === this.currentLayer.parentNode) {
+          this.currentLayer.appendChild(this.layers[idx]);
+          idx++;
+        }
+        this.ungroupLayer(uid);
+      } else {
+        var prev = this.layers[this.currentLayerIndex-1];
+        if (prev.parentNode)
+          prev = prev.parentNode;
+        this.groupLayer(uid, prev.uid);
+      }
+      this.addHistoryState(new HistoryState('toggleCurrentLayerGrouping', [], true));
+      this.layerWidget.requestRedraw();
+      this.requestRedraw();
+    }
+  },
 
   layerAbove : function() {
     this.setCurrentLayer(this.currentLayerIndex+1);

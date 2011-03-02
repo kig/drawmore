@@ -270,7 +270,7 @@
         };
         byId('TheInspiratorToggle').onclick = function(ev) {
           var s = byId('TheInspirator').style;
-          var expanded = s.width != '0px';
+          var expanded = s.width == '300px';
           this.textContent = expanded ? '<<' : '>>';
           this.style.borderRadius = expanded ? '8px 0px 0px 8px' : '8px 0px 0px 0px';
           s.width = expanded ? '0px' : '300px';
@@ -463,7 +463,7 @@
         z-index: 11;
         right: 0px;
         top: 260px;
-        width: 300px;
+        width: 0px;
         -webkit-transition-property: width;
         -webkit-transition-duration: 0.5s;
         -moz-transition-property: width;
@@ -486,7 +486,7 @@
         padding-bottom: 3px;
         padding-left: 8px;
         padding-right: 4px;
-        border-radius: 8px 0px 0px 0px;
+        border-radius: 8px 0px 0px 8px;
         cursor: pointer;
         -webkit-transition-property: border-radius;
         -webkit-transition-duration: 0.5s;
@@ -530,7 +530,7 @@
     </div>
     <div id="TheInspirator">
       <div id="TheInspiratorToggle">
-        >>
+        &lt;&lt;
       </div>
       <div id="refSearch" src="">
         <div id="refContainer">

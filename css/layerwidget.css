@@ -39,6 +39,9 @@
   color: rgba(0,0,0,0.6);
   vertical-align: bottom;
 }
+.layers .grouped {
+  margin-left: 16px;
+}
 .layers .current {
   background: rgba(255,255,255,0.8);
   color: black;
