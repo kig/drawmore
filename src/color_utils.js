@@ -438,6 +438,18 @@ ColorPicker = Klass(ColorUtils, {
     this.cursor.update(8);
     var hc = this.hueCanvas;
     var cc = this.canvas;
+    this.widget.addEventListener('mousewheel', function(ev) {
+      if (ev.wheelDelta > 0) self.setHue(self.hue+1*(ev.shiftKey?1:15));
+      else self.setHue(self.hue-1*(ev.shiftKey?1:15));
+      self.signalChange();
+      ev.preventDefault();
+    }, false);
+    this.widget.addEventListener('DOMMouseScroll', function(ev) {
+      if (ev.detail < 0) self.setHue(self.hue+1*(ev.shiftKey?1:15));
+      else self.setHue(self.hue-1*(ev.shiftKey?1:15));
+      self.signalChange();
+      ev.preventDefault();
+    }, false);
     hc.addEventListener('mousedown', function(ev) {
       this.down = true;
       var xy = Mouse.getRelativeCoords(hc, ev);
@@ -498,7 +510,8 @@ ColorPicker = Klass(ColorUtils, {
     );
     if (!eq) {
       var hsv = this.rgb2hsv(c[0], c[1], c[2]);
-      this.setHue(hsv[0], false);
+      if (hsv[2] > 0 && hsv[1] > 0)
+        this.setHue(hsv[0], false);
       this.setSaturation(hsv[1], false);
       this.setValue(hsv[2], false);
       this.currentColor = this.colorVec(c[0],c[1],c[2], 1);
@@ -527,7 +540,8 @@ ColorPicker = Klass(ColorUtils, {
   },
 
   setHue : function(hue, signal) {
-    this.hue = hue;
+    this.hue = hue % 360;
+    if (this.hue < 0) this.hue += 360;
     this.requestRedraw();
     if (signal == true) {
       this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
@@ -603,7 +617,8 @@ ColorPicker = Klass(ColorUtils, {
     }
     hc.fillStyle = 'black';
     hc.rotate(this.hue*deg2rad-Math.PI*0.5);
-    hc.fillRect(r-8,-2,16,4);
+    hc.fillRect(r-8,-2,16,1);
+    hc.fillRect(r-8,2,16,1);
     hc.restore();
   },
 
