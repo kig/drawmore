@@ -13,25 +13,14 @@ LayerManager = Klass({
 
   addLayer : function(layer) {
     this.layerIndex[layer.uid] = layer;
-    for (var i=0; i<layer.childNodes.length; i++)
-      this.addLayer(layer.childNodes[i]);
   },
 
   deleteLayer : function(layer) {
     delete this.layerIndex[layer.uid];
   },
 
-  flattenLayers : function(l, a) {
-    for (var i=0; i<l.length; i++) {
-      a.push(l[i]);
-      this.flattenLayers(l[i].childNodes, a);
-    }
-    return a;
-  },
-
   rebuild : function(layers) {
     this.layerIndex = {};
-    var layers = this.flattenLayers(layers, []);
     for (var i=0; i<layers.length; i++)
       this.addLayer(layers[i]);
     var processedLinks = [];
@@ -129,15 +118,21 @@ Layer = Klass({
       props.push(p);
     for (var i=0; i<props.length; i++)
       this.unlinkProperty(props[i]);
+    if (this.parentNode)
+      this.parentNode.removeChild(this);
+    if (this.layerManager)
+      this.layerManager.deleteLayer(this);
   },
 
-  copy : function() {
+  copy : function(deepCopy) {
     var l = Object.extend({}, this);
     l.linkedProperties = {};
-    for (var p in this.linkedProperties)
-      l.linkedProperties[p] = this.linkedProperties[p].slice(0);
+    if (deepCopy != false) {
+      for (var p in this.linkedProperties)
+        l.linkedProperties[p] = this.linkedProperties[p].slice(0);
+      this.childNodes = this.childNodes.slice(0);
+    }
     this.copyProperties(l);
-    this.childNodes = this.childNodes.map(function(c) { return c.copy(); });
     return l;
   },
 
@@ -156,14 +151,16 @@ Layer = Klass({
       var alpha = ctx.globalAlpha;
       var gco = ctx.globalCompositeOperation;
       if (this.childNodes.length > 0) {
-        tempLayer = tempLayer || new TiledLayer();
-        this.compositeTo(tempLayer, 1, 'source-over');
+        if (!tempLayer)
+          tempLayer = this.copy(false);
+        else
+          this.compositeTo(tempLayer, 1, 'source-over');
         for (var i=0; i<this.childNodes.length; i++) {
-          this.childNodes[i].applyTo(tempLayer);
+          this.layerManager.getLayerByUID(this.childNodes[i]).applyTo(tempLayer);
         }
         tempLayer.compositeTo(ctx, this.opacity, composite||this.globalCompositeOperation);
       } else {
-        this.compositeTo(ctx, this.opacity, composite);
+        this.compositeTo(ctx, this.opacity, composite||this.globalCompositeOperation);
       }
       ctx.globalAlpha = alpha;
       ctx.globalCompositeOperation = gco;
@@ -171,14 +168,32 @@ Layer = Klass({
   },
 
   appendChild : function(node) {
-    if (node.parentNode)
-      node.parentNode.removeChild(node);
-    node.parentNode = this;
-    this.childNodes.push(node);
+    if (node.parentNode == this.uid && this.childNodes.last() == node.uid)
+      return;
+    if (node.parentNode != null)
+      this.layerManager.getLayerByUID(node.parentNode).removeChild(node);
+    node.parentNode = this.uid;
+    this.childNodes.push(node.uid);
+  },
+
+  prependChild : function(node) {
+    if (node.parentNode == this.uid && this.childNodes[0] == node.uid)
+      return;
+    if (node.parentNode != null)
+      this.layerManager.getLayerByUID(node.parentNode).removeChild(node);
+    node.parentNode = this.uid;
+    this.childNodes.unshift(node.uid);
   },
 
   removeChild : function(node) {
-    this.childNodes.deleteFirst(node);
+    var cc = this.childNodes;
+    for (var i=0; i<cc.length;) {
+      if (cc[i] == node.uid) {
+        this.childNodes.splice(i,1);
+      } else {
+        i++;
+      }
+    }
     node.parentNode = null;
   },
 

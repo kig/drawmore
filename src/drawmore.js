@@ -237,21 +237,19 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.tempLayer.x = x;
       this.tempLayer.y = y;
       this.tempLayer.compensateZoom = zoom;
+      if (this.strokeLayer.display && this.currentLayer) {
+        this.currentLayer.prependChild(this.strokeLayer);
+        var composite = (this.erasing ? 'destination-out' :
+          (this.currentLayer.opacityLocked ? 'source-atop' : 'source-over')
+        );
+        this.strokeLayer.globalCompositeOperation = composite;
+      }
       for (var i=0; i<this.layers.length; i++) {
         var layer = this.layers[i];
-        if (i == this.currentLayerIndex && this.strokeLayer.display) {
-          layer.appendChild(this.strokeLayer);
-          var composite = (this.erasing ? 'destination-out' :
-            (layer.opacityLocked ? 'source-atop' : 'source-over')
-          );
-          this.strokeLayer.globalCompositeOperation = composite;
-        } else if (this.strokeLayer.parentNode == layer) {
-          layer.removeChild(this.strokeLayer);
-        }
-        if (!layer.parentNode) {
+        if (layer.parentNode == null) {
           if (layer.childNodes.length > 0)
             this.tempLayer.clear();
-          layer.applyTo(ctx, null, this.tempLayer);
+          layer.applyTo(ctx);
         }
       }
     ctx.restore();
@@ -387,6 +385,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.brushes = [];
     this.resize(this.canvas.width, this.canvas.height);
     this.strokeLayer = new TiledLayer();
+    this.strokeLayer.name = 'stroke';
+    this.strokeLayer.uid = -1;
+    this.layerManager.addLayer(this.strokeLayer);
   },
 
   setupDefaultState : function() {
@@ -438,9 +439,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
   getState : function() {
     var cs = this.constraints.slice(0);
     cs.deleteFirst(this.constraint);
-    if (this.strokeLayer.parentNode) {
-      this.strokeLayer.parentNode.removeChild(this.strokeLayer);
-    }
+    var pn = this.strokeLayer.parentNode;
+    var layers = this.layers.map(function(l){ return l.copy(); });
+    var strokeLayer = this.strokeLayer.copy();
     return {
       pickRadius : this.pickRadius,
       brushIndex : this.brushIndex,
@@ -455,14 +456,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
       constraints: cs,
       layerUID: this.layerUID,
       strokeInProgress : this.strokeInProgress,
-      layers : this.layers.map(function(l){
-        if (l.parentNode)
-          return l.uid;
-        else
-          return l.copy();
-      }),
+      layers : layers,
       currentLayerIndex : this.currentLayerIndex,
-      strokeLayer : this.strokeLayer.copy()
+      strokeLayer : strokeLayer
     };
   },
 
@@ -472,18 +468,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.pickRadius = state.pickRadius;
     this.brushes = state.brushes.map(function(l){ return l.copy(); });
     this.setBrush(state.brushIndex);
-    this.layers = state.layers.map(function(l){
-      if (l.isLayer) return l.copy();
-      else return l;
-    });
+    this.layers = state.layers.map(function(l){ return l.copy(); });
     this.strokeLayer = state.strokeLayer.copy();
     this.layerUID = state.layerUID;
-    this.layerManager.rebuild(this.layers.filter(function(l){ return l.isLayer; }));
-    var layerManager = this.layerManager;
-    this.layers = this.layers.map(function(l){
-      if (l.isLayer) return l;
-      else return layerManager.getLayerByUID(l);
-    });
+    this.layerManager.rebuild(this.layers);
+    this.layerManager.addLayer(this.strokeLayer);
     this.layerWidget.requestRedraw();
     this.setCurrentLayer(state.currentLayerIndex);
     for (var i=0; i<state.palette.length; i++)
