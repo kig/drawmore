@@ -1209,6 +1209,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
     if (this.currentLayer) {
       this.currentLayer.modify('x', dx);
       this.currentLayer.modify('y', dy);
+      var self = this;
+      this.currentLayer.childNodes.forEach(function(cn){
+        var l = self.layerManager.getLayerByUID(cn);
+        if (!l.isPropertyLinkedWith('x', self.currentLayer)) {
+          l.x += dx;
+          l.y += dy;
+        }
+      });
       this.requestRedraw();
       var l = this.history.last();
       if (l.methodName == 'moveCurrentLayer') {
