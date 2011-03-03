@@ -108,7 +108,7 @@ LayerWidget = Klass({
     var self = this;
     var li = LI(
       {
-        className: layer.parentNode != null ? 'grouped' : ''
+        className: layer.hasParentNode() ? 'grouped' : ''
       },
       DIV(
         {

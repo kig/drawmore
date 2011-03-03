@@ -56,6 +56,7 @@ Layer = Klass({
   zIndex : 0,
   globalAlpha : 1,
   globalCompositeOperation : 'source-over',
+  parentNodeUID : null,
 
   initialize : function(){
     this.childNodes = [];
@@ -118,8 +119,8 @@ Layer = Klass({
       props.push(p);
     for (var i=0; i<props.length; i++)
       this.unlinkProperty(props[i]);
-    if (this.parentNode)
-      this.parentNode.removeChild(this);
+    if (this.hasParentNode())
+      this.getParentNode().removeChild(this);
     if (this.layerManager)
       this.layerManager.deleteLayer(this);
   },
@@ -167,21 +168,29 @@ Layer = Klass({
     }
   },
 
-  appendChild : function(node) {
-    if (node.parentNode == this.uid && this.childNodes.last() == node.uid)
-      return;
-    if (node.parentNode != null)
-      this.layerManager.getLayerByUID(node.parentNode).removeChild(node);
-    node.parentNode = this.uid;
-    this.childNodes.push(node.uid);
+  getParentNode : function() {
+    return this.layerManager.getLayerByUID(this.parentNodeUID);
+  },
+  
+  hasParentNode : function() {
+    return this.parentNodeUID != null;
   },
 
-  prependChild : function(node) {
-    if (node.parentNode == this.uid && this.childNodes[0] == node.uid)
+  appendChild : function(node) {
+    if (node.parentNodeUID == this.uid && this.childNodes.last() == node.uid)
       return;
-    if (node.parentNode != null)
-      this.layerManager.getLayerByUID(node.parentNode).removeChild(node);
-    node.parentNode = this.uid;
+    if (node.hasParentNode())
+      node.getParentNode().removeChild(node);
+    node.parentNodeUID = this.uid;
+    this.childNodes.push(node.uid);
+  },
+  
+  prependChild : function(node) {
+    if (node.parentNodeUID == this.uid && this.childNodes[0] == node.uid)
+      return;
+    if (node.hasParentNode())
+      node.getParentNode().removeChild(node);
+    node.parentNodeUID = this.uid;
     this.childNodes.unshift(node.uid);
   },
 
@@ -194,7 +203,7 @@ Layer = Klass({
         i++;
       }
     }
-    node.parentNode = null;
+    node.parentNodeUID = null;
   },
 
   compositeTo : function(ctx, opacity, composite) {

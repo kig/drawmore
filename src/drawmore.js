@@ -246,10 +246,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
       }
       for (var i=0; i<this.layers.length; i++) {
         var layer = this.layers[i];
-        if (layer.parentNode == null) {
+        if (!layer.hasParentNode()) {
           if (layer.childNodes.length > 0)
             this.tempLayer.clear();
-          layer.applyTo(ctx);
+          layer.applyTo(ctx, null, this.tempLayer);
         }
       }
     ctx.restore();
@@ -384,10 +384,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.constraints = [];
     this.brushes = [];
     this.resize(this.canvas.width, this.canvas.height);
-    this.strokeLayer = new TiledLayer();
-    this.strokeLayer.name = 'stroke';
-    this.strokeLayer.uid = -1;
-    this.layerManager.addLayer(this.strokeLayer);
+    this.strokeLayer = this.createLayerObject();
   },
 
   setupDefaultState : function() {
@@ -439,9 +436,6 @@ Drawmore = Klass(Undoable, ColorUtils, {
   getState : function() {
     var cs = this.constraints.slice(0);
     cs.deleteFirst(this.constraint);
-    var pn = this.strokeLayer.parentNode;
-    var layers = this.layers.map(function(l){ return l.copy(); });
-    var strokeLayer = this.strokeLayer.copy();
     return {
       pickRadius : this.pickRadius,
       brushIndex : this.brushIndex,
@@ -456,9 +450,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
       constraints: cs,
       layerUID: this.layerUID,
       strokeInProgress : this.strokeInProgress,
-      layers : layers,
+      layers : this.layers.map(function(l){ return l.copy(); }),
       currentLayerIndex : this.currentLayerIndex,
-      strokeLayer : strokeLayer
+      strokeLayer : this.strokeLayer.copy()
     };
   },
 
@@ -1132,24 +1126,24 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   ungroupLayer : function(uid) {
     var layer = this.layerManager.getLayerByUID(uid);
-    layer.parentNode.removeChild(layer);
+    layer.getParentNode().removeChild(layer);
     layer.globalCompositeOperation = 'source-over';
   },
 
   toggleCurrentLayerGrouping : function() {
     var uid = this.currentLayer.uid;
     if (this.currentLayerIndex > 0) {
-      if (this.currentLayer.parentNode) {
+      if (this.currentLayer.hasParentNode()) {
         var idx = this.currentLayerIndex+1;
-        while (idx < this.layers.length && this.layers[idx].parentNode === this.currentLayer.parentNode) {
+        while (idx < this.layers.length && this.layers[idx].parentNodeUID == this.currentLayer.parentNodeUID) {
           this.currentLayer.appendChild(this.layers[idx]);
           idx++;
         }
         this.ungroupLayer(uid);
       } else {
         var prev = this.layers[this.currentLayerIndex-1];
-        if (prev.parentNode)
-          prev = prev.parentNode;
+        if (prev.hasParentNode())
+          prev = prev.getParentNode();
         this.groupLayer(uid, prev.uid);
       }
       this.addHistoryState(new HistoryState('toggleCurrentLayerGrouping', [], true));
