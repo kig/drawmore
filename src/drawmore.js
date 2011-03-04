@@ -65,7 +65,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   defaultLineWidth : 0.75,
   defaultColor : ColorUtils.colorVec(0,0,0,1),
-  defaultBackground : ColorUtils.colorVec(0.933,0.914,0.882,1),
+  defaultBackground : ColorUtils.colorVec(1,1,1,1),
   brushIndex : 0,
 
   minimumBrushSize : 0.75,
@@ -214,16 +214,18 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   resize : function(w,h) {
-    this.width = w;
-    this.height = h;
-    this.canvas.width = w;
-    this.canvas.height = h;
-    this.tempLayerStack = [
-      new CanvasLayer(w,h),
-      new CanvasLayer(w,h),
-      new CanvasLayer(w,h)
-    ];
-    this.requestRedraw();
+    if (w != this.width || h != this.height) {
+      this.width = w;
+      this.height = h;
+      this.canvas.width = w;
+      this.canvas.height = h;
+      this.tempLayerStack = [
+        new CanvasLayer(w,h),
+        new CanvasLayer(w,h),
+        new CanvasLayer(w,h)
+      ];
+      this.requestRedraw();
+    }
   },
 
   applyTo : function(ctx, x, y, w, h, flippedX, flippedY, zoom) {
@@ -835,7 +837,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
           ev.preventDefault();
 
         } else if (Key.match(ev,  draw.keyBindings.groupLayer)) {
-          draw.toggleCurrentLayerGrouping();
+          if (ev.shiftKey)
+            draw.unindentCurrentLayer();
+          else
+            draw.indentCurrentLayer();
 
         } else if (Key.match(ev, draw.keyBindings.duplicateCurrentLayer)) {
           draw.duplicateCurrentLayer();
@@ -1140,43 +1145,49 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   // Layers
 
-  groupLayer : function(srcUID, groupUID) {
+  indentLayer : function(srcUID, groupUID) {
     var layer = this.layerManager.getLayerByUID(srcUID);
     var group = this.layerManager.getLayerByUID(groupUID);
     group.appendChild(layer);
-    layer.globalCompositeOperation = 'source-atop';
+    var isTop = (layer.parentNodeUID == this.topLayer.uid);
+    layer.globalCompositeOperation = isTop ? 'source-over' : 'source-atop';
   },
 
-  ungroupLayer : function(uid) {
+  unindentLayer : function(uid) {
     var layer = this.layerManager.getLayerByUID(uid);
     var parent = layer.getParentNode();
     var grandParent = parent.getParentNode();
     grandParent.insertChildAfter(layer, parent);
-    layer.globalCompositeOperation = 'source-over';
+    var isTop = (layer.parentNodeUID == this.topLayer.uid);
+    layer.globalCompositeOperation = isTop ? 'source-over' : 'source-atop';
   },
 
-  toggleCurrentLayerGrouping : function() {
+  indentCurrentLayer : function() {
     if (!this.currentLayer) return;
-    if (this.currentLayer.getPreviousNode()) {
+    var prev = this.currentLayer.getPreviousNode();
+    if (prev.uid != this.currentLayer.parentNodeUID) {
       var uid = this.currentLayer.uid;
-      if (this.currentLayer.parentNodeUID != this.topLayer.uid) {
-        var parent = this.currentLayer.getParentNode();
-        var cc = parent.childNodes;
-        var nextLayers = cc.slice(cc.indexOf(uid)+1);
-        for (var i=nextLayers.length-1; i>=0; i--) {
-          this.currentLayer.prependChild(nextLayers[i]);
-        }
-        this.ungroupLayer(uid);
-      } else {
-        var prev = this.currentLayer.getPreviousNode();
-        if (prev.parentNodeUID != this.topLayer.uid)
-          prev = prev.getParentNode();
-        this.groupLayer(uid, prev.uid);
-        var cc = this.currentLayer.childNodes;
-        for (var i=0; i<cc.length; i++)
-          this.groupLayer(cc[i], prev.uid);
+      if (prev.parentNodeUID != this.currentLayer.parentNodeUID)
+        prev = prev.getParentNode();
+      this.indentLayer(uid, prev.uid);
+      this.addHistoryState(new HistoryState('indentCurrentLayer', [], true));
+      this.layerWidget.requestRedraw();
+      this.requestRedraw();
+    }
+  },
+  
+  unindentCurrentLayer : function() {
+    if (!this.currentLayer) return;
+    if (this.currentLayer.parentNodeUID != this.topLayer.uid) {
+      var uid = this.currentLayer.uid;
+      var parent = this.currentLayer.getParentNode();
+      var cc = parent.childNodes;
+      var nextLayers = cc.slice(cc.indexOf(uid)+1);
+      for (var i=nextLayers.length-1; i>=0; i--) {
+        this.currentLayer.prependChild(this.layerManager.getLayerByUID(nextLayers[i]));
       }
-      this.addHistoryState(new HistoryState('toggleCurrentLayerGrouping', [], true));
+      this.unindentLayer(uid);
+      this.addHistoryState(new HistoryState('unindentCurrentLayer', [], true));
       this.layerWidget.requestRedraw();
       this.requestRedraw();
     }
@@ -1394,11 +1405,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.setCurrentLayer(layer.uid, false);
     } else {
       if (this.currentLayer.childNodes.length > 0) {
-        this.groupLayer(layer.uid, this.currentLayer.uid);
+        this.indentLayer(layer.uid, this.currentLayer.uid);
       } else {
         this.currentLayer.getParentNode().insertChildAfter(layer, this.currentLayer);
         if (this.currentLayer.parentNodeUID != this.topLayer.uid)
-          layer.composite = 'source-atop'; // layer group
+          layer.globalCompositeOperation = 'source-atop'; // layer group
       }
       this.setCurrentLayer(layer.uid, false);
     }
@@ -1413,7 +1424,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     } else {
       this.currentLayer.getParentNode().insertChildBefore(layer, this.currentLayer);
       if (this.currentLayer.parentNodeUID != this.topLayer.uid) {
-        layer.composite = 'source-atop'; // layer group
+        layer.globalCompositeOperation = 'source-atop'; // layer group
       }
       this.setCurrentLayer(layer.uid, false);
     }

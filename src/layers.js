@@ -248,18 +248,18 @@ Layer = Klass({
   },
   
   insertChildBefore : function(node, sibling) {
-    var i = this.childNodes.indexOf(sibling.uid);
     if (node.hasParentNode())
       node.getParentNode().removeChild(node);
     node.parentNodeUID = this.uid;
+    var i = this.childNodes.indexOf(sibling.uid);
     this.childNodes.splice(i, 0, node.uid);
   },
   
   insertChildAfter : function(node, sibling) {
-    var i = this.childNodes.indexOf(sibling.uid);
     if (node.hasParentNode())
       node.getParentNode().removeChild(node);
     node.parentNodeUID = this.uid;
+    var i = this.childNodes.indexOf(sibling.uid);
     this.childNodes.splice(i+1, 0, node.uid);
   },
 

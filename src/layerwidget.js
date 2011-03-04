@@ -25,9 +25,9 @@ LayerWidget = Klass({
     window.addEventListener('mouseup', function(ev){
       if (self.active) {
         var dropped = false;
-        var srcIdx,dstIdx,srcUID,dstUID;
+        var srcUID,dstUID;
         var c = self.active;
-        srcUID = c.layerUID;
+        srcUID = dstUID = c.layerUID;
         self.active = null;
         if (c.dragging) {
           dropped = true;
@@ -36,23 +36,32 @@ LayerWidget = Klass({
           var dy = (ev.clientY-c.downY);
           var myTop = c.offsetTop;
           var myBottom = c.offsetTop + c.offsetHeight;
-          for (var j=0; j<cc.length; j++) {
-            var mid = (cc[j].offsetTop+cc[j].offsetHeight/2);
-            dstUID = cc[j].layerUID;
-            if (dy < 0) { // going upwards, compare top to mid
-              if (myTop < mid)
+          if (dy < 0) { // going upwards == towards the end in layer list == towards start of html list
+            for (var j=i-1; j>=0; j--) {
+              var mid = cc[j].offsetTop+cc[j].offsetHeight/2;
+              if (myTop < mid) {
+                dstUID = cc[j].layerUID;
+              } else {
                 break;
-            } else { // going down
-              if (mid > myBottom)
+              }
+            }
+          } else {
+            for (var j=i+1; j<cc.length; j++) {
+              var mid = cc[j].offsetTop+cc[j].offsetHeight/2;
+              if (myBottom > mid) {
+                dstUID = cc[j].layerUID;
+              } else {
                 break;
+              }
             }
           }
           ev.preventDefault();
+          var lm = self.app.layerManager;
+          self.app.moveLayer(srcUID, dstUID);
         }
         c.style.top = '0px';
+        c.style.zIndex = 0;
         c.dragging = c.down = false;
-        if (dropped)
-          self.app.moveLayer(srcUID, dstUID);
       }
       if (self.activeOpacity) {
         var dx = ev.clientX-self.activeOpacity.downX;
@@ -72,6 +81,7 @@ LayerWidget = Klass({
         }
         if (self.active.dragging) {
           self.active.style.top = dy + 'px';
+          self.active.style.zIndex = 10;
         }
       }
       if (self.activeOpacity) {
@@ -99,7 +109,8 @@ LayerWidget = Klass({
     var self = this;
     var li = LI(
       {
-        className: ('indent-'+indent) + (isCurrent ? ' current' : '') 
+        className: ('indent-'+indent) + (isCurrent ? ' current' : ''),
+        layerUID : layer.uid
       },
       DIV(
         {
