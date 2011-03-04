@@ -248,12 +248,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
       ctx.mozImageSmoothingEnabled = false;
       ctx.webkitImageSmoothingEnabled = false;
       ctx.imageSmoothingEnabled = false;
-      for (var i=0; i<this.tempLayerStack.length; i++) {
-        var tempLayer = this.tempLayerStack[i];
-        //tempLayer.x = x;
-        //tempLayer.y = y;
-      }
-      //this.tempLayerStack.last().compensateZoom = zoom;
+      var tl = this.tempLayerStack.last();
+      tl.x = x;
+      tl.y = y;
+      tl.compensateZoom = zoom;
       if (this.strokeLayer.display && this.currentLayer != null) {
         this.currentLayer.prependChild(this.strokeLayer);
         var composite = (this.erasing ? 'destination-out' :
@@ -262,7 +260,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
         this.strokeLayer.globalCompositeOperation = composite;
       }
       
-      this.topLayer.applyTo(ctx, null, this.tempLayerStack);
+      this.topLayer.applyTo(ctx, null, this.tempLayerStack, true);
       
       if (this.strokeLayer.hasParentNode()) {
         var p = this.strokeLayer.getParentNode();
@@ -1287,15 +1285,16 @@ Drawmore = Klass(Undoable, ColorUtils, {
     if (below && below.uid != this.topLayer.uid) {
       var target = this.createLayerObject();
       // target becomes below
-      var x = below.x;
-      var y = below.y;
-      below.x = below.y = 0;
       below.compositeTo(target, below.opacity, 'source-over');
-      this.currentLayer.applyTo(target);
-      below.x = x;
-      below.y = y;
-      below.opacity = 1;
+      this.currentLayer.applyTo(target,
+        this.currentLayer.parentNodeUID == below.parentNodeUID 
+        ? 'source-over'
+        : 'source-atop'
+      );
       below.tiles = target.tiles;
+      below.x = 0;
+      below.y = 0;
+      below.opacity = 1;
       this.deleteCurrentLayer(false);
       this.addHistoryState(new HistoryState('mergeDown', [], true));
     }

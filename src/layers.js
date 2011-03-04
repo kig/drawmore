@@ -167,14 +167,16 @@ Layer = Klass({
   flipX : function() {},
   flipY : function() {},
 
-  applyTo : function(ctx, composite, tempLayerStack){
+  applyTo : function(ctx, composite, tempLayerStack, skipTemp){
     if (this.display) {
       var alpha = ctx.globalAlpha;
       var gco = ctx.globalCompositeOperation;
       if (this.childNodes.length > 0) {
         var tempLayer;
         var tail = null;
-        if (!tempLayerStack || tempLayerStack.length == 0) {
+        if (skipTemp) {
+          tempLayer = ctx;
+        } else if (!tempLayerStack || tempLayerStack.length == 0) {
           tempLayer = this.copy(false);
         } else {
           tempLayer = tempLayerStack[0];
@@ -185,7 +187,8 @@ Layer = Klass({
         for (var i=0; i<this.childNodes.length; i++) {
           this.layerManager.getLayerByUID(this.childNodes[i]).applyTo(tempLayer, null, tail);
         }
-        tempLayer.compositeTo(ctx, this.opacity, composite||this.globalCompositeOperation);
+        if (!skipTemp)
+          tempLayer.compositeTo(ctx, this.opacity, composite||this.globalCompositeOperation);
       } else {
         this.compositeTo(ctx, this.opacity, composite||this.globalCompositeOperation);
       }
@@ -209,26 +212,34 @@ Layer = Klass({
     return this.layerManager.getLayerByUID(this.childNodes[i]);
   },
   
-  getNextNode : function() {
+  getNextNode : function(goingUp) {
     if (this.parentNodeUID == null) 
       return null;
-    if (this.childNodes.length > 0) 
-      return this.getChildNode(0);
+    if (!goingUp) {
+      if (this.childNodes.length > 0) 
+        return this.getChildNode(0);
+    }
     var pn = this.getParentNode();
     var nextIdx = pn.childNodes.indexOf(this.uid)+1;
     if (nextIdx < pn.childNodes.length)
       return pn.getChildNode(nextIdx);
     else
-      return pn.getNextNode();
+      return pn.getNextNode(true);
   },
   
-  getPreviousNode : function() {
+  getPreviousNode : function(goingDown) {
     if (this.parentNodeUID == null) 
       return null;
+    if (goingDown) {
+      if (this.childNodes.length > 0)
+        return this.getChildNode(this.childNodes.length-1);
+      else
+        return this;
+    }
     var pn = this.getParentNode();
     var prevIdx = pn.childNodes.indexOf(this.uid)-1;
     if (prevIdx >= 0)
-      return pn.getChildNode(prevIdx);
+      return pn.getChildNode(prevIdx).getPreviousNode(true);
     else
       return pn;
   },
