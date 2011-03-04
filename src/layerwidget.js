@@ -33,29 +33,20 @@ LayerWidget = Klass({
           dropped = true;
           var cc = toArray(self.layers.childNodes);
           var i = cc.indexOf(c);
-          var clen = cc.length;
-          srcIdx = clen-1-i;
           var dy = (ev.clientY-c.downY);
           var myTop = c.offsetTop;
           var myBottom = c.offsetTop + c.offsetHeight;
-          dstIdx = srcIdx;
           for (var j=0; j<cc.length; j++) {
             var mid = (cc[j].offsetTop+cc[j].offsetHeight/2);
+            dstUID = cc[j].layerUID;
             if (dy < 0) { // going upwards, compare top to mid
-              if (myTop < mid) {
-                dstIdx = clen-1-j;
+              if (myTop < mid)
                 break;
-              }
             } else { // going down
-              if (mid > myBottom) {
-                dstIdx = clen-1-j+1;
+              if (mid > myBottom)
                 break;
-              }
-              if (j == cc.length-1) dstIdx = 0;
             }
           }
-          dstIdx = Math.clamp(dstIdx, 0, clen-1);
-          dstUID = self.app.layers[dstIdx].uid;
           ev.preventDefault();
         }
         c.style.top = '0px';
@@ -104,11 +95,11 @@ LayerWidget = Klass({
     return idx;
   },
 
-  __newLayer : function(layer) {
+  __newLayer : function(layer, indent, isCurrent) {
     var self = this;
     var li = LI(
       {
-        className: layer.hasParentNode() ? 'grouped' : ''
+        className: ('indent-'+indent) + (isCurrent ? ' current' : '') 
       },
       DIV(
         {
@@ -156,7 +147,7 @@ LayerWidget = Klass({
         onkeydown : Event.cancel
       }),
       CHECKBOX({
-        disabled: layer === self.app.currentLayer,
+        disabled: isCurrent,
         checked: layer.isPropertyLinkedWith('x', self.app.currentLayer),
         title: 'Link position',
         onclick: function(ev) {
@@ -211,7 +202,7 @@ LayerWidget = Klass({
         if (this.eatClick) {
           this.eatClick = false;
         } else {
-          self.app.setCurrentLayerByUID(layer.uid);
+          self.app.setCurrentLayer(layer.uid);
         }
         ev.preventDefault();
       }
@@ -230,13 +221,15 @@ LayerWidget = Klass({
   },
 
   updateDisplay : function() {
-    var layers = this.app.layers;
     this.clear();
-    for (var i=0; i<layers.length; i++) {
-      var layer = layers[i];
-      this.__newLayer(layer);
-      if (this.app.currentLayerIndex == i)
-        this.layers.firstChild.className += ' current';
+    this.buildLayerList(this.app.topLayer, 0);
+  },
+  
+  buildLayerList : function(layer, indent) {
+    for (var i=0; i<layer.childNodes.length; i++) {
+      var c = layer.getChildNode(i);
+      this.__newLayer(c, indent, this.app.currentLayer.uid == c.uid);
+      this.buildLayerList(c, indent+1);
     }
   },
 

@@ -39,8 +39,14 @@
   color: rgba(0,0,0,0.6);
   vertical-align: bottom;
 }
-.layers .grouped {
+.layers .indent-0 {
+  margin-left: 0px;
+}
+.layers .indent-1 {
   margin-left: 16px;
+}
+.layers .indent-2 {
+  margin-left: 32px;
 }
 .layers .current {
   background: rgba(255,255,255,0.8);

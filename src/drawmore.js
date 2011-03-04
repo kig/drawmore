@@ -91,7 +91,6 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   initialize : function(canvas, config) {
     this.canvas = canvas;
-    this.layerManager = new LayerManager();
     Object.extend(this, config);
     this.canvas.style.setProperty("image-rendering", "optimizeSpeed", "important");
     this.ctx = canvas.getContext('2d');
@@ -214,6 +213,19 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.drawHistogram("input lag ", " ms", this.inputTimes, this.inputCount, ctx, x, y);
   },
 
+  resize : function(w,h) {
+    this.width = w;
+    this.height = h;
+    this.canvas.width = w;
+    this.canvas.height = h;
+    this.tempLayerStack = [
+      new CanvasLayer(w,h),
+      new CanvasLayer(w,h),
+      new CanvasLayer(w,h)
+    ];
+    this.requestRedraw();
+  },
+
   applyTo : function(ctx, x, y, w, h, flippedX, flippedY, zoom) {
     var px = -x;
     var py = -y;
@@ -234,23 +246,25 @@ Drawmore = Klass(Undoable, ColorUtils, {
       ctx.mozImageSmoothingEnabled = false;
       ctx.webkitImageSmoothingEnabled = false;
       ctx.imageSmoothingEnabled = false;
-      this.tempLayer.x = x;
-      this.tempLayer.y = y;
-      this.tempLayer.compensateZoom = zoom;
-      if (this.strokeLayer.display && this.currentLayer) {
+      for (var i=0; i<this.tempLayerStack.length; i++) {
+        var tempLayer = this.tempLayerStack[i];
+        //tempLayer.x = x;
+        //tempLayer.y = y;
+      }
+      //this.tempLayerStack.last().compensateZoom = zoom;
+      if (this.strokeLayer.display && this.currentLayer != null) {
         this.currentLayer.prependChild(this.strokeLayer);
         var composite = (this.erasing ? 'destination-out' :
           (this.currentLayer.opacityLocked ? 'source-atop' : 'source-over')
         );
         this.strokeLayer.globalCompositeOperation = composite;
       }
-      for (var i=0; i<this.layers.length; i++) {
-        var layer = this.layers[i];
-        if (!layer.hasParentNode()) {
-          if (layer.childNodes.length > 0)
-            this.tempLayer.clear();
-          layer.applyTo(ctx, null, this.tempLayer);
-        }
+      
+      this.topLayer.applyTo(ctx, null, this.tempLayerStack);
+      
+      if (this.strokeLayer.hasParentNode()) {
+        var p = this.strokeLayer.getParentNode();
+        p.removeChild(this.strokeLayer);
       }
     ctx.restore();
   },
@@ -377,20 +391,31 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setupEmptyState : function() {
-    this.layers = [];
-    this.layerUID = 0;
+    this.layerManager = new LayerManager();
+    this.currentLayer = null;
+    this.layerUID = -2;
+    this.topLayer = new Layer();
+    this.topLayer.uid = this.layerUID++;
+    this.layerManager.addLayer(this.topLayer);
+    this.strokeLayer = this.createLayerObject();
     this.layerWidget.requestRedraw();
     this.palette = [];
     this.constraints = [];
     this.brushes = [];
     this.resize(this.canvas.width, this.canvas.height);
-    this.strokeLayer = this.createLayerObject();
   },
 
   setupDefaultState : function() {
     this.setupEmptyState();
     this.addRoundBrush();
     var s2 = 1/Math.sqrt(2);
+    var a = 0;
+    this.addPolygonBrush([
+      {x: Math.cos(a+Math.PI-0.05), y: Math.sin(a+Math.PI-0.05)},
+      {x: Math.cos(a+Math.PI+0.05), y: Math.sin(a+Math.PI+0.05)},
+      {x: Math.cos(a-0.05), y: Math.sin(a-0.05)},
+      {x: Math.cos(a+0.05), y: Math.sin(a+0.05)}
+    ]);
     for (var i=0; i<3; i++) {
       var a = (i+1)*Math.PI/8;
       this.addPolygonBrush([
@@ -406,6 +431,13 @@ Drawmore = Klass(Undoable, ColorUtils, {
         {x: -Math.cos(a+Math.PI-0.05), y: Math.sin(a+Math.PI-0.05)}
       ]);
     }
+    var a = Math.PI/2;
+    this.addPolygonBrush([
+      {x: Math.cos(a+Math.PI-0.05), y: Math.sin(a+Math.PI-0.05)},
+      {x: Math.cos(a+Math.PI+0.05), y: Math.sin(a+Math.PI+0.05)},
+      {x: Math.cos(a-0.05), y: Math.sin(a-0.05)},
+      {x: Math.cos(a+0.05), y: Math.sin(a+0.05)}
+    ]);
     this.addPolygonBrush([{x:s2, y:s2}, {x:s2,y:-s2}, {x:-s2,y:-s2}, {x:-s2,y:s2}]);
     this.addPolygonBrush([{x:1, y:0}, {x:0,y:-1}, {x:-1,y:0}, {x:0,y:1}]);
     this.setBrush(0);
@@ -419,15 +451,6 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.clear();
     this.resetView();
     this.addHistoryBarrier();
-  },
-
-  resize : function(w,h) {
-    this.width = w;
-    this.height = h;
-    this.canvas.width = w;
-    this.canvas.height = h;
-    this.tempLayer = new CanvasLayer(w,h);
-    this.requestRedraw();
   },
 
 
@@ -450,9 +473,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
       constraints: cs,
       layerUID: this.layerUID,
       strokeInProgress : this.strokeInProgress,
-      layers : this.layers.map(function(l){ return l.copy(); }),
-      currentLayerIndex : this.currentLayerIndex,
-      strokeLayer : this.strokeLayer.copy()
+      layers : this.layerManager.copyLayers(),
+      currentLayerUID : this.currentLayer && this.currentLayer.uid,
+      topLayerUID : this.topLayer.uid,
+      strokeLayerUID : this.strokeLayer.uid
     };
   },
 
@@ -462,13 +486,12 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.pickRadius = state.pickRadius;
     this.brushes = state.brushes.map(function(l){ return l.copy(); });
     this.setBrush(state.brushIndex);
-    this.layers = state.layers.map(function(l){ return l.copy(); });
-    this.strokeLayer = state.strokeLayer.copy();
     this.layerUID = state.layerUID;
-    this.layerManager.rebuild(this.layers);
-    this.layerManager.addLayer(this.strokeLayer);
+    this.layerManager.rebuildCopy(state.layers);
+    this.topLayer = this.layerManager.getLayerByUID(state.topLayerUID);
+    this.strokeLayer = this.layerManager.getLayerByUID(state.strokeLayerUID);
     this.layerWidget.requestRedraw();
-    this.setCurrentLayer(state.currentLayerIndex);
+    this.setCurrentLayer(state.currentLayerUID);
     for (var i=0; i<state.palette.length; i++)
       this.setPaletteColor(i, state.palette[i]);
     this.palette.splice(state.palette.length, this.palette.length);
@@ -1126,25 +1149,32 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   ungroupLayer : function(uid) {
     var layer = this.layerManager.getLayerByUID(uid);
-    layer.getParentNode().removeChild(layer);
+    var parent = layer.getParentNode();
+    var grandParent = parent.getParentNode();
+    grandParent.insertChildAfter(layer, parent);
     layer.globalCompositeOperation = 'source-over';
   },
 
   toggleCurrentLayerGrouping : function() {
-    var uid = this.currentLayer.uid;
-    if (this.currentLayerIndex > 0) {
-      if (this.currentLayer.hasParentNode()) {
-        var idx = this.currentLayerIndex+1;
-        while (idx < this.layers.length && this.layers[idx].parentNodeUID == this.currentLayer.parentNodeUID) {
-          this.currentLayer.appendChild(this.layers[idx]);
-          idx++;
+    if (!this.currentLayer) return;
+    if (this.currentLayer.getPreviousNode()) {
+      var uid = this.currentLayer.uid;
+      if (this.currentLayer.parentNodeUID != this.topLayer.uid) {
+        var parent = this.currentLayer.getParentNode();
+        var cc = parent.childNodes;
+        var nextLayers = cc.slice(cc.indexOf(uid)+1);
+        for (var i=nextLayers.length-1; i>=0; i--) {
+          this.currentLayer.prependChild(nextLayers[i]);
         }
         this.ungroupLayer(uid);
       } else {
-        var prev = this.layers[this.currentLayerIndex-1];
-        if (prev.hasParentNode())
+        var prev = this.currentLayer.getPreviousNode();
+        if (prev.parentNodeUID != this.topLayer.uid)
           prev = prev.getParentNode();
         this.groupLayer(uid, prev.uid);
+        var cc = this.currentLayer.childNodes;
+        for (var i=0; i<cc.length; i++)
+          this.groupLayer(cc[i], prev.uid);
       }
       this.addHistoryState(new HistoryState('toggleCurrentLayerGrouping', [], true));
       this.layerWidget.requestRedraw();
@@ -1153,18 +1183,26 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   layerAbove : function() {
-    this.setCurrentLayer(this.currentLayerIndex+1);
+    if (!this.currentLayer) return;
+    var p = this.currentLayer.getNextNode();
+    if (p)
+      this.setCurrentLayer(p.uid);
   },
 
   layerBelow : function() {
-    this.setCurrentLayer(this.currentLayerIndex-1);
+    if (!this.currentLayer) return;
+    var p = this.currentLayer.getPreviousNode();
+    if (p && p.uid != this.topLayer.uid)
+      this.setCurrentLayer(p.uid);
   },
 
   toggleCurrentLayer : function() {
+    if (!this.currentLayer) return;
     this.toggleLayer(this.currentLayer.uid);
   },
 
   toggleCurrentLayerOpacityLocked : function() {
+    if (!this.currentLayer) return;
     this.toggleLayerOpacityLocked(this.currentLayer.uid);
   },
 
@@ -1177,6 +1215,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   toggleLayerLinkPosition : function(uid) {
+    if (!this.currentLayer) return;
     if (uid != this.currentLayer.uid) {
       var l = this.layerManager.getLayerByUID(uid);
       var linked = l.isPropertyLinkedWith('x', this.currentLayer);
@@ -1194,90 +1233,102 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   flipCurrentLayerHorizontally : function() {
+    if (!this.currentLayer) return;
     this.currentLayer.flipX();
     this.requestRedraw();
     this.addHistoryState(new HistoryState('flipCurrentLayerHorizontally', [], true));
   },
 
   flipCurrentLayerVertically : function() {
+    if (!this.currentLayer) return;
     this.currentLayer.flipY();
     this.requestRedraw();
     this.addHistoryState(new HistoryState('flipCurrentLayerVertically', [], true));
   },
 
   moveCurrentLayer : function(dx, dy) {
-    if (this.currentLayer) {
-      this.currentLayer.modify('x', dx);
-      this.currentLayer.modify('y', dy);
-      var self = this;
-      this.currentLayer.childNodes.forEach(function(cn){
-        var l = self.layerManager.getLayerByUID(cn);
-        if (!l.isPropertyLinkedWith('x', self.currentLayer)) {
-          l.x += dx;
-          l.y += dy;
-        }
-      });
-      this.requestRedraw();
-      var l = this.history.last();
-      if (l.methodName == 'moveCurrentLayer') {
-        this.addHistoryState(new HistoryState('moveCurrentLayer', [dx,dy], false));
-      } else {
-        this.addHistoryState(new HistoryState('moveCurrentLayer', [dx,dy], true));
+    if (!this.currentLayer) return;
+    this.currentLayer.modify('x', dx);
+    this.currentLayer.modify('y', dy);
+    var self = this;
+    var cc = this.currentLayer.childNodes;
+    for (var i=0; i<cc.length; i++) {
+      var cn = cc[i];
+      var l = self.layerManager.getLayerByUID(cn);
+      if (!l.isPropertyLinkedWith('x', this.currentLayer)) {
+        l.x += dx;
+        l.y += dy;
       }
+    }
+    this.requestRedraw();
+    var l = this.history.last();
+    if (l.methodName == 'moveCurrentLayer') {
+      this.addHistoryState(new HistoryState('moveCurrentLayer', [dx,dy], false));
+    } else {
+      this.addHistoryState(new HistoryState('moveCurrentLayer', [dx,dy], true));
     }
   },
 
   mergeDown : function(addHistory) {
-    if (this.currentLayerIndex > 0) {
+    if (!this.currentLayer) return;
+    if (this.getCurrentLayerIndex() > 0) {
       var target = this.createLayerObject();
-      var below = this.layers[this.currentLayerIndex-1];
-      target.name = this.currentLayer.name;
-      below.applyTo(target);
+      var below = this.currentLayer.getPreviousNode();
+      // target becomes below
+      var x = below.x;
+      var y = below.y;
+      below.x = below.y = 0;
+      below.compositeTo(target, below.opacity, 'source-over');
       this.currentLayer.applyTo(target);
-      var cidx = this.currentLayerIndex;
-      this.deleteLayer(cidx, false);
-      this.deleteLayer(cidx-1, false);
-      this.layers.splice(cidx-1, 0, target);
-      this.setCurrentLayer(cidx-1, false);
+      below.x = x;
+      below.y = y;
+      below.opacity = 1;
+      below.tiles = target.tiles;
+      this.deleteCurrentLayer(false);
       this.addHistoryState(new HistoryState('mergeDown', [], true));
     }
   },
 
   mergeVisible : function() {
+    if (!this.currentLayer) return;
     var target = this.createLayerObject();
-    this.layers.forEach(function(l){ l.applyTo(target); });
-    var firstIdx = null;
-    for (var i=0; i<this.layers.length; i++) {
-      while (i<this.layers.length && this.layers[i].display) {
-        if (firstIdx == null) firstIdx = i;
-        this.deleteLayer(i, false);
+    this.topLayer.applyTo(target);
+    for (var i=0; i<this.topLayer.childNodes.length; i++) {
+      var l = this.layerManager.getLayerByUID(this.topLayer.childNodes[i]);
+      while (i<this.topLayer.childNodes.length && l.display) {
+        this.deleteLayer(this.topLayer.childNodes[i], false);
+        l = this.layerManager.getLayerByUID(this.topLayer.childNodes[i]);
       }
     }
-    this.layers.splice(firstIdx || 0, 0, target);
-    this.setCurrentLayer(firstIdx, false);
+    this.addLayerBeforeCurrent(target);
+    this.setCurrentLayer(target.uid, false);
     this.addHistoryState(new HistoryState('mergeVisible', [], true));
   },
 
   mergeAll : function() {
+    if (!this.currentLayer) return;
     var target = this.createLayerObject();
-    this.layers.forEach(function(l){ l.applyTo(target); });
-    while (this.layers.length > 0)
-      this.deleteLayer(this.layers.length-1, false);
-    this.layers.push(target);
-    this.setCurrentLayer(this.layers.length-1, false);
+    this.topLayer.applyTo(target);
+    while (this.topLayer.childNodes.length > 0)
+      this.deleteLayer(this.topLayer.childNodes[0].uid, false);
+    this.addLayerBeforeCurrent(target);
+    this.setCurrentLayer(target.uid, false);
     this.addHistoryState(new HistoryState('mergeAll', [], true));
   },
 
   setCurrentLayerOpacity : function(opacity) {
+    if (!this.currentLayer) return;
     this.setLayerOpacity(this.currentLayer.uid, opacity);
     this.layerWidget.requestRedraw();
   },
 
   currentLayerOpacityUp : function() {
+    if (!this.currentLayer) return;
     this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity * 1.1, 1/255, 1));
   },
 
   currentLayerOpacityDown : function() {
+    if (!this.currentLayer) return;
     this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity / 1.1, 0, 1));
   },
 
@@ -1301,7 +1352,6 @@ Drawmore = Klass(Undoable, ColorUtils, {
     layer.uid = this.layerUID;
     this.layerUID++;
     this.layerManager.addLayer(layer);
-    layer.layerManager = this.layerManager;
     return layer;
   },
 
@@ -1319,42 +1369,63 @@ Drawmore = Klass(Undoable, ColorUtils, {
     layer.drawImage(img, 0, 0);
     layer.set('x', x);
     layer.set('y', y);
-    this.layers.push(layer);
-    this.setCurrentLayer(this.layers.length-1, false);
-    this.layerWidget.requestRedraw();
+    this.addLayerAfterCurrent(layer);
     this.addHistoryState(new HistoryState('newLayerFromImage',  [img,x,y,name], true));
+    return layer;
   },
 
   newLayer : function() {
     var layer = this.createLayerObject();
-    if (this.layers.length == 0) {
-      this.layers.push(layer);
-      this.setCurrentLayer(this.layers.length-1, false);
-    } else {
-      this.layers.splice(this.currentLayerIndex+1,0,layer);
-      this.setCurrentLayer(this.currentLayerIndex+1, false);
-    }
-    this.layerWidget.requestRedraw();
+    this.addLayerAfterCurrent(layer);
     this.addHistoryState(new HistoryState('newLayer', [], true));
     return layer;
   },
 
   newLayerBelow : function() {
     var layer = this.createLayerObject();
-    if (this.layers.length == 0) {
-      this.layers.push(layer);
-      this.setCurrentLayer(this.layers.length-1, false);
-    } else {
-      this.layers.splice(this.currentLayerIndex,0,layer);
-      this.setCurrentLayer(this.currentLayerIndex, false);
-    }
-    this.layerWidget.requestRedraw();
+    this.addLayerBeforeCurrent(layer);
     this.addHistoryState(new HistoryState('newLayerBelow', [], true));
     return layer;
   },
 
+  addLayerAfterCurrent : function(layer) {
+    if (!this.currentLayer) {
+      this.topLayer.appendChild(layer);
+      this.setCurrentLayer(layer.uid, false);
+    } else {
+      if (this.currentLayer.childNodes.length > 0) {
+        this.groupLayer(layer.uid, this.currentLayer.uid);
+      } else {
+        this.currentLayer.getParentNode().insertChildAfter(layer, this.currentLayer);
+        if (this.currentLayer.parentNodeUID != this.topLayer.uid)
+          layer.composite = 'source-atop'; // layer group
+      }
+      this.setCurrentLayer(layer.uid, false);
+    }
+    this.layerWidget.requestRedraw();
+    this.requestRedraw();
+  },
+  
+  addLayerBeforeCurrent : function(layer) {
+    if (!this.currentLayer) {
+      this.topLayer.prependChild(layer);
+      this.setCurrentLayer(layer.uid, false);
+    } else {
+      this.currentLayer.getParentNode().insertChildBefore(layer, this.currentLayer);
+      if (this.currentLayer.parentNodeUID != this.topLayer.uid) {
+        layer.composite = 'source-atop'; // layer group
+      }
+      this.setCurrentLayer(layer.uid, false);
+    }
+    this.layerWidget.requestRedraw();
+    this.requestRedraw();
+  },
+  
   duplicateCurrentLayer : function() {
+    if (!this.currentLayer) return;
     var layer = this.currentLayer.copy(false);
+    layer.uid = this.layerUID++;
+    this.layerManager.addLayer(layer);
     var m = layer.name.match(/ \(copy( \d+)?\)$/);
     if (m) {
       m[1] = m[1] || 0;
@@ -1363,14 +1434,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     } else {
       layer.name += " (copy)";
     }
-    if (this.layers.length == 0) {
-      this.layers.push(layer);
-      this.setCurrentLayer(this.layers.length-1, false);
-    } else {
-      this.layers.splice(this.currentLayerIndex+1,0,layer);
-      this.setCurrentLayer(this.currentLayerIndex+1, false);
-    }
-    this.layerWidget.requestRedraw();
+    this.addLayerAfterCurrent(layer);
     this.addHistoryState(new HistoryState('duplicateCurrentLayer', [], true));
     return layer;
   },
@@ -1401,92 +1465,86 @@ Drawmore = Klass(Undoable, ColorUtils, {
     else
       this.showLayer(uid);
   },
+  
+  layerIndexDFS : function(layer, uid) {
+    if (uid == layer.uid) {
+      return [0, true];
+    } else {
+      var idx = 1;
+      for (var i=0; i<layer.childNodes.length; i++) {
+        var found = this.layerIndexDFS(this.layerManager.getLayerByUID(layer.childNodes[i]), uid);
+        idx += found[0];
+        if (found[1])
+          return [idx, true];
+      }
+      return [idx, false];
+    }
+  },
+  
+  getLayerIndex : function(layer) {
+    var found = this.layerIndexDFS(this.topLayer, layer.uid) 
+    if (found[1])
+      return found[0];
+    else
+      return -1;
+  },
 
   moveLayer : function(srcUID, dstUID) {
+    if (srcUID == dstUID || srcUID == null || dstUID == null) return;
     var src = this.layerManager.getLayerByUID(srcUID);
     var dst = this.layerManager.getLayerByUID(dstUID);
-    var srcIdx = this.layers.indexOf(src);
-    var dstIdx = this.layers.indexOf(dst);
-    var tmp = this.layers[srcIdx];
-    if (srcIdx < dstIdx) {
-      for (var i=srcIdx; i<dstIdx; i++)
-        this.layers[i] = this.layers[i+1];
-      this.layers[dstIdx] = tmp;
+    if (this.getLayerIndex(src) < this.getLayerIndex(dst)) {
+      if (dst.childNodes.length > 0) dst.prependChild(src);
+      else dst.getParentNode().insertChildAfter(src, dst);
     } else {
-      for (var i=srcIdx; i>dstIdx; i--)
-        this.layers[i] = this.layers[i-1];
-      this.layers[dstIdx] = tmp;
-    }
-    if (srcIdx == this.currentLayerIndex) {
-      this.setCurrentLayer(dstIdx, false);
-    } else if (srcIdx < this.currentLayerIndex && dstIdx >= this.currentLayerIndex) {
-      this.setCurrentLayer(this.currentLayerIndex-1, false);
-    } else if (srcIdx > this.currentLayerIndex && dstIdx <= this.currentLayerIndex) {
-      this.setCurrentLayer(this.currentLayerIndex+1, false);
+      dst.getParentNode().insertChildBefore(src, dst);
     }
     this.addHistoryState(new HistoryState('moveLayer', [srcUID, dstUID], true));
     this.requestRedraw();
-
     this.layerWidget.requestRedraw();
   },
 
-  deleteLayer : function(i, addHistory) {
-    if (i < this.currentLayerIndex) {
-      this.setCurrentLayer(this.currentLayerIndex-1, false);
-    }
-    if (i == this.layers.length-1 && i == this.currentLayerIndex) {
-      this.setCurrentLayer(this.currentLayerIndex-1, false);
-    }
-    var layer = this.layers.splice(i,1)[0];
+  deleteLayer : function(uid, recordHistory) {
+    var layer = this.layerManager.getLayerByUID(uid);
+    layer.getParentNode().removeChild(layer);
     layer.destroy();
-    this.layerManager.deleteLayer(layer);
-    if (i == this.currentLayerIndex) {
-      this.setCurrentLayer(this.currentLayerIndex, false);
-    }
-    if (addHistory != false)
-      this.addHistoryState(new HistoryState('deleteLayer', [i], true));
+    
+    if (recordHistory)
+      this.addHistoryState(new HistoryState('deleteLayer', [uid], true));
     this.requestRedraw();
-
     this.layerWidget.requestRedraw();
-  },
-
-  deleteLayerByUID : function(uid, recordHistory) {
-    var idx = this.layers.indexOf(this.layerManager.getLayerByUID(uid));
-    this.deleteLayer(idx, recordHistory);
   },
 
   deleteCurrentLayer : function(addHistory) {
-    this.deleteLayer(this.currentLayerIndex, addHistory);
+    if (!this.currentLayer) return;
+    this.deleteLayer(this.currentLayer.uid, addHistory);
   },
 
-  setCurrentLayer : function(i, recordHistory) {
-    i = Math.clamp(i, 0, this.layers.length-1);
-    this.currentLayer = this.layers[i];
-    this.currentLayerIndex = i;
+  setCurrentLayer : function(uid, recordHistory) {
+    var layer = this.layerManager.getLayerByUID(uid);
+    if (layer == null) throw ("no layer with UID "+uid);
+    this.currentLayer = layer;
     if (recordHistory != false) {
       // collapse multiple setCurrentLayer calls into a single history event
       var last = this.history.last();
       if (last && last.methodName == 'setCurrentLayer')
-        last.args[0] = i;
-      else
-        this.addHistoryState(new HistoryState('setCurrentLayer', [i], true));
+        last.breakpoint = false;
+      this.addHistoryState(new HistoryState('setCurrentLayer', [uid], true));
     }
     this.requestRedraw();
-
     this.layerWidget.requestRedraw();
   },
 
-  setCurrentLayerByUID : function(uid, recordHistory) {
-    var idx = this.layers.indexOf(this.layerManager.getLayerByUID(uid));
-    this.setCurrentLayer(idx, recordHistory);
-  },
-
   clear : function() {
+    if (!this.currentLayer) return;
     this.currentLayer.clear();
     this.addHistoryState(new HistoryState('clear',  [], true));
     this.requestRedraw();
   },
 
+  
+  // Flipping
+  
   flipX : function() {
     this.flippedX = !this.flippedX;
     this.requestRedraw();
