@@ -266,7 +266,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
       
       if (this.strokeLayer.hasParentNode()) {
         var p = this.strokeLayer.getParentNode();
-        p.removeChild(this.strokeLayer);
+        if (!p)
+          console.log(this.strokeLayer.parentNodeUID, p, this.strokeLayer);
+        else 
+          p.removeChild(this.strokeLayer);
       }
     ctx.restore();
   },
@@ -493,6 +496,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.topLayer = this.layerManager.getLayerByUID(state.topLayerUID);
     this.strokeLayer = this.layerManager.getLayerByUID(state.strokeLayerUID);
     this.layerWidget.requestRedraw();
+    this.currentLayer = null;
     this.setCurrentLayer(state.currentLayerUID);
     for (var i=0; i<state.palette.length; i++)
       this.setPaletteColor(i, state.palette[i]);
@@ -1165,7 +1169,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   indentCurrentLayer : function() {
     if (!this.currentLayer) return;
     var prev = this.currentLayer.getPreviousNode();
-    if (prev.uid != this.currentLayer.parentNodeUID) {
+    if (prev && prev.uid != this.currentLayer.parentNodeUID) {
       var uid = this.currentLayer.uid;
       if (prev.parentNodeUID != this.currentLayer.parentNodeUID)
         prev = prev.getParentNode();
@@ -1282,9 +1286,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   mergeDown : function(addHistory) {
     if (!this.currentLayer) return;
-    if (this.getCurrentLayerIndex() > 0) {
+    var below = this.currentLayer.getPreviousNode();
+    if (below && below.uid != this.topLayer.uid) {
       var target = this.createLayerObject();
-      var below = this.currentLayer.getPreviousNode();
       // target becomes below
       var x = below.x;
       var y = below.y;
@@ -1517,6 +1521,20 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   deleteLayer : function(uid, recordHistory) {
     var layer = this.layerManager.getLayerByUID(uid);
+    if (layer == null) throw ("deleteLayer: no layer with UID "+uid);
+    if (layer == this.currentLayer) {
+      var prev = layer.getPreviousNode();
+      if (prev && prev.uid != this.topLayer.uid) {
+        this.setCurrentLayer(prev.uid, false);
+      } else {
+        var next = layer.getNextNode();
+        if (next && next.uid != this.topLayer.uid) {
+          this.setCurrentLayer(next.uid, false);
+        } else {
+          this.setCurrentLayer(null, false);
+        }
+      }
+    } 
     layer.getParentNode().removeChild(layer);
     layer.destroy();
     
@@ -1532,8 +1550,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setCurrentLayer : function(uid, recordHistory) {
+    if (uid == null) {
+      this.currentLayer = null;
+      return;
+    } else if (uid == this.topLayer.uid) {
+      return;
+    }
     var layer = this.layerManager.getLayerByUID(uid);
-    if (layer == null) throw ("no layer with UID "+uid);
+    if (layer == null) throw ("setCurrentLayer: no layer with UID "+uid);
     this.currentLayer = layer;
     if (recordHistory != false) {
       // collapse multiple setCurrentLayer calls into a single history event
@@ -1578,7 +1602,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Brush strokes
 
   beginStroke : function() {
-    if (this.strokeInProgress || this.currentLayer.notDrawable) return;
+    if (this.strokeInProgress || !this.currentLayer || this.currentLayer.notDrawable) return;
     this.strokeInProgress = true;
     this.strokeLayer.clear();
     this.strokeLayer.show();

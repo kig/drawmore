@@ -45,7 +45,7 @@ LayerManager = Klass({
   },
 
   rebuildCopy : function(layers) {
-    this.rebuild(layers.map(function(l){ return l.copy(); }));
+    this.rebuild(layers.map(function(l){ return l.copy(true); }));
   },
   
   getLayerByUID : function(uid) {
@@ -55,7 +55,7 @@ LayerManager = Klass({
   copyLayers : function() {
     var a = [];
     for (var i in this.layerIndex) {
-      a.push(this.layerIndex[i].copy());
+      a.push(this.layerIndex[i].copy(true));
     }
     return a;
   }
@@ -207,7 +207,7 @@ Layer = Klass({
   
   getNextNode : function() {
     if (this.parentNodeUID == null) 
-      return {};
+      return null;
     if (this.childNodes.length > 0) 
       return this.getChildNode(0);
     var pn = this.getParentNode();
@@ -220,7 +220,7 @@ Layer = Klass({
   
   getPreviousNode : function() {
     if (this.parentNodeUID == null) 
-      return {};
+      return null;
     var pn = this.getParentNode();
     var prevIdx = pn.childNodes.indexOf(this.uid)-1;
     if (prevIdx >= 0)
