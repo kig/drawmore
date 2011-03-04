@@ -495,9 +495,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.layerManager.rebuildCopy(state.layers);
     this.topLayer = this.layerManager.getLayerByUID(state.topLayerUID);
     this.strokeLayer = this.layerManager.getLayerByUID(state.strokeLayerUID);
+    this.currentLayer = this.layerManager.getLayerByUID(state.currentLayerUID);
     this.layerWidget.requestRedraw();
-    this.currentLayer = null;
-    this.setCurrentLayer(state.currentLayerUID);
     for (var i=0; i<state.palette.length; i++)
       this.setPaletteColor(i, state.palette[i]);
     this.palette.splice(state.palette.length, this.palette.length);
@@ -1200,15 +1199,13 @@ Drawmore = Klass(Undoable, ColorUtils, {
   layerAbove : function() {
     if (!this.currentLayer) return;
     var p = this.currentLayer.getNextNode();
-    if (p)
-      this.setCurrentLayer(p.uid);
+    if (p) this.setCurrentLayer(p.uid);
   },
 
   layerBelow : function() {
     if (!this.currentLayer) return;
     var p = this.currentLayer.getPreviousNode();
-    if (p && p.uid != this.topLayer.uid)
-      this.setCurrentLayer(p.uid);
+    if (p) this.setCurrentLayer(p.uid);
   },
 
   toggleCurrentLayer : function() {
@@ -1325,7 +1322,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     var target = this.createLayerObject();
     this.topLayer.applyTo(target);
     while (this.topLayer.childNodes.length > 0)
-      this.deleteLayer(this.topLayer.childNodes[0].uid, false);
+      this.deleteLayer(this.topLayer.childNodes[0], false);
     this.addLayerBeforeCurrent(target);
     this.setCurrentLayer(target.uid, false);
     this.addHistoryState(new HistoryState('mergeAll', [], true));
@@ -1534,11 +1531,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
           this.setCurrentLayer(null, false);
         }
       }
-    } 
-    layer.getParentNode().removeChild(layer);
+    }
     layer.destroy();
     
-    if (recordHistory)
+    if (recordHistory != false)
       this.addHistoryState(new HistoryState('deleteLayer', [uid], true));
     this.requestRedraw();
     this.layerWidget.requestRedraw();
@@ -1552,19 +1548,20 @@ Drawmore = Klass(Undoable, ColorUtils, {
   setCurrentLayer : function(uid, recordHistory) {
     if (uid == null) {
       this.currentLayer = null;
-      return;
     } else if (uid == this.topLayer.uid) {
       return;
+    } else {
+      var layer = this.layerManager.getLayerByUID(uid);
+      if (layer == null) throw ("setCurrentLayer: no layer with UID "+uid);
+      this.currentLayer = layer;
     }
-    var layer = this.layerManager.getLayerByUID(uid);
-    if (layer == null) throw ("setCurrentLayer: no layer with UID "+uid);
-    this.currentLayer = layer;
     if (recordHistory != false) {
       // collapse multiple setCurrentLayer calls into a single history event
       var last = this.history.last();
       if (last && last.methodName == 'setCurrentLayer')
-        last.breakpoint = false;
-      this.addHistoryState(new HistoryState('setCurrentLayer', [uid], true));
+        last.args[0] = uid;
+      else
+        this.addHistoryState(new HistoryState('setCurrentLayer', [uid], true));
     }
     this.requestRedraw();
     this.layerWidget.requestRedraw();

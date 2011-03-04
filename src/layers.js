@@ -129,6 +129,10 @@ Layer = Klass({
   },
 
   destroy : function() {
+    var cc = this.childNodes;
+    for (var i=0; i<cc.length; i++) {
+      this.layerManager.getLayerByUID(cc[i]).destroy();
+    }
     var props = [];
     for (var p in this.linkedProperties)
       props.push(p);
