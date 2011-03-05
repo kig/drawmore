@@ -135,7 +135,21 @@ Drawmore = Klass(Undoable, ColorUtils, {
   updateDisplay : function() {
     this.executeTimeJump();
     var t0 = new Date;
-    this.applyTo(this.ctx, -this.panX, -this.panY, this.width, this.height, this.flippedX, this.flippedY, this.zoom);
+    if (this.zoom > 1) {
+      this.applyTo(this.ctx, Math.floor(-this.panX/this.zoom), Math.floor(-this.panY/this.zoom), Math.ceil(this.width/this.zoom), Math.ceil(this.height/this.zoom), this.flippedX, this.flippedY, 1);
+      this.ctx.save();
+        this.ctx.mozImageSmoothingEnabled = false;
+        this.ctx.webkitImageSmoothingEnabled = false;
+        this.ctx.imageSmoothingEnabled = false;
+        this.ctx.globalCompositeOperation = 'source-over';
+        this.ctx.drawImage(this.canvas, 
+          0, 0, this.width/this.zoom, this.height/this.zoom, 
+          0, 0, this.width, this.height
+        );
+      this.ctx.restore();
+    } else {
+      this.applyTo(this.ctx, -this.panX, -this.panY, this.width, this.height, this.flippedX, this.flippedY, this.zoom);
+    }
     this.ctx.getImageData(0,0,1,1); // force draw completion
     var t1 = new Date;
     var elapsed = t1-t0;
@@ -234,6 +248,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
     var px = -x;
     var py = -y;
     ctx.save();
+      ctx.beginPath();
+      ctx.rect(0,0,w,h);
+      ctx.clip();
       ctx.fillStyle = this.colorToStyle(this.background);
       ctx.fillRect(0,0,w,h);
       var xs = 1, ys = 1;
@@ -247,9 +264,6 @@ Drawmore = Klass(Undoable, ColorUtils, {
       }
       ctx.translate(px, py);
       ctx.scale(zoom*xs, zoom*ys);
-      ctx.mozImageSmoothingEnabled = false;
-      ctx.webkitImageSmoothingEnabled = false;
-      ctx.imageSmoothingEnabled = false;
       for (var i=0; i<this.tempLayerStack.length; i++)
       {
         var tl = this.tempLayerStack[i];
