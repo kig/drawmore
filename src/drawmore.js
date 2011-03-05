@@ -133,6 +133,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Draw loop
 
   updateDisplay : function() {
+    this.executeTimeJump();
     var t0 = new Date;
     this.applyTo(this.ctx, -this.panX, -this.panY, this.width, this.height, this.flippedX, this.flippedY, this.zoom);
     this.ctx.getImageData(0,0,1,1); // force draw completion
@@ -229,6 +230,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   applyTo : function(ctx, x, y, w, h, flippedX, flippedY, zoom) {
+    this.executeTimeJump();
     var px = -x;
     var py = -y;
     ctx.save();
@@ -284,6 +286,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setBackground : function(color) {
+    this.executeTimeJump();
     if (typeof color == 'string')
       this.background = this.styleToColor(color);
     else
@@ -295,6 +298,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setBackgroundImage : function(src) {
+    this.executeTimeJump();
     this.backgroundImage = new Image();
     this.backgroundImage.src = src;
     if (this.onbackgroundimagechange)
@@ -389,6 +393,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Document state management
 
   newDocument : function() {
+    this.executeTimeJump();
     this.clearHistory();
     this.setupDefaultState();
   },
@@ -459,6 +464,16 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
 
   // Undo history management
+  
+  requestUndo : function(singleStep) {
+    this.delayedUndo(singleStep);
+    this.requestRedraw();
+  },
+  
+  requestRedo : function(singleStep) {
+    this.delayedRedo(singleStep);
+    this.requestRedraw();
+  },
 
   getState : function() {
     var cs = this.constraints.slice(0);
@@ -769,9 +784,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
       if (ev.altKey) {
         if (Key.match(ev, draw.keyBindings.undo)) {
           if (ev.shiftKey)
-            draw.redo(true);
+            draw.requestRedo(true);
           else
-            draw.undo(true);
+            draw.requestUndo(true);
           ev.preventDefault();
         }
       } else if (!ev.altKey && !ev.ctrlKey) {
@@ -786,9 +801,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
         } else if (Key.match(ev, draw.keyBindings.undo)) {
           if (ev.shiftKey)
-            draw.redo();
+            draw.requestRedo();
           else
-            draw.undo();
+            draw.requestUndo();
 
         } else if (Key.match(ev, draw.keyBindings.zoom)) {
           if (ev.shiftKey)
@@ -1167,6 +1182,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   indentCurrentLayer : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     var prev = this.currentLayer.getPreviousNode();
     if (prev && prev.uid != this.currentLayer.parentNodeUID) {
@@ -1181,6 +1197,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
   
   unindentCurrentLayer : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     if (this.currentLayer.parentNodeUID != this.topLayer.uid) {
       var uid = this.currentLayer.uid;
@@ -1198,28 +1215,33 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   layerAbove : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     var p = this.currentLayer.getNextNode();
     if (p) this.setCurrentLayer(p.uid);
   },
 
   layerBelow : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     var p = this.currentLayer.getPreviousNode();
     if (p) this.setCurrentLayer(p.uid);
   },
 
   toggleCurrentLayer : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     this.toggleLayer(this.currentLayer.uid);
   },
 
   toggleCurrentLayerOpacityLocked : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     this.toggleLayerOpacityLocked(this.currentLayer.uid);
   },
 
   toggleLayerOpacityLocked : function(uid) {
+    this.executeTimeJump();
     var layer = this.layerManager.getLayerByUID(uid);
     layer.opacityLocked = !layer.opacityLocked;
     this.addHistoryState(new HistoryState('toggleLayerOpacityLocked', [uid], true));
@@ -1228,6 +1250,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   toggleLayerLinkPosition : function(uid) {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     if (uid != this.currentLayer.uid) {
       var l = this.layerManager.getLayerByUID(uid);
@@ -1246,6 +1269,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   flipCurrentLayerHorizontally : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     this.currentLayer.flipX();
     this.requestRedraw();
@@ -1253,6 +1277,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   flipCurrentLayerVertically : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     this.currentLayer.flipY();
     this.requestRedraw();
@@ -1260,6 +1285,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   moveCurrentLayer : function(dx, dy) {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     this.currentLayer.modify('x', dx);
     this.currentLayer.modify('y', dy);
@@ -1283,6 +1309,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   mergeDown : function(addHistory) {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     var below = this.currentLayer.getPreviousNode();
     if (below && below.uid != this.topLayer.uid) {
@@ -1304,6 +1331,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   mergeVisible : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     var target = this.createLayerObject();
     this.topLayer.applyTo(target);
@@ -1320,6 +1348,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   mergeAll : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     var target = this.createLayerObject();
     this.topLayer.applyTo(target);
@@ -1331,22 +1360,26 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setCurrentLayerOpacity : function(opacity) {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     this.setLayerOpacity(this.currentLayer.uid, opacity);
     this.layerWidget.requestRedraw();
   },
 
   currentLayerOpacityUp : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity * 1.1, 1/255, 1));
   },
 
   currentLayerOpacityDown : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     this.setCurrentLayerOpacity(Math.clamp(this.currentLayer.opacity / 1.1, 0, 1));
   },
 
   setLayerOpacity : function(uid, opacity) {
+    this.executeTimeJump();
     var layer = this.layerManager.getLayerByUID(uid);
     if (layer) {
       layer.set('opacity', opacity);
@@ -1370,6 +1403,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   newLayerFromImage : function(img, x, y, name) {
+    this.executeTimeJump();
     var layer = this.createLayerObject();
     if (name != null)
       layer.name = name;
@@ -1389,6 +1423,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   newLayer : function() {
+    this.executeTimeJump();
     var layer = this.createLayerObject();
     this.addLayerAfterCurrent(layer);
     this.addHistoryState(new HistoryState('newLayer', [], true));
@@ -1396,6 +1431,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   newLayerBelow : function() {
+    this.executeTimeJump();
     var layer = this.createLayerObject();
     this.addLayerBeforeCurrent(layer);
     this.addHistoryState(new HistoryState('newLayerBelow', [], true));
@@ -1436,6 +1472,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
   
   duplicateCurrentLayer : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     var layer = this.currentLayer.copy(false);
     layer.uid = this.layerUID++;
@@ -1454,12 +1491,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   renameLayer : function(uid, name) {
+    this.executeTimeJump();
     this.layerManager.getLayerByUID(uid).name = name;
     this.layerWidget.requestRedraw();
     this.addHistoryState(new HistoryState('renameLayer', [uid, name], true));
   },
 
   hideLayer : function(uid) {
+    this.executeTimeJump();
     this.layerManager.getLayerByUID(uid).set('display', false);
     this.layerWidget.requestRedraw();
     this.requestRedraw();
@@ -1467,6 +1506,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   showLayer : function(uid) {
+    this.executeTimeJump();
     this.layerManager.getLayerByUID(uid).set('display', true);
     this.layerWidget.requestRedraw();
     this.requestRedraw();
@@ -1474,6 +1514,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   toggleLayer : function(uid) {
+    this.executeTimeJump();
     if (this.layerManager.getLayerByUID(uid).display)
       this.hideLayer(uid);
     else
@@ -1504,6 +1545,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   moveLayer : function(srcUID, dstUID) {
+    this.executeTimeJump();
     if (srcUID == dstUID || srcUID == null || dstUID == null) return;
     var src = this.layerManager.getLayerByUID(srcUID);
     var dst = this.layerManager.getLayerByUID(dstUID);
@@ -1519,6 +1561,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   deleteLayer : function(uid, recordHistory) {
+    this.executeTimeJump();
     var layer = this.layerManager.getLayerByUID(uid);
     if (layer == null) throw ("deleteLayer: no layer with UID "+uid);
     if (layer == this.currentLayer) {
@@ -1543,11 +1586,13 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   deleteCurrentLayer : function(addHistory) {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     this.deleteLayer(this.currentLayer.uid, addHistory);
   },
 
   setCurrentLayer : function(uid, recordHistory) {
+    this.executeTimeJump();
     if (uid == null) {
       this.currentLayer = null;
     } else if (uid == this.topLayer.uid) {
@@ -1570,6 +1615,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   clear : function() {
+    this.executeTimeJump();
     if (!this.currentLayer) return;
     this.currentLayer.clear();
     this.addHistoryState(new HistoryState('clear',  [], true));
@@ -1580,18 +1626,21 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Flipping
   
   flipX : function() {
+    this.executeTimeJump();
     this.flippedX = !this.flippedX;
     this.requestRedraw();
     this.addHistoryState(new HistoryState('flipX',  []));
   },
 
   flipY : function() {
+    this.executeTimeJump();
     this.flippedY = !this.flippedY;
     this.requestRedraw();
     this.addHistoryState(new HistoryState('flipY',  []));
   },
 
   resetFlip : function() {
+    this.executeTimeJump();
     this.flippedX = this.flippedY = false;
     this.requestRedraw();
     this.addHistoryState(new HistoryState('resetFlip',  []));
@@ -1601,6 +1650,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Brush strokes
 
   beginStroke : function() {
+    this.executeTimeJump();
     if (this.strokeInProgress || !this.currentLayer || this.currentLayer.notDrawable) return;
     this.strokeInProgress = true;
     this.strokeLayer.clear();
@@ -1610,6 +1660,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   endStroke : function(erasing) {
+    this.executeTimeJump();
     if (erasing == null) erasing = this.erasing;
     if (!this.strokeInProgress) return;
     this.strokeInProgress = false;
@@ -1646,6 +1697,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   drawPoint : function(xy) {
+    this.executeTimeJump();
     if (!this.strokeInProgress) return;
     if (!xy.absolute)
       xy = this.getAbsolutePoint(xy);
@@ -1659,6 +1711,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   drawLine : function(a, b) {
+    this.executeTimeJump();
     if (!this.strokeInProgress) return;
     if (!a.absolute)
       a = this.getAbsolutePoint(a);
@@ -1678,16 +1731,19 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Brush state
 
   addRoundBrush : function() {
+    this.executeTimeJump();
     this.brushes.push(new RoundBrush);
     this.addHistoryState(new HistoryState('addRoundBrush',  [], true));
   },
 
   addPolygonBrush : function(path) {
+    this.executeTimeJump();
     this.brushes.push(new PolygonBrush(path));
     this.addHistoryState(new HistoryState('addPolygonBrush',  [path], true));
   },
 
   addImageBrush : function(src) {
+    this.executeTimeJump();
     var img = new Image();
     img.src = src;
     this.brushes.push(new ImageBrush(img));
@@ -1695,6 +1751,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setBrush : function(idx) {
+    this.executeTimeJump();
     this.brushIndex = idx;
     this.brush = this.brushes[idx];
     this.cursor.setBrush(this.brush, [1,0,0,1], this.colorStyle, this.opacity);
@@ -1702,10 +1759,12 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   nextBrush : function() {
+    this.executeTimeJump();
     this.setBrush((this.brushIndex + 1) % this.brushes.length);
   },
 
   previousBrush : function() {
+    this.executeTimeJump();
     if (this.brushIndex == 0)
       this.setBrush(this.brushes.length-1);
     else
@@ -1713,6 +1772,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   deleteBrush : function(idx) {
+    this.executeTimeJump();
     if (idx < 0 || idx >= this.brushes.length)
       throw (new Error('Bad brush index'));
     if (idx <= this.brushIndex)
@@ -1723,6 +1783,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setColor : function(color) {
+    this.executeTimeJump();
     if (typeof color == 'string')
       this.color = this.styleToColor(color);
     else
@@ -1743,6 +1804,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setOpacity : function(o) {
+    this.executeTimeJump();
     o = Math.clamp(o, 0, 1);
     this.opacity = o;
     this.strokeLayer.opacity = o;
@@ -1758,6 +1820,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setLineWidth : function(w) {
+    this.executeTimeJump();
     this.lineWidth = w;
     this.cursor.update(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
     // collapse multiple setLineWidth calls into a single history event
@@ -1772,6 +1835,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Palette
 
   setupPalette : function() {
+    this.executeTimeJump();
     var cc = byClass('paletteColor');
     for (var i=0; i<cc.length; i++) {
       this.setPaletteColor(i, cc[i].getAttribute('color'));
@@ -1779,6 +1843,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setPaletteColor : function(idx, color) {
+    this.executeTimeJump();
     var c = color;
     if (typeof color == 'string')
       c = this.styleToColor(color);
@@ -1788,12 +1853,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   nextColor : function() {
+    this.executeTimeJump();
     var idx = this.palette.indexOf(this.color);
     if (idx < 0) idx = this.palette.length-1;
     this.setColor(this.palette[(idx+1) % this.palette.length]);
   },
 
   previousColor : function() {
+    this.executeTimeJump();
     var idx = this.palette.indexOf(this.color);
     if (idx < 0) idx = this.palette.length+1;
     this.setColor(this.palette[(idx-1) % this.palette.length]);
@@ -1802,6 +1869,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Picking
 
   pickColor : function(xy, radius) {
+    this.executeTimeJump();
     if (xy) {
       var c = this.colorAt(this.ctx, xy.x, xy.y, radius);
       this.setColor(c);
@@ -1809,6 +1877,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   pickBackground : function(xy, radius) {
+    this.executeTimeJump();
     if (xy) {
       var c = this.colorAt(this.ctx, xy.x, xy.y, radius);
       this.setBackground(c);
@@ -1819,30 +1888,36 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Constraints
 
   addTemporaryConstraint : function(c) {
+    this.executeTimeJump();
     this.constraints.push(c);
   },
 
   removeTemporaryConstraint : function(c) {
+    this.executeTimeJump();
     this.constraints.deleteFirst(c);
   },
 
   addConstraint : function(c) {
+    this.executeTimeJump();
     this.constraints.push(c);
     this.addHistoryState(new HistoryState('addConstraint', [c]));
   },
 
   removeConstraint : function(c) {
+    this.executeTimeJump();
     var idx = this.constraints.indexOf(c);
     if (idx >= 0)
       this.removeConstraintAt(idx);
   },
 
   removeConstraintAt : function(idx) {
+    this.executeTimeJump();
     this.constraints.splice(idx,1);
     this.addHistoryState(new HistoryState('removeConstraintAt', [idx]));
   },
 
   applyConstraints : function(p) {
+    this.executeTimeJump();
     for (var i=0; i<this.constraints.length; i++) {
       this.constraints[i].applyTo(p);
     }

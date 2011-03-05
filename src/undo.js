@@ -11,6 +11,9 @@ Undoable = Klass({
   playbackRate : 5000, // events per millisecond
   recordHistory : true,
   historyIndex : -1,
+  
+  needTimeJump : false,
+  requestedHistoryIndex : 0,
 
   initialize : function() {
     this.clearHistory();
@@ -61,6 +64,7 @@ Undoable = Klass({
 
   addHistoryState : function(obj) {
     if (this.recordHistory) {
+      this.executeTimeJump();
       this.historyIndex++;
       this.history[this.historyIndex] = obj;
       if (this.history.length > this.historyIndex+1) {
@@ -97,8 +101,8 @@ Undoable = Klass({
     this.historyIndex = index;
   },
 
-  undo : function(singleStep) {
-    var lastPoint = this.historyIndex;
+  findUndoPoint : function(singleStep, startIndex) {
+    var lastPoint = startIndex;
     for (var i=lastPoint; i>=0; i--) {
       if (this.history[i] == null) { // barrier, can't cross
         lastPoint = i+1;
@@ -108,20 +112,46 @@ Undoable = Klass({
         break;
       }
     }
-    this.gotoHistoryState(lastPoint-1);
+    return lastPoint-1;
   },
-
-  redo : function(singleStep) {
+  
+  findRedoPoint : function(singleStep, startIndex) {
     var nextPoint = this.history.length;
-    for (var i=this.historyIndex+2; i<this.history.length; i++) {
+    for (var i=startIndex+2; i<this.history.length; i++) {
       if (this.history[i] != null && (singleStep || this.history[i].breakpoint)) {
         nextPoint = i;
         break;
       }
     }
-    this.gotoHistoryState(nextPoint-1);
+    return nextPoint-1;
+  },
+  
+  undo : function(singleStep) {
+    this.gotoHistoryState(this.findUndoPoint(singleStep, this.historyIndex));
   },
 
+  redo : function(singleStep) {
+    this.gotoHistoryState(this.findRedoPoint(singleStep, this.historyIndex));
+  },
+
+  delayedUndo : function(singleStep) {
+    this.requestedHistoryIndex = this.findUndoPoint(singleStep, this.needTimeJump ? this.requestedHistoryIndex : this.historyIndex);
+    this.needTimeJump = true;
+  },
+  
+  delayedRedo : function(singleStep) {
+    this.requestedHistoryIndex = this.findRedoPoint(singleStep, this.needTimeJump ? this.requestedHistoryIndex : this.historyIndex);
+    this.needTimeJump = true;
+  },
+  
+  executeTimeJump : function() {
+    if (this.needTimeJump) {
+      this.needTimeJump = false;
+      Magi.console.spam('time jump to', this.requestedHistoryIndex);
+      this.gotoHistoryState(this.requestedHistoryIndex);
+    }
+  },
+  
   clearHistory : function() {
     this.history = [];
     this.snapshots = [];
