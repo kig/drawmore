@@ -138,18 +138,18 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.applyTo(this.ctx, -this.panX, -this.panY, this.width, this.height, this.flippedX, this.flippedY, this.zoom);
     this.ctx.getImageData(0,0,1,1); // force draw completion
     var t1 = new Date;
-    if (this.inputTime >= this.lastUpdateTime) {
-      var inputLag = t1 - this.inputTime;
-      this.inputTimes[this.inputCount%this.inputTimes.length] = inputLag;
-      this.drawInputTimeHistogram(this.ctx, 12, 68);
-      this.inputCount++;
-    }
     var elapsed = t1-t0;
     this.frameTimes[this.frameCount%this.frameTimes.length] = elapsed;
     this.redrawRequested = false;
     this.layerWidget.redraw();
     this.colorPicker.redraw();
     this.drawFrameTimeHistogram(this.ctx, 12, 38);
+    if (this.inputTime >= this.lastUpdateTime) {
+      var inputLag = t1 - this.inputTime;
+      this.inputTimes[this.inputCount%this.inputTimes.length] = inputLag;
+      this.drawInputTimeHistogram(this.ctx, 12, 68);
+      this.inputCount++;
+    }
     var t2 = new Date().getTime();
     this.ctx.save();
       this.ctx.font = '9px sans-serif';

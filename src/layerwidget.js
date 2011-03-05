@@ -109,8 +109,9 @@ LayerWidget = Klass({
     var self = this;
     var li = LI(
       {
-        className: ('indent-'+indent) + (isCurrent ? ' current' : ''),
-        layerUID : layer.uid
+        className: (isCurrent ? 'current' : ''),
+        layerUID : layer.uid,
+        style : {marginLeft: indent*16 + 'px'}
       },
       DIV(
         {

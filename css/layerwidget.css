@@ -10,7 +10,6 @@
   font-size: 12px;
 }
 .layers {
-  background: rgba(0,0,0,0.3);
   width: 156px;
   list-style: none;
   margin: 0px;
@@ -35,21 +34,12 @@
   border: 1px solid rgba(0,0,0,0.15);
   border-bottom: 1px solid rgba(0,0,0,0.5);
   border-top: 1px solid rgba(0,0,0,0.5);
-  background: rgba(255,255,255,0.4);
-  color: rgba(0,0,0,0.6);
+  background: #ccc;
+  color: #444;
   vertical-align: bottom;
 }
-.layers .indent-0 {
-  margin-left: 0px;
-}
-.layers .indent-1 {
-  margin-left: 16px;
-}
-.layers .indent-2 {
-  margin-left: 32px;
-}
 .layers .current {
-  background: rgba(255,255,255,0.8);
+  background: #eee;
   color: black;
 }
 .layers input[type=checkbox] {
