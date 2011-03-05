@@ -73,6 +73,33 @@ Layer = Klass({
   globalCompositeOperation : 'source-over',
   parentNodeUID : null,
 
+  directCompositeCount : 0,
+  tempStackOverflowCount : 0,
+  tempStackUseCount : 0,
+  skipTempCount : 0,
+  copyCount : 0,
+  deepCopyCount : 0,
+  
+  printStats : function(msg) {
+    Magi.console.spam(msg+
+      ' :: copies: '+this.copyCount+
+      ', deepCopies: '+this.deepCopyCount+
+      ', tempOverflows: '+this.tempStackOverflowCount+
+      ', tempUses: '+this.tempStackUseCount+
+      ', skipTemps: '+this.skipTempCount+
+      ', directComposites: '+this.directCompositeCount
+    );
+  },
+  
+  resetStats : function() {
+    this.directCompositeCount = 0;
+    this.tempStackOverflowCount = 0;
+    this.tempStackUseCount = 0;
+    this.skipTempCount = 0;
+    this.copyCount = 0;
+    this.deepCopyCount = 0;
+  },
+  
   initialize : function(){
     this.childNodes = [];
     this.linkedProperties = {};
@@ -129,6 +156,7 @@ Layer = Klass({
   },
 
   destroy : function() {
+    this.clear();
     var cc = this.childNodes;
     for (var i=0; i<cc.length; i++) {
       this.layerManager.getLayerByUID(cc[i]).destroy();
@@ -145,10 +173,12 @@ Layer = Klass({
   },
 
   copy : function(deepCopy) {
+    Layer.copyCount++;
     var l = Object.extend({}, this);
     l.linkedProperties = {};
     l.childNodes = [];
     if (deepCopy != false) {
+      Layer.deepCopyCount++;
       for (var p in this.linkedProperties)
         l.linkedProperties[p] = this.linkedProperties[p].slice(0);
       l.childNodes = this.childNodes.slice(0);
@@ -161,7 +191,22 @@ Layer = Klass({
   },
 
   getBoundingBox : function() {
-    return null;
+    var bbox = this.getLayerBoundingBox();
+    for (var i=0; i<this.childNodes.length; i++) {
+      var c = this.getChildNode(i);
+      var cb = c.getBoundingBox();
+      if (cb.top < bbox.top) bbox.top = cb.top;
+      if (cb.bottom > bbox.bottom) bbox.bottom = cb.bottom;
+      if (cb.left < bbox.left) bbox.left = cb.left;
+      if (cb.right > bbox.right) bbox.right = cb.right;
+    }
+    bbox.width = bbox.right-bbox.left+1;
+    bbox.height = bbox.bottom-bbox.top+1;
+    return bbox;
+  },
+  
+  getLayerBoundingBox : function() {
+    return {top:1/0, left:1/0, right:-1/0, bottom:-1/0, width:0, height:0};
   },
 
   flipX : function() {},
@@ -175,10 +220,16 @@ Layer = Klass({
         var tempLayer;
         var tail = null;
         if (skipTemp) {
+          Layer.skipTempCount++;
           tempLayer = ctx;
-        } else if (!tempLayerStack || tempLayerStack.length == 0) {
-          tempLayer = this.copy(false);
+          tail = tempLayerStack;
+        } else if (tempLayerStack == null || tempLayerStack.length == 0) {
+          Layer.tempStackOverflowCount++;
+          Magi.console.spam('temp overflow for '+this.name);
+          tempLayer = new TiledLayer();
+          this.compositeTo(tempLayer, 1, 'source-over');
         } else {
+          Layer.tempStackUseCount++;
           tempLayer = tempLayerStack[0];
           tempLayer.clear();
           tail = tempLayerStack.slice(1);
@@ -190,6 +241,7 @@ Layer = Klass({
         if (!skipTemp)
           tempLayer.compositeTo(ctx, this.opacity, composite||this.globalCompositeOperation);
       } else {
+        Layer.directCompositeCount++;
         this.compositeTo(ctx, this.opacity, composite||this.globalCompositeOperation);
       }
       ctx.globalAlpha = alpha;
@@ -318,8 +370,18 @@ CanvasLayer = Klass(Layer, {
     }
     this.ctx = this.canvas.getContext('2d');
   },
+  
+  resize : function(w,h) {
+    this.canvas.width = w;
+    this.canvas.height = h;
+  },
+  
+  upsize : function(w, h) {
+    if (w>this.canvas.width || h>this.canvas.height)
+      this.resize(w,h);
+  },
 
-  getBoundingBox : function() {
+  getLayerBoundingBox : function() {
     var w = this.canvas.width;
     var h = this.canvas.height;
     return {left: this.x, top: this.y, right: this.x+w, bottom: this.y+h, width: w, height: h};
@@ -453,12 +515,57 @@ CanvasLayer = Klass(Layer, {
 TiledLayer = Klass(Layer, {
 
   tileSize: 64,
+  allocPool : [],
+  totalAllocCount : 0,
+  allocCount : 0,
+  recycleCount : 0,
+  returnCount : 0,
+  COWCount : 0,
 
+  prefillAllocPool : function(count) {
+    for (var i=0; i<count; i++) {
+      TiledLayer.allocPool.push(E.canvas(this.tileSize, this.tileSize));
+      TiledLayer.allocCount++;
+      TiledLayer.totalAllocCount++;
+    }
+  },
+  
+  printAllocStats : function(msg) {
+    Magi.console.spam(msg+
+      ' :: allocs: '+this.allocCount+
+      ', COW copies: '+this.COWCount+
+      ', recycled: '+this.recycleCount+
+      ', returned: '+this.returnCount+
+      ', pool size: '+this.allocPool.length+
+      ', total allocs: '+this.totalAllocCount
+    );
+  },
+  resetAllocStats : function() {
+    this.COWCount = this.allocCount = this.recycleCount = this.returnCount = 0;
+  },
+
+  getNewCanvas : function() {
+    if (TiledLayer.allocPool.length == 0) {
+      this.prefillAllocPool(64);
+    } else {
+      TiledLayer.recycleCount++;
+    }
+    return TiledLayer.allocPool.pop();
+  },
+  
+  returnCanvas : function(c) {
+    c.getContext('2d').clearRect(0,0,this.tileSize,this.tileSize);
+    TiledLayer.returnCount++;
+    TiledLayer.allocPool.push(c);
+  },
+
+  
+  
   initializeLayer: function() {
     this.tiles = {};
   },
 
-  getBoundingBox : function() {
+  getLayerBoundingBox : function() {
     var top=1/0, left=1/0, bottom=-1/0, right=-1/0;
     for (var f in this.tiles) {
       var tile = this.tiles[f];
@@ -489,7 +596,7 @@ TiledLayer = Klass(Layer, {
       var ctx = tile.context;
       var canvas = tile.canvas;
       if (tile.snapshotted) {
-        tile.canvas = E.canvas(this.tileSize, this.tileSize);
+        tile.canvas = this.getNewCanvas();
         tile.context = tile.canvas.getContext('2d');
         ctx = tile.context;
       }
@@ -522,7 +629,7 @@ TiledLayer = Klass(Layer, {
       var ctx = tile.context;
       var canvas = tile.canvas;
       if (tile.snapshotted) {
-        tile.canvas = E.canvas(this.tileSize, this.tileSize);
+        tile.canvas = this.getNewCanvas();
         tile.context = tile.canvas.getContext('2d');
         ctx = tile.context;
       }
@@ -576,11 +683,12 @@ TiledLayer = Klass(Layer, {
     var c=t[p];
     if (create && (c == null || c.snapshotted)) {
       var nc = {
-        canvas: E.canvas(this.tileSize, this.tileSize),
+        canvas: this.getNewCanvas(),
         x: x, y: y, snapshotted: false,
         useNewPath: true
       };
       if (c && c.snapshotted) {
+        TiledLayer.COWCount++
         var ctx = nc.canvas.getContext('2d');
         ctx.globalCompositeOperation = 'copy';
         ctx.drawImage(c.canvas,0,0);
@@ -598,9 +706,14 @@ TiledLayer = Klass(Layer, {
   },
 
   clear : function(){
+    for (var f in this.tiles) {
+      var t = this.tiles[f];
+      if (!t.snapshotted)
+        this.returnCanvas(t.canvas);
+    }
     this.tiles = {};
   },
-
+  
   compositeTo : function(ctx, opacity, composite) {
     ctx.globalAlpha = opacity;
     ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
@@ -737,3 +850,4 @@ TiledLayer = Klass(Layer, {
 
 });
 
+TiledLayer.prefillAllocPool(128);

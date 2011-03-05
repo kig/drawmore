@@ -7,7 +7,7 @@ HistoryState = function(methodName, args, breakpoint) {
 };
 
 Undoable = Klass({
-  historySnapshotEventCount : 400,
+  historySnapshotEventCount : 1000,
   playbackRate : 5000, // events per millisecond
   recordHistory : true,
   historyIndex : -1,

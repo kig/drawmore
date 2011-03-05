@@ -248,10 +248,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
       ctx.mozImageSmoothingEnabled = false;
       ctx.webkitImageSmoothingEnabled = false;
       ctx.imageSmoothingEnabled = false;
-      var tl = this.tempLayerStack.last();
-      tl.x = x;
-      tl.y = y;
-      tl.compensateZoom = zoom;
+      for (var i=0; i<this.tempLayerStack.length; i++)
+      {
+        var tl = this.tempLayerStack[i];
+        tl.upsize(w,h);
+        tl.x = x;
+        tl.y = y;
+        tl.compensateZoom = zoom;
+      }
       if (this.strokeLayer.display && this.currentLayer != null) {
         this.currentLayer.prependChild(this.strokeLayer);
         var composite = (this.erasing ? 'destination-out' :
@@ -260,12 +264,19 @@ Drawmore = Klass(Undoable, ColorUtils, {
         this.strokeLayer.globalCompositeOperation = composite;
       }
       
+      TiledLayer.printAllocStats('out-frame');
+      TiledLayer.resetAllocStats();
+      Layer.printStats('out-frame');
+      Layer.resetStats();
       this.topLayer.applyTo(ctx, null, this.tempLayerStack, true);
+      TiledLayer.printAllocStats('in-frame');
+      Layer.printStats('in-frame');
+      Magi.console.spam('--------------------------------------------------------------------');
       
       if (this.strokeLayer.hasParentNode()) {
         var p = this.strokeLayer.getParentNode();
         if (!p)
-          console.log(this.strokeLayer.parentNodeUID, p, this.strokeLayer);
+          Magi.console.log('Warning: strokeLayer.getParentNode returned null', this.strokeLayer.parentNodeUID, p, this.strokeLayer);
         else 
           p.removeChild(this.strokeLayer);
       }
@@ -332,22 +343,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   getBoundingBox : function() {
-    var top=1/0, left=1/0, bottom=-1/0, right=-1/0;
-    for (var i=0; i<this.layers.length; i++) {
-      if (this.layers[i].display) {
-        var bbox = this.layers[i].getBoundingBox();
-        if (bbox) {
-          if (bbox.top < top) top = bbox.top;
-          if (bbox.left < left) left = bbox.left;
-          if (bbox.bottom > bottom) bottom = bbox.bottom;
-          if (bbox.right > right) right = bbox.right;
-        }
-      }
-    }
-    top = Math.floor(top);
-    left = Math.floor(left);
-    bottom = Math.ceil(bottom);
-    right = Math.ceil(right);
+    var bbox = this.topLayer.getBoundingBox();
+    var top = Math.floor(bbox.top);
+    var left = Math.floor(bbox.left);
+    var bottom = Math.ceil(bbox.bottom);
+    var right = Math.ceil(bbox.right);
     var width = right-left+1;
     var height = bottom-top+1;
     return {
@@ -398,6 +398,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.currentLayer = null;
     this.layerUID = -2;
     this.topLayer = new Layer();
+    this.topLayer.name = 'TOP';
     this.topLayer.uid = this.layerUID++;
     this.layerManager.addLayer(this.topLayer);
     this.strokeLayer = this.createLayerObject();
@@ -507,12 +508,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   createSnapshot : function() {
+    Magi.console.spam('created a snapshot');
     return {
       state: this.getState()
     };
   },
 
   applySnapshot : function(snapshot) {
+    Magi.console.spam('applied a snapshot');
     this.applyState(snapshot.state);
     this.requestRedraw();
   },

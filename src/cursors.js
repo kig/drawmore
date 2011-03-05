@@ -19,12 +19,12 @@ RoundBrushCursor = Klass({
       while (w > this.minSz && (w > diameter*4 || (w > 512 && w > diameter*2)))
         w /= 2;
       this.cursorCanvas.width = this.cursorCanvas.height = w;
-      // if (window.console) console.log('scale down to '+w);
+      Magi.console.spam('scale down to '+w);
     } else if (w < diameter+2) {
       while (w < diameter+2)
         w *= 2
       this.cursorCanvas.width = this.cursorCanvas.height = w;
-      // if (window.console) console.log('scale up to '+w);
+      Magi.console.spam('scale up to '+w);
     }
     this.sz = w;
     ctx.clearRect(0,0,w,w);
@@ -105,12 +105,12 @@ BrushCursor = Klass({
       while (w > this.minSz && (w > diameter*4 || (w > 512 && w > diameter*2)))
         w /= 2;
       this.cursorCanvas.width = this.cursorCanvas.height = w;
-      // if (window.console) console.log('scale down to '+w);
+      Magi.console.spam('scale down to '+w);
     } else if (w < diameter+2) {
       while (w < diameter+2)
         w *= 2
       this.cursorCanvas.width = this.cursorCanvas.height = w;
-      // if (window.console) console.log('scale up to '+w);
+      Magi.console.spam('scale up to '+w);
     }
     this.sz = w;
     ctx.clearRect(0,0,w,w);

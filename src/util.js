@@ -1,5 +1,27 @@
 if (typeof Magi == 'undefined') Magi = {};
 
+Magi.console = {
+  messages : [],
+  IWantSpam : false,
+  addMessage: function(msg) {
+    this.messages.push(msg);
+    if (this.messages.length >= 1000)
+      this.messages.splice(0, this.messages.length-500);
+  },
+  log: function() {
+    this.addMessage(arguments);
+    if (window && window.console)
+      window.console.log.apply(window.console, arguments);
+  },
+  spam: function() {
+    if (this.IWantSpam)
+      this.log.apply(this, arguments);
+    else
+      this.addMessage(arguments);
+  }
+}
+
+
 Magi.Stats = {
   shaderBindCount : 0,
   materialUpdateCount : 0,
