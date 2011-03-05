@@ -377,7 +377,7 @@ CanvasLayer = Klass(Layer, {
   },
   
   upsize : function(w, h) {
-    if (w!=this.canvas.width || h!=this.canvas.height) {
+    if (w>this.canvas.width || h>this.canvas.height) {
       this.resize(w,h);
     }
   },

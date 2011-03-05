@@ -134,7 +134,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   updateDisplay : function() {
     this.executeTimeJump();
-    var t0 = new Date;
+    var t0 = new Date().getTime();
     if (this.zoom > 1) {
       this.applyTo(this.ctx, Math.floor(-this.panX/this.zoom), Math.floor(-this.panY/this.zoom), Math.ceil(this.width/this.zoom), Math.ceil(this.height/this.zoom), this.flippedX, this.flippedY, 1);
       this.ctx.save();
@@ -142,40 +142,42 @@ Drawmore = Klass(Undoable, ColorUtils, {
         this.ctx.webkitImageSmoothingEnabled = false;
         this.ctx.imageSmoothingEnabled = false;
         this.ctx.globalCompositeOperation = 'source-over';
-        this.ctx.drawImage(this.canvas, 
-          0, 0, this.width/this.zoom, this.height/this.zoom, 
+        this.ctx.drawImage(this.canvas,
+          0, 0, this.width/this.zoom, this.height/this.zoom,
           0, 0, this.width, this.height
         );
       this.ctx.restore();
     } else {
       this.applyTo(this.ctx, -this.panX, -this.panY, this.width, this.height, this.flippedX, this.flippedY, this.zoom);
     }
-    this.ctx.getImageData(0,0,1,1); // force draw completion
-    var t1 = new Date;
-    var elapsed = t1-t0;
-    this.frameTimes[this.frameCount%this.frameTimes.length] = elapsed;
-    this.redrawRequested = false;
     this.layerWidget.redraw();
     this.colorPicker.redraw();
-    this.drawFrameTimeHistogram(this.ctx, 12, 38);
-    if (this.inputTime >= this.lastUpdateTime) {
-      var inputLag = t1 - this.inputTime;
-      this.inputTimes[this.inputCount%this.inputTimes.length] = inputLag;
-      this.drawInputTimeHistogram(this.ctx, 12, 68);
-      this.inputCount++;
+    var t1 = new Date().getTime();
+    var elapsed = t1-t0;
+    this.redrawRequested = false;
+    if (Magi.console.IWantSpam) {
+      this.ctx.getImageData(0,0,1,1); // force draw completion
+      var t1 = new Date().getTime();
+      var elapsed = t1-t0;
+      this.frameTimes[this.frameCount%this.frameTimes.length] = elapsed;
+      this.drawFrameTimeHistogram(this.ctx, 12, 38);
+      if (this.inputTime >= this.lastUpdateTime) {
+        var inputLag = t1 - this.inputTime;
+        this.inputTimes[this.inputCount%this.inputTimes.length] = inputLag;
+        this.drawInputTimeHistogram(this.ctx, 12, 68);
+        this.inputCount++;
+      }
+      this.ctx.save();
+        this.ctx.font = '9px sans-serif';
+        var fpsText = 'frame interval ' + (t1-(this.lastUpdateTime||t1)) + ' ms';
+        this.ctx.fillStyle = 'white';
+        this.ctx.fillText(fpsText, 12+1, 98+9+1);
+        this.ctx.fillStyle = 'black';
+        this.ctx.fillText(fpsText, 12, 98+9);
+      this.ctx.restore();
     }
-    var t2 = new Date().getTime();
-    this.ctx.save();
-      this.ctx.font = '9px sans-serif';
-      var fpsText = 'frame interval ' + (t2-(this.lastUpdateTime||t2)) + ' ms';
-      this.ctx.fillStyle = 'white';
-      this.ctx.fillText(fpsText, 12+1, 98+9+1);
-      this.ctx.fillStyle = 'black';
-      this.ctx.fillText(fpsText, 12, 98+9);
-    this.ctx.restore();
+    this.lastUpdateTime = t1;
     this.frameCount++;
-    this.lastUpdateTime = t2;
-    var self = this;
   },
 
   updateInputTime : function() {
@@ -249,8 +251,6 @@ Drawmore = Klass(Undoable, ColorUtils, {
     var py = -y;
     ctx.save();
       ctx.beginPath();
-      ctx.rect(0,0,w,h);
-      ctx.clip();
       ctx.fillStyle = this.colorToStyle(this.background);
       ctx.fillRect(0,0,w,h);
       var xs = 1, ys = 1;
@@ -279,7 +279,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
         );
         this.strokeLayer.globalCompositeOperation = composite;
       }
-      
+
       TiledLayer.printAllocStats('out-frame');
       TiledLayer.resetAllocStats();
       Layer.printStats('out-frame');
@@ -288,12 +288,12 @@ Drawmore = Klass(Undoable, ColorUtils, {
       TiledLayer.printAllocStats('in-frame');
       Layer.printStats('in-frame');
       Magi.console.spam('--------------------------------------------------------------------');
-      
+
       if (this.strokeLayer.hasParentNode()) {
         var p = this.strokeLayer.getParentNode();
         if (!p)
           Magi.console.log('Warning: strokeLayer.getParentNode returned null', this.strokeLayer.parentNodeUID, p, this.strokeLayer);
-        else 
+        else
           p.removeChild(this.strokeLayer);
       }
     ctx.restore();
@@ -478,12 +478,12 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
 
   // Undo history management
-  
+
   requestUndo : function(singleStep) {
     this.delayedUndo(singleStep);
     this.requestRedraw();
   },
-  
+
   requestRedo : function(singleStep) {
     this.delayedRedo(singleStep);
     this.requestRedraw();
@@ -1209,7 +1209,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.requestRedraw();
     }
   },
-  
+
   unindentCurrentLayer : function() {
     this.executeTimeJump();
     if (!this.currentLayer) return;
@@ -1331,7 +1331,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       // target becomes below
       below.compositeTo(target, below.opacity, 'source-over');
       this.currentLayer.applyTo(target,
-        this.currentLayer.parentNodeUID == below.parentNodeUID 
+        this.currentLayer.parentNodeUID == below.parentNodeUID
         ? 'source-over'
         : 'source-atop'
       );
@@ -1469,7 +1469,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.layerWidget.requestRedraw();
     this.requestRedraw();
   },
-  
+
   addLayerBeforeCurrent : function(layer) {
     if (!this.currentLayer) {
       this.topLayer.prependChild(layer);
@@ -1484,7 +1484,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.layerWidget.requestRedraw();
     this.requestRedraw();
   },
-  
+
   duplicateCurrentLayer : function() {
     this.executeTimeJump();
     if (!this.currentLayer) return;
@@ -1534,7 +1534,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     else
       this.showLayer(uid);
   },
-  
+
   layerIndexDFS : function(layer, uid) {
     if (uid == layer.uid) {
       return [0, true];
@@ -1549,9 +1549,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
       return [idx, false];
     }
   },
-  
+
   getLayerIndex : function(layer) {
-    var found = this.layerIndexDFS(this.topLayer, layer.uid) 
+    var found = this.layerIndexDFS(this.topLayer, layer.uid)
     if (found[1])
       return found[0];
     else
@@ -1592,7 +1592,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       }
     }
     layer.destroy();
-    
+
     if (recordHistory != false)
       this.addHistoryState(new HistoryState('deleteLayer', [uid], true));
     this.requestRedraw();
@@ -1636,9 +1636,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.requestRedraw();
   },
 
-  
+
   // Flipping
-  
+
   flipX : function() {
     this.executeTimeJump();
     this.flippedX = !this.flippedX;
