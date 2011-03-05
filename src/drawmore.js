@@ -77,6 +77,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   height: 1,
 
   lastUpdateTime : 0,
+  lastFrameDuration : 0,
   frameCount : 0,
 
   inputTime : -1,
@@ -88,6 +89,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
   disableColorPick : true,
   flippedX : false,
   flippedY : false,
+
+  showHistograms: true,
 
   initialize : function(canvas, config) {
     this.canvas = canvas;
@@ -143,7 +146,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
         this.ctx.imageSmoothingEnabled = false;
         this.ctx.globalCompositeOperation = 'source-over';
         this.ctx.drawImage(this.canvas,
-          0, 0, this.width/this.zoom, this.height/this.zoom,
+          0, 0, Math.round(this.width/this.zoom), Math.round(this.height/this.zoom),
           0, 0, this.width, this.height
         );
       this.ctx.restore();
@@ -155,8 +158,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     var t1 = new Date().getTime();
     var elapsed = t1-t0;
     this.redrawRequested = false;
-    if (Magi.console.IWantSpam) {
-      this.ctx.getImageData(0,0,1,1); // force draw completion
+    if (this.showHistograms) {
+      //this.ctx.getImageData(0,0,1,1); // force draw completion
       var t1 = new Date().getTime();
       var elapsed = t1-t0;
       this.frameTimes[this.frameCount%this.frameTimes.length] = elapsed;
@@ -176,6 +179,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
         this.ctx.fillText(fpsText, 12, 98+9);
       this.ctx.restore();
     }
+    this.lastFrameDuration = elapsed;
     this.lastUpdateTime = t1;
     this.frameCount++;
   },
@@ -329,14 +333,14 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.redrawRequested = true;
     var self = this;
     var update = function(){ self.updateDisplay(); };
-    if (window.requestAnimationFrame) {
-      window.requestAnimationFrame(update);
-    } else if (window.mozRequestAnimationFrame) {
+    if (window.mozRequestAnimationFrame) {
       window.mozRequestAnimationFrame(update);
-    } else if (window.webkitRequestAnimationFrame) {
-      window.webkitRequestAnimationFrame(update);
+    //} else if (window.webkitRequestAnimationFrame) {
+    //  window.webkitRequestAnimationFrame(update);
     } else {
-      setTimeout(update, 16-Math.min(16, (new Date()).getTime()-this.lastUpdateTime));
+      setTimeout(update,
+        16 - Math.min(16, (new Date()).getTime()-this.lastUpdateTime-this.lastFrameDuration)
+      );
     }
   },
 
