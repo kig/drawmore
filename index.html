@@ -237,7 +237,7 @@
         var loaded = false;
         if (prefs) {
           try {
-            draw.load(prefs);
+            // draw.load(prefs);
             loaded = true;
           } catch(e) {
             console.log("Failed to load saved Drawmore state", e);
@@ -534,11 +534,7 @@
       </div>
       <div id="refSearch" src="">
         <div id="refContainer">
-          <object width="300" height="300">
-<!--             <param name="flashvars" value="offsite=true&lang=en-us&page_show_url=%2Fphotos%2Ftags%2Frandom%2Fshow%2F&page_show_back_url=%2Fphotos%2Ftags%2Frandom%2F&tags=random&jump_to=&start_index="></param> -->
-<!--             <param name="movie" value="http://www.flickr.com/apps/slideshow/show.swf?v=71649"></param> -->
-<!--             <param name="allowFullScreen" value="true"></param> -->
-          </object>
+          <object width="300" height="300"></object>
           <input id="refSearchInput" spellcheck="false" type="text" value="" placeholder="Search for refs" onchange="RefSearch.searchTag(this.value);return false;">
         </div>
       </div>
