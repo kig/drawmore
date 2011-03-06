@@ -90,15 +90,16 @@ Drawmore = Klass(Undoable, ColorUtils, {
   flippedX : false,
   flippedY : false,
 
-  showHistograms: true,
+  showHistograms: false,
   showDrawAreas: false,
-
+  
   initialize : function(canvas, config) {
     this.canvas = canvas;
     this.statsCanvas = E.canvas(140, 140);
     this.statsCtx = this.statsCanvas.getContext('2d');
     this.canvas.parentNode.appendChild(this.statsCanvas);
     this.statsCanvas.style.position = 'absolute';
+    this.statsCanvas.style.display = 'none';
     this.statsCanvas.style.pointerEvents = 'none';
     this.statsCanvas.style.left = this.statsCanvas.style.top = '0px';
     Object.extend(this, config);
@@ -119,6 +120,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     for (var i=0; i<this.frameTimes.length; i++) this.frameTimes[i] = 0;
     this.inputTimes = new glMatrixArrayType(100);
     for (var i=0; i<this.inputTimes.length; i++) this.inputTimes[i] = 0;
+    this.frameIntervals = new glMatrixArrayType(100);
+    for (var i=0; i<this.frameIntervals.length; i++) this.frameIntervals[i] = 0;
     var self = this;
     setTimeout(function() {
       // ctrl-R messes with the r key when reloading
@@ -201,16 +204,13 @@ Drawmore = Klass(Undoable, ColorUtils, {
     var elapsed = t1-t0;
     this.redrawRequested = false;
     this.frameTimes[this.frameCount%this.frameTimes.length] = elapsed;
+    this.frameIntervals[this.frameCount%this.frameTimes.length] = t1-(this.lastUpdateTime||t1);
+    this.statsCanvas.style.display = this.showHistograms ? 'block' : 'none';
     if (this.showHistograms) {
       //this.ctx.getImageData(0,0,1,1); // force draw completion
       this.statsCtx.clearRect(0,0, this.statsCanvas.width, this.statsCanvas.height);
       this.drawFrameTimeHistogram(this.statsCtx, 12, 38);
-      this.statsCtx.save();
-        this.statsCtx.font = '9px sans-serif';
-        var fpsText = 'frame interval ' + (t1-(this.lastUpdateTime||t1)) + ' ms';
-        this.statsCtx.fillStyle = 'black';
-        this.statsCtx.fillText(fpsText, 12, 98+9);
-      this.statsCtx.restore();
+      this.drawFrameIntervalHistogram(this.statsCtx, 12, 98);
     }
     if (this.inputTime >= this.lastUpdateTime) {
       var inputLag = t1 - this.inputTime;
@@ -239,28 +239,40 @@ Drawmore = Klass(Undoable, ColorUtils, {
     for (var i=fc; i>=0; i--, fx--) {
       var ft = times[i];
       total += ft;
+      if (ft > 80) {
+        ft = 80;
+        ctx.fillStyle = 'red';
+      }
       ctx.fillRect(x+fx, y+12, 1, ft/4);
+      if (ft == 80) ctx.fillStyle = 'black';
     }
     for (var i=times.length-1; i>fc; i--, fx--) {
       var ft = times[i];
       total += ft;
+      if (ft > 80) {
+        ft = 80;
+        ctx.fillStyle = 'red';
+      }
       ctx.fillRect(x+fx, y+12, 1, ft/4);
+      if (ft == 80) ctx.fillStyle = 'black';
     }
     ctx.fillStyle = 'white';
     ctx.fillRect(x,y+11,times.length,0.5);
     var fx = times.length-1;
     for (var i=fc; i>=0; i--, fx--) {
       var ft = times[i];
+      if (ft > 80) ft = 80;
       ctx.fillRect(x+fx, y+12+ft/4, 1, 1);
     }
     for (var i=times.length-1; i>fc; i--, fx--) {
       var ft = times[i];
+      if (ft > 80) ft = 80;
       ctx.fillRect(x+fx, y+12+ft/4, 1, 1);
     }
     ctx.font = '9px sans-serif';
     var fpsText = title + times[fc] + unit;
     ctx.fillStyle = 'black';
-    ctx.fillText(fpsText, x, y+9);
+    ctx.fillText(fpsText, x+0, y+9);
     ctx.restore();
   },
 
@@ -270,6 +282,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   drawInputTimeHistogram : function(ctx, x, y) {
     this.drawHistogram("input lag ", " ms", this.inputTimes, this.inputCount, ctx, x, y);
+  },
+
+  drawFrameIntervalHistogram : function(ctx, x, y) {
+    this.drawHistogram("frame interval ", " ms", this.frameIntervals, this.frameCount, ctx, x, y);
   },
 
   resize : function(w,h) {
@@ -1202,6 +1218,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   toggleHelp : function() {
     // overwrite with a version that does something
+  },
+
+  toggleHistograms : function() {
+    this.showHistograms = !this.showHistograms;
+    this.requestRedraw();
   },
 
 

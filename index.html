@@ -79,6 +79,9 @@
         byId('new').onclick = function(){
           draw.newDocument();
         };
+        byId('toggleHistograms').onclick = function(){
+          draw.toggleHistograms();
+        };
 
         var picker = byId('colorPicker');
         var colorPicker = new ColorPicker(picker, 100, 100, function(c) {
@@ -211,14 +214,19 @@
             var p = byId('colorPicker');
             var l = byClass('layerWidget');
             var inspirator = byId('TheInspirator');
+            var iToggle = byId('TheInspiratorToggle');
             if (f.style.display != 'none') {
-              inspirator.style.display = f.style.display = p.style.display = 'none';
+              this.oldShowHistograms = this.showHistograms;
+              this.showHistograms = false;
+              iToggle.style.display = inspirator.style.display = f.style.display = p.style.display = 'none';
               l.forEach(function(e){ e.style.display = 'none'; });
             } else {
-              inspirator.style.display = f.style.display = 'block';
+              this.showHistograms = this.oldShowHistograms;
+              iToggle.style.display = inspirator.style.display = f.style.display = 'block';
               l.forEach(function(e){ e.style.display = 'block'; });
               p.style.display = 'inline-block';
             }
+            this.requestRedraw();
           },
           toggleHelp : function() {
             var h = byId('help');
@@ -500,6 +508,7 @@
   <body>
     <div id="fileIO">
       <button id="new">New</button>
+      <button id="toggleHistograms">Toggle stats</button>
 <!--      <input type="file" id="load" value="" />
       <button id="save">Save</button>-->
       <button id="export">Export Image</button>
@@ -611,7 +620,7 @@
       <p>feedback to <a href="http://twitter.com/ilmarihei">twitter</a></p>
       <p>patches and bugs to <a href="http://github.com/kig/scribble">github</a></p>
       <p>ilmari.heikkinen@gmail.com</p>
-      <p>v 1.21.2</p>
+      <p>v 1.21.3</p>
     </div>
   </body>
 </html>
