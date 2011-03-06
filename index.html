@@ -216,12 +216,9 @@
             var inspirator = byId('TheInspirator');
             var iToggle = byId('TheInspiratorToggle');
             if (f.style.display != 'none') {
-              this.oldShowHistograms = this.showHistograms;
-              this.showHistograms = false;
               iToggle.style.display = inspirator.style.display = f.style.display = p.style.display = 'none';
               l.forEach(function(e){ e.style.display = 'none'; });
             } else {
-              this.showHistograms = this.oldShowHistograms;
               iToggle.style.display = inspirator.style.display = f.style.display = 'block';
               l.forEach(function(e){ e.style.display = 'block'; });
               p.style.display = 'inline-block';
@@ -620,7 +617,7 @@
       <p>feedback to <a href="http://twitter.com/ilmarihei">twitter</a></p>
       <p>patches and bugs to <a href="http://github.com/kig/scribble">github</a></p>
       <p>ilmari.heikkinen@gmail.com</p>
-      <p>v 2011-03-06.22.8</p>
+      <p>v 2011-03-06.22.9</p>
     </div>
   </body>
 </html>

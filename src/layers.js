@@ -526,6 +526,8 @@ TiledLayer = Klass(Layer, {
   recycleCount : 0,
   returnCount : 0,
   COWCount : 0,
+  
+  doNotPoolTiles : navigator.userAgent.match(/Firefox\/4/), //FIXME UGH
 
   prefillAllocPool : function(count) {
     for (var i=0; i<count; i++) {
@@ -548,10 +550,10 @@ TiledLayer = Klass(Layer, {
   resetAllocStats : function() {
     this.COWCount = this.allocCount = this.recycleCount = this.returnCount = 0;
   },
-
+  
   getNewCanvas : function() {
     if (TiledLayer.allocPool.length == 0) {
-      this.prefillAllocPool(64);
+      TiledLayer.prefillAllocPool(TiledLayer.doNotPoolTiles ? 1 : 64);
     } else {
       TiledLayer.recycleCount++;
     }
@@ -559,7 +561,10 @@ TiledLayer = Klass(Layer, {
   },
   
   returnCanvas : function(c) {
+    if (TiledLayer.doNotPoolTiles)
+      return;
     c.getContext('2d').clearRect(0,0,this.tileSize,this.tileSize);
+    c.recycled = true;
     TiledLayer.returnCount++;
     TiledLayer.allocPool.push(c);
   },
