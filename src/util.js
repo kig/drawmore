@@ -1427,15 +1427,12 @@ Key = {
         event.which == codeL ||
         event.which == codeU ||
         event.keyCode == codeL ||
-        event.keyCode == codeU ||
-        event.charCode == codeL ||
-        event.charCode == codeU
+        event.keyCode == codeU
       );
     } else {
       return (
         event.which == code ||
-        event.keyCode == code ||
-        event.charCode == code
+        event.keyCode == code
       );
     }
   },

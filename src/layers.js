@@ -555,7 +555,7 @@ TiledLayer = Klass(Layer, {
     } else {
       TiledLayer.recycleCount++;
     }
-    return TiledLayer.allocPool.pop();
+    return TiledLayer.allocPool.shift();
   },
   
   returnCanvas : function(c) {
@@ -666,8 +666,8 @@ TiledLayer = Klass(Layer, {
     y-=this.y;
     var ftx = Math.floor(x / this.tileSize);
     var fty = Math.floor(y / this.tileSize);
-    var ltx = Math.floor((x+img.width) / this.tileSize);
-    var lty = Math.floor((y+img.height) / this.tileSize);
+    var ltx = Math.floor((x+img.width-1) / this.tileSize);
+    var lty = Math.floor((y+img.height-1) / this.tileSize);
     for (var tx=ftx; tx <= ltx; tx++) {
       for (var ty=fty; ty <= lty; ty++) {
         // optimize: skip if img is transparent here
@@ -758,6 +758,7 @@ TiledLayer = Klass(Layer, {
   },
 
   stroke : function(color, lineWidth, composite) {
+    // FIXME stroke needs lineWidth/2 border of tiles
     composite = composite || this.globalCompositeOperation;
     for (var f in this.tiles) {
       var t = this.tiles[f];

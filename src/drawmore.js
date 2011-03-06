@@ -91,6 +91,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   flippedY : false,
 
   showHistograms: true,
+  showDrawAreas: false,
 
   initialize : function(canvas, config) {
     this.canvas = canvas;
@@ -159,25 +160,35 @@ Drawmore = Klass(Undoable, ColorUtils, {
     }
   },
   
+  updateChangedBox : function(bbox) {
+    if (this.changedBox == null) {
+      this.changedBox = bbox;
+    } else {
+      Layer.bboxMerge(bbox, this.changedBox);
+    }
+  },
+    
   updateDisplay : function() {
     this.executeTimeJump();
     var t0 = new Date().getTime();
     this.ctx.save();
     if (!this.needFullRedraw && this.changedBox && !this.flippedX && !this.flippedY) {
-      // Draw only the changedBox area.
-      var x = this.changedBox.left*this.zoom+this.panX;
-      var y = this.changedBox.top*this.zoom+this.panY;
-      var w = this.changedBox.width*this.zoom;
-      var h = this.changedBox.height*this.zoom;
-      this.ctx.translate(x,y);
-      if (Magi.console.IWantSpam) {
-        this.ctx.strokeStyle = 'red';
-        this.ctx.strokeRect(0,0,w,h);
+      if (this.changedBox.left <= this.changedBox.right && this.changedBox.top <= this.changedBox.bottom) {
+        // Draw only the changedBox area.
+        var x = this.changedBox.left*this.zoom+this.panX;
+        var y = this.changedBox.top*this.zoom+this.panY;
+        var w = this.changedBox.width*this.zoom;
+        var h = this.changedBox.height*this.zoom;
+        this.ctx.translate(x,y);
+        if (this.showDrawAreas || Magi.console.IWantSpam) {
+          this.ctx.strokeStyle = 'red';
+          this.ctx.strokeRect(0,0,w,h);
+        }
+        this.ctx.beginPath();
+        this.ctx.rect(0,0,w,h);
+        this.ctx.clip();
+        this.drawMainCanvas(x-this.panX, y-this.panY, this.changedBox.width*this.zoom, this.changedBox.height*this.zoom);
       }
-      this.ctx.beginPath();
-      this.ctx.rect(0,0,w,h);
-      this.ctx.clip();
-      this.drawMainCanvas(x-this.panX, y-this.panY, this.changedBox.width*this.zoom, this.changedBox.height*this.zoom);
     } else {
       this.drawMainCanvas(-this.panX, -this.panY, this.width, this.height);
       this.needFullRedraw = false;
@@ -189,27 +200,24 @@ Drawmore = Klass(Undoable, ColorUtils, {
     var t1 = new Date().getTime();
     var elapsed = t1-t0;
     this.redrawRequested = false;
+    this.frameTimes[this.frameCount%this.frameTimes.length] = elapsed;
     if (this.showHistograms) {
       //this.ctx.getImageData(0,0,1,1); // force draw completion
-      var t1 = new Date().getTime();
-      var elapsed = t1-t0;
-      this.frameTimes[this.frameCount%this.frameTimes.length] = elapsed;
       this.statsCtx.clearRect(0,0, this.statsCanvas.width, this.statsCanvas.height);
       this.drawFrameTimeHistogram(this.statsCtx, 12, 38);
-      if (this.inputTime >= this.lastUpdateTime) {
-        var inputLag = t1 - this.inputTime;
-        this.inputTimes[this.inputCount%this.inputTimes.length] = inputLag;
-        this.drawInputTimeHistogram(this.statsCtx, 12, 68);
-        this.inputCount++;
-      }
       this.statsCtx.save();
         this.statsCtx.font = '9px sans-serif';
         var fpsText = 'frame interval ' + (t1-(this.lastUpdateTime||t1)) + ' ms';
-        this.statsCtx.fillStyle = 'white';
-        this.statsCtx.fillText(fpsText, 12+1, 98+9+1);
         this.statsCtx.fillStyle = 'black';
         this.statsCtx.fillText(fpsText, 12, 98+9);
       this.statsCtx.restore();
+    }
+    if (this.inputTime >= this.lastUpdateTime) {
+      var inputLag = t1 - this.inputTime;
+      this.inputTimes[this.inputCount%this.inputTimes.length] = inputLag;
+      if (this.showHistograms)
+        this.drawInputTimeHistogram(this.statsCtx, 12, 68);
+      this.inputCount++;
     }
     this.lastFrameDuration = elapsed;
     this.lastUpdateTime = t1;
@@ -251,8 +259,6 @@ Drawmore = Klass(Undoable, ColorUtils, {
     }
     ctx.font = '9px sans-serif';
     var fpsText = title + times[fc] + unit;
-    ctx.fillStyle = 'white';
-    ctx.fillText(fpsText, x+1, y+10);
     ctx.fillStyle = 'black';
     ctx.fillText(fpsText, x, y+9);
     ctx.restore();
@@ -339,6 +345,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   setBackground : function(color) {
     this.executeTimeJump();
+    this.needFullRedraw = true;
     if (typeof color == 'string')
       this.background = this.styleToColor(color);
     else
@@ -351,6 +358,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   setBackgroundImage : function(src) {
     this.executeTimeJump();
+    this.needFullRedraw = true;
     this.backgroundImage = new Image();
     this.backgroundImage.src = src;
     if (this.onbackgroundimagechange)
@@ -663,9 +671,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
   pushAction : function(methodName, args) {
     var hs = new HistoryState(methodName, args, false);
     this.actionQueue.push(hs);
+    this.requestRedraw();
   },
   
-  runActions : function(methodName, args) {
+  runActions : function() {
     if (this.inRunActions) return;
     this.inRunActions = true;
     for (var i=0; i<this.actionQueue.length; i++) {
@@ -1122,6 +1131,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   setPan : function(x, y) {
     this.panX = x;
     this.panY = y;
+    this.needFullRedraw = true;
     this.requestRedraw();
   },
 
@@ -1225,6 +1235,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.indentLayer(uid, prev.uid);
       this.addHistoryState(new HistoryState('indentCurrentLayer', [], true));
       this.layerWidget.requestRedraw();
+      this.updateChangedBox(this.currentLayer.getBoundingBox());
       this.requestRedraw();
     }
   },
@@ -1243,6 +1254,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.unindentLayer(uid);
       this.addHistoryState(new HistoryState('unindentCurrentLayer', [], true));
       this.layerWidget.requestRedraw();
+      this.updateChangedBox(this.currentLayer.getBoundingBox());
       this.requestRedraw();
     }
   },
@@ -1305,6 +1317,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.executeTimeJump();
     if (!this.currentLayer) return;
     this.currentLayer.flipX();
+    this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.requestRedraw();
     this.addHistoryState(new HistoryState('flipCurrentLayerHorizontally', [], true));
   },
@@ -1313,6 +1326,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.executeTimeJump();
     if (!this.currentLayer) return;
     this.currentLayer.flipY();
+    this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.requestRedraw();
     this.addHistoryState(new HistoryState('flipCurrentLayerVertically', [], true));
   },
@@ -1332,6 +1346,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
         l.y += dy;
       }
     }
+    this.needFullRedraw = true;
     this.requestRedraw();
     var l = this.history.last();
     if (l.methodName == 'moveCurrentLayer') {
@@ -1359,6 +1374,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       below.y = 0;
       below.opacity = 1;
       this.deleteCurrentLayer(false);
+      this.updateChangedBox(this.currentLayer.getBoundingBox());
       this.addHistoryState(new HistoryState('mergeDown', [], true));
     }
   },
@@ -1377,6 +1393,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     }
     this.addLayerBeforeCurrent(target);
     this.setCurrentLayer(target.uid, false);
+    this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.addHistoryState(new HistoryState('mergeVisible', [], true));
   },
 
@@ -1389,6 +1406,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.deleteLayer(this.topLayer.childNodes[0], false);
     this.addLayerBeforeCurrent(target);
     this.setCurrentLayer(target.uid, false);
+    this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.addHistoryState(new HistoryState('mergeAll', [], true));
   },
 
@@ -1416,6 +1434,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     var layer = this.layerManager.getLayerByUID(uid);
     if (layer) {
       layer.set('opacity', opacity);
+      this.updateChangedBox(layer.getBoundingBox());
       this.requestRedraw();
       var l = this.history.last();
       if (l.methodName == 'setLayerOpacity' && l.args[0] == uid) {
@@ -1451,6 +1470,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     layer.set('x', x);
     layer.set('y', y);
     this.addLayerAfterCurrent(layer);
+    this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.addHistoryState(new HistoryState('newLayerFromImage',  [img,x,y,name], true));
     return layer;
   },
@@ -1459,6 +1479,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.executeTimeJump();
     var layer = this.createLayerObject();
     this.addLayerAfterCurrent(layer);
+    this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.addHistoryState(new HistoryState('newLayer', [], true));
     return layer;
   },
@@ -1467,6 +1488,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.executeTimeJump();
     var layer = this.createLayerObject();
     this.addLayerBeforeCurrent(layer);
+    this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.addHistoryState(new HistoryState('newLayerBelow', [], true));
     return layer;
   },
@@ -1519,6 +1541,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       layer.name += " (copy)";
     }
     this.addLayerAfterCurrent(layer);
+    this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.addHistoryState(new HistoryState('duplicateCurrentLayer', [], true));
     return layer;
   },
@@ -1532,16 +1555,20 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   hideLayer : function(uid) {
     this.executeTimeJump();
-    this.layerManager.getLayerByUID(uid).set('display', false);
+    var layer = this.layerManager.getLayerByUID(uid);
+    layer.set('display', false);
     this.layerWidget.requestRedraw();
+    this.updateChangedBox(layer.getBoundingBox());
     this.requestRedraw();
     this.addHistoryState(new HistoryState('hideLayer', [uid], true));
   },
 
   showLayer : function(uid) {
     this.executeTimeJump();
-    this.layerManager.getLayerByUID(uid).set('display', true);
+    var layer = this.layerManager.getLayerByUID(uid);
+    layer.set('display', true);
     this.layerWidget.requestRedraw();
+    this.updateChangedBox(layer.getBoundingBox());
     this.requestRedraw();
     this.addHistoryState(new HistoryState('showLayer', [uid], true));
   },
@@ -1588,6 +1615,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     } else {
       dst.getParentNode().insertChildBefore(src, dst);
     }
+    this.updateChangedBox(src.getBoundingBox());
+    this.updateChangedBox(dst.getBoundingBox());
     this.addHistoryState(new HistoryState('moveLayer', [srcUID, dstUID], true));
     this.requestRedraw();
     this.layerWidget.requestRedraw();
@@ -1610,6 +1639,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
         }
       }
     }
+    this.updateChangedBox(layer.getBoundingBox());
     layer.destroy();
 
     if (recordHistory != false)
@@ -1650,6 +1680,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   clear : function() {
     this.executeTimeJump();
     if (!this.currentLayer) return;
+    this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.currentLayer.clear();
     this.addHistoryState(new HistoryState('clear',  [], true));
     this.requestRedraw();
@@ -1704,11 +1735,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     );
     this.strokeLayer.applyTo(this.currentLayer, composite);
     this.strokeLayer.hide();
-    if (this.changedBox == null) {
-      this.changedBox = this.strokeLayer.getBoundingBox();
-    } else {
-      Layer.bboxMerge(this.strokeLayer.getBoundingBox(), this.changedBox);
-    }
+    this.updateChangedBox(this.strokeLayer.getBoundingBox());
     this.addHistoryState(new HistoryState('endStroke',  [erasing]));
     this.requestRedraw();
   },
@@ -1746,11 +1773,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       xy.x, xy.y, xy.r,
       xy.brushTransform
     );
-    if (this.changedBox == null) {
-      this.changedBox = this.strokeLayer.getBoundingBox();
-    } else {
-      Layer.bboxMerge(this.strokeLayer.getBoundingBox(), this.changedBox);
-    }
+    this.updateChangedBox(this.strokeLayer.getBoundingBox());
     this.addHistoryState(new HistoryState('drawPoint', [xy]));
     this.requestRedraw();
   },
@@ -1768,11 +1791,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       b.x, b.y, b.r,
       a.brushTransform
     );
-    if (this.changedBox == null) {
-      this.changedBox = this.strokeLayer.getBoundingBox();
-    } else {
-      Layer.bboxMerge(this.strokeLayer.getBoundingBox(), this.changedBox);
-    }
+    this.updateChangedBox(this.strokeLayer.getBoundingBox());
     this.addHistoryState(new HistoryState('drawLine', [a, b]));
     this.requestRedraw();
   },
@@ -1804,7 +1823,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.executeTimeJump();
     this.brushIndex = idx;
     this.brush = this.brushes[idx];
-    this.cursor.setBrush(this.brush, [1,0,0,1], this.colorStyle, this.opacity);
+    this.cursor.requestSetBrush(this.brush, [1,0,0,1], this.colorStyle, this.opacity);
     this.addHistoryState(new HistoryState('setBrush',  [idx]));
   },
 
@@ -1842,7 +1861,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.colorStyle = s;
     if (this.oncolorchange)
       this.oncolorchange(this.color);
-    this.cursor.update(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
+    this.cursor.requestUpdate(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
     if (this.colorPicker)
       this.colorPicker.setColor(this.color, false);
     // collapse multiple setColor calls into a single history event
@@ -1860,7 +1879,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.strokeLayer.opacity = o;
     if (this.onopacitychange)
       this.onopacitychange(o);
-    this.cursor.update(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
+    this.cursor.requestUpdate(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
     // collapse multiple setOpacity calls into a single history event
     var last = this.history.last();
     if (last && last.methodName == 'setOpacity')
@@ -1872,7 +1891,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   setLineWidth : function(w) {
     this.executeTimeJump();
     this.lineWidth = w;
-    this.cursor.update(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
+    this.cursor.requestUpdate(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
     // collapse multiple setLineWidth calls into a single history event
     var last = this.history.last();
     if (last && last.methodName == 'setLineWidth')
