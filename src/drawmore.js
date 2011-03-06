@@ -377,10 +377,10 @@ Drawmore = Klass(Undoable, ColorUtils, {
     var update = function(){ self.updateDisplay(); };
     if (window.mozRequestAnimationFrame) {
       window.mozRequestAnimationFrame(update);
-    //} else if (window.webkitRequestAnimationFrame) {
-    // window.webkitRequestAnimationFrame(update);
+    } else if (window.webkitRequestAnimationFrame) {
+      window.webkitRequestAnimationFrame(update);
     } else {
-      setTimeout(update, 1);
+      setTimeout(update, 0);
     }
   },
 
