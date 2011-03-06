@@ -89,6 +89,22 @@ BrushCursor = Klass({
   show : function() {
     this.cursorCanvas.style.visibility = 'visible';
   },
+  
+  requestSetBrush : function(brush, transform, color, opacity) {
+    this.brush = brush;
+    this.requestUpdate(this.diameter, transform, color, opacity);
+  },
+
+  requestUpdate : function(diameter, transform, color, opacity) {
+    if (this.updateTimeout != null) {
+      clearTimeout(this.updateTimeout);
+      this.updateTimeout = null;
+    }
+    var self = this;
+    this.updateTimeout = setTimeout(function() {
+      self.update(diameter, transform, color, opacity);
+    }, 0);
+  },
 
   setBrush : function(brush, transform, color, opacity) {
     this.brush = brush;
