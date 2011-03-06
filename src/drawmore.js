@@ -1129,17 +1129,20 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Zooming
 
   zoomIn : function() {
+    var z = this.zoom;
     this.setZoom(this.zoom * 2);
-    this.setLineWidth(this.lineWidth * 2);
+    this.setLineWidth(this.lineWidth * (this.zoom/z));
   },
 
   zoomOut : function() {
+    var z = this.zoom;
     this.setZoom(this.zoom / 2);
-    this.setLineWidth(this.lineWidth / 2);
+    this.setLineWidth(this.lineWidth * (this.zoom/z));
   },
 
   setZoom : function(z) {
-    if (z < (1/64) || z > 64) return;
+    if (z < (1/16) || z > 64) return;
+    this.needFullRedraw = true;
     var f = z/this.zoom;
     if (this.flippedX) {
       // panX is the distance of the right edge of the screen from the origin
