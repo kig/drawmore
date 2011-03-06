@@ -94,6 +94,12 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   initialize : function(canvas, config) {
     this.canvas = canvas;
+    this.statsCanvas = E.canvas(140, 140);
+    this.statsCtx = this.statsCanvas.getContext('2d');
+    this.canvas.parentNode.appendChild(this.statsCanvas);
+    this.statsCanvas.style.position = 'absolute';
+    this.statsCanvas.style.pointerEvents = 'none';
+    this.statsCanvas.style.left = this.statsCanvas.style.top = '0px';
     Object.extend(this, config);
     this.canvas.style.setProperty("image-rendering", "optimizeSpeed", "important");
     this.ctx = canvas.getContext('2d');
@@ -135,24 +141,49 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   // Draw loop
 
-  updateDisplay : function() {
-    this.executeTimeJump();
-    var t0 = new Date().getTime();
-    if (this.zoom > 1) {
-      this.applyTo(this.ctx, Math.floor(-this.panX/this.zoom), Math.floor(-this.panY/this.zoom), Math.ceil(this.width/this.zoom), Math.ceil(this.height/this.zoom), this.flippedX, this.flippedY, 1);
+  drawMainCanvas : function(x,y,w,h, noOptimize) {
+    this.ctx.mozImageSmoothingEnabled = false;
+    this.ctx.webkitImageSmoothingEnabled = false;
+    this.ctx.imageSmoothingEnabled = false;
+    if (this.zoom > 1 && !noOptimize) {
+      this.applyTo(this.tempCtx, Math.floor(x/this.zoom), Math.floor(y/this.zoom), Math.ceil(w/this.zoom), Math.ceil(h/this.zoom), this.flippedX, this.flippedY, 1);
       this.ctx.save();
-        this.ctx.mozImageSmoothingEnabled = false;
-        this.ctx.webkitImageSmoothingEnabled = false;
-        this.ctx.imageSmoothingEnabled = false;
         this.ctx.globalCompositeOperation = 'source-over';
-        this.ctx.drawImage(this.canvas,
-          0, 0, Math.round(this.width/this.zoom), Math.round(this.height/this.zoom),
-          0, 0, this.width, this.height
+        this.ctx.drawImage(this.tempCanvas,
+          0, 0, Math.round(w/this.zoom), Math.round(h/this.zoom),
+          0, 0, w, h
         );
       this.ctx.restore();
     } else {
-      this.applyTo(this.ctx, -this.panX, -this.panY, this.width, this.height, this.flippedX, this.flippedY, this.zoom);
+      this.applyTo(this.ctx, x, y, w, h, this.flippedX, this.flippedY, this.zoom);
     }
+  },
+  
+  updateDisplay : function() {
+    this.executeTimeJump();
+    var t0 = new Date().getTime();
+    this.ctx.save();
+    if (!this.needFullRedraw && this.changedBox && !this.flippedX && !this.flippedY) {
+      // Draw only the changedBox area.
+      var x = this.changedBox.left*this.zoom+this.panX;
+      var y = this.changedBox.top*this.zoom+this.panY;
+      var w = this.changedBox.width*this.zoom;
+      var h = this.changedBox.height*this.zoom;
+      this.ctx.translate(x,y);
+      if (Magi.console.IWantSpam) {
+        this.ctx.strokeStyle = 'red';
+        this.ctx.strokeRect(0,0,w,h);
+      }
+      this.ctx.beginPath();
+      this.ctx.rect(0,0,w,h);
+      this.ctx.clip();
+      this.drawMainCanvas(x-this.panX, y-this.panY, this.changedBox.width*this.zoom, this.changedBox.height*this.zoom);
+    } else {
+      this.drawMainCanvas(-this.panX, -this.panY, this.width, this.height);
+      this.needFullRedraw = false;
+    }
+    this.changedBox = null;
+    this.ctx.restore();
     this.layerWidget.redraw();
     this.colorPicker.redraw();
     var t1 = new Date().getTime();
@@ -163,21 +194,22 @@ Drawmore = Klass(Undoable, ColorUtils, {
       var t1 = new Date().getTime();
       var elapsed = t1-t0;
       this.frameTimes[this.frameCount%this.frameTimes.length] = elapsed;
-      this.drawFrameTimeHistogram(this.ctx, 12, 38);
+      this.statsCtx.clearRect(0,0, this.statsCanvas.width, this.statsCanvas.height);
+      this.drawFrameTimeHistogram(this.statsCtx, 12, 38);
       if (this.inputTime >= this.lastUpdateTime) {
         var inputLag = t1 - this.inputTime;
         this.inputTimes[this.inputCount%this.inputTimes.length] = inputLag;
-        this.drawInputTimeHistogram(this.ctx, 12, 68);
+        this.drawInputTimeHistogram(this.statsCtx, 12, 68);
         this.inputCount++;
       }
-      this.ctx.save();
-        this.ctx.font = '9px sans-serif';
+      this.statsCtx.save();
+        this.statsCtx.font = '9px sans-serif';
         var fpsText = 'frame interval ' + (t1-(this.lastUpdateTime||t1)) + ' ms';
-        this.ctx.fillStyle = 'white';
-        this.ctx.fillText(fpsText, 12+1, 98+9+1);
-        this.ctx.fillStyle = 'black';
-        this.ctx.fillText(fpsText, 12, 98+9);
-      this.ctx.restore();
+        this.statsCtx.fillStyle = 'white';
+        this.statsCtx.fillText(fpsText, 12+1, 98+9+1);
+        this.statsCtx.fillStyle = 'black';
+        this.statsCtx.fillText(fpsText, 12, 98+9);
+      this.statsCtx.restore();
     }
     this.lastFrameDuration = elapsed;
     this.lastUpdateTime = t1;
@@ -240,6 +272,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
       this.height = h;
       this.canvas.width = w;
       this.canvas.height = h;
+      this.tempCanvas = E.canvas(w,h);
+      this.tempCtx = this.tempCanvas.getContext('2d');
       this.tempLayerStack = [
         new CanvasLayer(w,h),
         new CanvasLayer(w,h),
@@ -336,11 +370,9 @@ Drawmore = Klass(Undoable, ColorUtils, {
     if (window.mozRequestAnimationFrame) {
       window.mozRequestAnimationFrame(update);
     //} else if (window.webkitRequestAnimationFrame) {
-    //  window.webkitRequestAnimationFrame(update);
+    // window.webkitRequestAnimationFrame(update);
     } else {
-      setTimeout(update,
-        16 - Math.min(16, (new Date()).getTime()-this.lastUpdateTime-this.lastFrameDuration)
-      );
+      setTimeout(update, 1);
     }
   },
 
@@ -417,6 +449,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
   },
 
   setupEmptyState : function() {
+    this.needFullRedraw = true;
+    this.actionQueue = [];
     this.layerManager = new LayerManager();
     this.currentLayer = null;
     this.layerUID = -2;
@@ -484,11 +518,13 @@ Drawmore = Klass(Undoable, ColorUtils, {
   // Undo history management
 
   requestUndo : function(singleStep) {
+    this.runActions();
     this.delayedUndo(singleStep);
     this.requestRedraw();
   },
 
   requestRedo : function(singleStep) {
+    this.runActions();
     this.delayedRedo(singleStep);
     this.requestRedraw();
   },
@@ -550,6 +586,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   applySnapshot : function(snapshot) {
     Magi.console.spam('applied a snapshot');
     this.applyState(snapshot.state);
+    this.needFullRedraw = true;
     this.requestRedraw();
   },
 
@@ -598,6 +635,12 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.canvas.addEventListener('contextmenu', function(ev) {
       ev.preventDefault();
     }, false);
+    this.canvas.addEventListener('click', function(ev) {
+      ev.preventDefault();
+    }, false);
+    this.canvas.addEventListener('dblclick', function(ev) {
+      ev.preventDefault();
+    }, false);
   },
 
   removeListeners : function() {
@@ -609,6 +652,36 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.canvas.removeEventListener('contextmenu', function(ev) {
       ev.preventDefault();
     }, false);
+    this.canvas.removeEventListener('click', function(ev) {
+      ev.preventDefault();
+    }, false);
+    this.canvas.removeEventListener('dblclick', function(ev) {
+      ev.preventDefault();
+    }, false);
+  },
+  
+  pushAction : function(methodName, args) {
+    var hs = new HistoryState(methodName, args, false);
+    this.actionQueue.push(hs);
+  },
+  
+  runActions : function(methodName, args) {
+    if (this.inRunActions) return;
+    this.inRunActions = true;
+    for (var i=0; i<this.actionQueue.length; i++) {
+      var a = this.actionQueue[i];
+      this[a.methodName].apply(this, a.args);
+    }
+    this.actionQueue.splice(0);
+    this.inRunActions = false;
+  },
+  
+  executeTimeJump : function() {
+    if (this.inTimeJump) return;
+    this.inTimeJump = true;
+    Undoable.executeTimeJump.apply(this, arguments);
+    this.runActions();
+    this.inTimeJump = false;
   },
 
   createListeners : function() {
@@ -651,6 +724,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
       } else {
         draw.cursor.moveTo(draw.current.x, draw.current.y);
       }
+      draw.absoluteCurrent = draw.getAbsolutePoint(draw.current);
       if (Mouse.state[Mouse.LEFT] && draw.mousedown) {
         if (draw.prev != null) {
           if (!ev.shiftKey && draw.constraint != null) {
@@ -658,18 +732,19 @@ Drawmore = Klass(Undoable, ColorUtils, {
             draw.constraint = null;
           }
           if (ev.shiftKey && draw.constraint == null) {
-            var dx = draw.current.x - draw.prev.x;
-            var dy = draw.current.y - draw.prev.y;
+            var dx = draw.absoluteCurrent.x - draw.absolutePrev.x;
+            var dy = draw.absoluteCurrent.y - draw.absolutePrev.y;
             if (Math.abs(dx) > Math.abs(dy))
-              draw.constraint = new Constraints.ConstantY(draw.prev.y);
+              draw.constraint = new Constraints.ConstantY(draw.absolutePrev.y);
             else
-              draw.constraint = new Constraints.ConstantX(draw.prev.x);
+              draw.constraint = new Constraints.ConstantX(draw.absolutePrev.x);
             draw.addTemporaryConstraint(draw.constraint);
           }
-          draw.applyConstraints(draw.current);
-          draw.drawLine(draw.prev, draw.current);
+          draw.applyConstraints(draw.absoluteCurrent);
+          draw.pushAction('drawLine', [draw.absolutePrev, draw.absoluteCurrent]);
         }
         draw.prev = draw.current;
+        draw.absolutePrev = draw.absoluteCurrent;
         ev.preventDefault();
       }
     };
@@ -678,22 +753,24 @@ Drawmore = Klass(Undoable, ColorUtils, {
       draw.updateInputTime();
       draw.stopResizingBrush();
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
+      draw.absoluteCurrent = draw.getAbsolutePoint(draw.current);
       draw.cursor.moveTo(draw.current.x, draw.current.y);
       if (Mouse.state[Mouse.LEFT] && ev.target == draw.canvas) {
         draw.mousedown = true;
         if (ev.altKey)
           draw.erasing = true;
-        draw.beginStroke();
+        draw.pushAction('beginStroke', []);
         if (ev.shiftKey && draw.mouseup) {
           if (draw.constraint != null) {
             draw.removeTemporaryConstraint(draw.constraint);
             draw.constraint = null;
           }
-          draw.drawLine(draw.mouseup, draw.current);
+          draw.pushAction('drawLine', [draw.absoluteMouseup, draw.absoluteCurrent]);
           draw.prev = null;
         } else {
-          draw.drawPoint(draw.current);
+          draw.pushAction('drawPoint', [draw.absoluteCurrent]);
           draw.prev = draw.current;
+          draw.absolutePrev = draw.absoluteCurrent;
         }
         ev.preventDefault();
       } else if (Mouse.state[Mouse.MIDDLE] && ev.target == draw.canvas) {
@@ -715,90 +792,23 @@ Drawmore = Klass(Undoable, ColorUtils, {
         ev.preventDefault();
       draw.mousedown = false;
       draw.mouseup = Mouse.getRelativeCoords(draw.canvas, ev);
+      draw.absoluteMouseup = draw.getAbsolutePoint(draw.mouseup);
       if (!Mouse.state[Mouse.LEFT]) {
         draw.prev = null;
+        draw.absolutePrev = null;
       }
       if (ev.button == Mouse.MIDDLE) {
         draw.stopPanning();
         draw.stopMoving();
       }
-      draw.endStroke();
+      draw.pushAction('endStroke', [draw.erasing]);
       draw.erasing = false;
     };
-
-    this.listeners['touchmove'] = function(ev) {
-      draw.updateInputTime();
-      if (ev.touches.length == 1) {
-        draw.current = Mouse.getRelativeCoords(draw.canvas, ev.touches[0]);
-        if (draw.panning)
-          draw.keepPanning();
-        if (draw.resizingBrush) {
-          draw.keepResizingBrush();
-        } else {
-          draw.cursor.moveTo(draw.current.x, draw.current.y);
-        }
-        if (draw.mousedown) {
-          if (draw.prev != null) {
-            if (!ev.shiftKey && draw.constraint != null) {
-              draw.removeTemporaryConstraint(draw.constraint);
-              draw.constraint = null;
-            }
-            if (ev.shiftKey && draw.constraint == null) {
-              var dx = draw.current.x - draw.prev.x;
-              var dy = draw.current.y - draw.prev.y;
-              if (Math.abs(dx) > Math.abs(dy))
-                draw.constraint = new Constraints.ConstantY(draw.prev.y);
-              else
-                draw.constraint = new Constraints.ConstantX(draw.prev.x);
-              draw.addTemporaryConstraint(draw.constraint);
-            }
-            draw.applyConstraints(draw.current);
-            draw.drawLine(draw.prev, draw.current);
-          }
-          draw.prev = draw.current;
-          ev.preventDefault();
-        }
-      }
-    };
-
-    this.listeners['touchstart'] = function(ev) {
-      draw.updateInputTime();
-      if (ev.touches.length == 1) {
-        draw.current = Mouse.getRelativeCoords(draw.canvas, ev.touches[0]);
-        draw.cursor.moveTo(draw.current.x, draw.current.y);
-        if (ev.target == draw.canvas) {
-          draw.mousedown = true;
-          draw.beginStroke();
-          if (ev.shiftKey && draw.mouseup) {
-            if (draw.constraint != null) {
-              draw.removeTemporaryConstraint(draw.constraint);
-              draw.constraint = null;
-            }
-            draw.drawLine(draw.mouseup, draw.current);
-            draw.prev = null;
-          } else {
-            draw.drawPoint(draw.current);
-            draw.prev = draw.current;
-          }
-          ev.preventDefault();
-        }
-      }
-    };
-
-    this.listeners['touchend'] = function(ev) {
-      draw.updateInputTime();
-      if (ev.touches.length == 1) {
-        if (draw.mousedown)
-          ev.preventDefault();
-        draw.mousedown = false;
-        draw.mouseup = Mouse.getRelativeCoords(draw.canvas, ev.touches[0]);
-        draw.prev = null;
-        draw.endStroke();
-      }
-    };
-
+    
     this.listeners['keydown'] = function(ev) {
       draw.updateInputTime();
+      if (Key.match(ev, [Key.ALT]))
+        ev.preventDefault();
       if (ev.altKey) {
         if (Key.match(ev, draw.keyBindings.undo)) {
           if (ev.shiftKey)
@@ -858,6 +868,8 @@ Drawmore = Klass(Undoable, ColorUtils, {
     this.listeners['keyup'] = function(ev) {
       draw.updateInputTime();
       draw.stopResizingBrush();
+      if (Key.match(ev, [Key.ALT]))
+        ev.preventDefault();
       if (ev.altKey && !ev.ctrlKey) {
         if (Key.match(ev, draw.keyBindings.flip)) {
           if (ev.shiftKey)
@@ -1646,6 +1658,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   flipX : function() {
     this.executeTimeJump();
     this.flippedX = !this.flippedX;
+    this.needFullRedraw = true;
     this.requestRedraw();
     this.addHistoryState(new HistoryState('flipX',  []));
   },
@@ -1653,6 +1666,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   flipY : function() {
     this.executeTimeJump();
     this.flippedY = !this.flippedY;
+    this.needFullRedraw = true;
     this.requestRedraw();
     this.addHistoryState(new HistoryState('flipY',  []));
   },
@@ -1660,6 +1674,7 @@ Drawmore = Klass(Undoable, ColorUtils, {
   resetFlip : function() {
     this.executeTimeJump();
     this.flippedX = this.flippedY = false;
+    this.needFullRedraw = true;
     this.requestRedraw();
     this.addHistoryState(new HistoryState('resetFlip',  []));
   },
@@ -1679,7 +1694,6 @@ Drawmore = Klass(Undoable, ColorUtils, {
 
   endStroke : function(erasing) {
     this.executeTimeJump();
-    if (erasing == null) erasing = this.erasing;
     if (!this.strokeInProgress) return;
     this.strokeInProgress = false;
     var composite = (erasing ? 'destination-out' :
@@ -1687,6 +1701,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
     );
     this.strokeLayer.applyTo(this.currentLayer, composite);
     this.strokeLayer.hide();
+    if (this.changedBox == null) {
+      this.changedBox = this.strokeLayer.getBoundingBox();
+    } else {
+      Layer.bboxMerge(this.strokeLayer.getBoundingBox(), this.changedBox);
+    }
     this.addHistoryState(new HistoryState('endStroke',  [erasing]));
     this.requestRedraw();
   },
@@ -1724,6 +1743,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
       xy.x, xy.y, xy.r,
       xy.brushTransform
     );
+    if (this.changedBox == null) {
+      this.changedBox = this.strokeLayer.getBoundingBox();
+    } else {
+      Layer.bboxMerge(this.strokeLayer.getBoundingBox(), this.changedBox);
+    }
     this.addHistoryState(new HistoryState('drawPoint', [xy]));
     this.requestRedraw();
   },
@@ -1741,6 +1765,11 @@ Drawmore = Klass(Undoable, ColorUtils, {
       b.x, b.y, b.r,
       a.brushTransform
     );
+    if (this.changedBox == null) {
+      this.changedBox = this.strokeLayer.getBoundingBox();
+    } else {
+      Layer.bboxMerge(this.strokeLayer.getBoundingBox(), this.changedBox);
+    }
     this.addHistoryState(new HistoryState('drawLine', [a, b]));
     this.requestRedraw();
   },

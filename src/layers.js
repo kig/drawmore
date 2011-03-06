@@ -195,14 +195,18 @@ Layer = Klass({
     for (var i=0; i<this.childNodes.length; i++) {
       var c = this.getChildNode(i);
       var cb = c.getBoundingBox();
-      if (cb.top < bbox.top) bbox.top = cb.top;
-      if (cb.bottom > bbox.bottom) bbox.bottom = cb.bottom;
-      if (cb.left < bbox.left) bbox.left = cb.left;
-      if (cb.right > bbox.right) bbox.right = cb.right;
+      this.bboxMerge(cb, bbox);
     }
-    bbox.width = bbox.right-bbox.left+1;
-    bbox.height = bbox.bottom-bbox.top+1;
     return bbox;
+  },
+  
+  bboxMerge : function(src, dst) {
+    if (src.top < dst.top) dst.top = src.top;
+    if (src.bottom > dst.bottom) dst.bottom = src.bottom;
+    if (src.left < dst.left) dst.left = src.left;
+    if (src.right > dst.right) dst.right = src.right;
+    dst.width = dst.right-dst.left+1;
+    dst.height = dst.bottom-dst.top+1;
   },
   
   getLayerBoundingBox : function() {
