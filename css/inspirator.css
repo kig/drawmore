@@ -23,7 +23,7 @@
   width: 288px;
   margin-top: 0px;
   margin: 0px;
-  text-align: right;
+  text-align: left;
   border-radius: 0px 0px 0px 8px;
   border: 0px;
   background-color: rgba(0,0,0,0.8);
@@ -32,6 +32,9 @@
   padding-right: 4px;
   padding-bottom: 2px;
   margin-bottom: 8px;
+}
+#refSearch input:focus {
+  outline: none;
 }
 #inspirator {
   margin-right: 4px;

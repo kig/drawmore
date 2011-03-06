@@ -46,9 +46,9 @@
         };
 
 
-        var c = E.canvas(window.innerWidth,window.innerHeight);
-        c.style.position = 'absolute';
-        c.style.left = c.style.top = '0px';
+        var c = byId('mainCanvas');
+        c.width = window.innerWidth;
+        c.height = window.innerHeight;
         document.body.appendChild(c);
         draw = null;
 
@@ -280,6 +280,7 @@
           this.style.borderRadius = expanded ? '8px 0px 0px 8px' : '8px 0px 0px 0px';
           s.width = expanded ? '0px' : '300px';
         };
+        byId('TheInspiratorToggle').onclick();
 
       }, false);
 
@@ -309,6 +310,12 @@
         bottom: 4px;
         left: 4px;
       }
+      #mainCanvas {
+        position: absolute;
+        left: 0px;
+        top: 0px;
+        z-index: 0;
+      }
 
       #fileIO {
         text-align: right;
@@ -334,6 +341,7 @@
         position: absolute;
         top: 36px;
         right: 0px;
+        z-index: 10;
       }
       #colorName, #bgColorName {
         border: 0px;
@@ -465,7 +473,7 @@
       }
       #TheInspirator {
         position: absolute;
-        z-index: 11;
+        z-index: 9;
         right: 0px;
         top: 260px;
         width: 0px;
@@ -480,8 +488,8 @@
       }
       #TheInspiratorToggle {
         position: absolute;
-        z-index: 11;
-        font-size: 13px;
+        z-index: 9;
+        font-size: 12px;
         height: 16px;
         top: 240px;
         right: 0px;
@@ -503,6 +511,7 @@
     </style>
   </head>
   <body>
+    <canvas id="mainCanvas"></canvas>
     <div id="fileIO">
       <button id="new">New</button>
       <button id="toggleHistograms">Toggle stats</button>
