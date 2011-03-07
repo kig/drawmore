@@ -439,6 +439,7 @@ Drawmore.Modules.Layers = {
     if (srcUID == dstUID || srcUID == null || dstUID == null) return;
     var src = this.layerManager.getLayerByUID(srcUID);
     var dst = this.layerManager.getLayerByUID(dstUID);
+    if (src.isParentOf(dst)) return;
     if (this.isLayerBefore(src,dst)) {
       if (src.globalCompositeOperation == 'source-over' && src.parentNodeUID == this.topLayer.uid)
         src.globalCompositeOperation = 'source-atop';

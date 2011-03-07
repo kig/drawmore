@@ -47,11 +47,11 @@ LayerManager = Klass({
   rebuildCopy : function(layers) {
     this.rebuild(layers.map(function(l){ return l.copy(true); }));
   },
-  
+
   getLayerByUID : function(uid) {
     return this.layerIndex[uid];
   },
-  
+
   copyLayers : function() {
     var a = [];
     for (var i in this.layerIndex) {
@@ -79,7 +79,7 @@ Layer = Klass({
   skipTempCount : 0,
   copyCount : 0,
   deepCopyCount : 0,
-  
+
   printStats : function(msg) {
     Magi.console.spam(msg+
       ' :: copies: '+this.copyCount+
@@ -90,7 +90,7 @@ Layer = Klass({
       ', directComposites: '+this.directCompositeCount
     );
   },
-  
+
   resetStats : function() {
     this.directCompositeCount = 0;
     this.tempStackOverflowCount = 0;
@@ -99,7 +99,7 @@ Layer = Klass({
     this.copyCount = 0;
     this.deepCopyCount = 0;
   },
-  
+
   initialize : function(){
     this.childNodes = [];
     this.linkedProperties = {};
@@ -199,7 +199,7 @@ Layer = Klass({
     }
     return bbox;
   },
-  
+
   bboxMerge : function(src, dst) {
     if (src.top < dst.top) dst.top = src.top;
     if (src.bottom > dst.bottom) dst.bottom = src.bottom;
@@ -208,7 +208,7 @@ Layer = Klass({
     dst.width = dst.right-dst.left+1;
     dst.height = dst.bottom-dst.top+1;
   },
-  
+
   getLayerBoundingBox : function() {
     return {top:1/0, left:1/0, right:-1/0, bottom:-1/0, width:0, height:0};
   },
@@ -259,20 +259,20 @@ Layer = Klass({
   getParentNode : function() {
     return (this.layerManager.getLayerByUID(this.parentNodeUID));
   },
-  
+
   hasParentNode : function() {
     return (this.parentNodeUID != null);
   },
-  
+
   getChildNode : function(i) {
     return this.layerManager.getLayerByUID(this.childNodes[i]);
   },
-  
+
   getNextNode : function(goingUp) {
-    if (this.parentNodeUID == null) 
+    if (this.parentNodeUID == null)
       return null;
     if (!goingUp) {
-      if (this.childNodes.length > 0) 
+      if (this.childNodes.length > 0)
         return this.getChildNode(0);
     }
     var pn = this.getParentNode();
@@ -282,9 +282,9 @@ Layer = Klass({
     else
       return pn.getNextNode(true);
   },
-  
+
   getPreviousNode : function(goingDown) {
-    if (this.parentNodeUID == null) 
+    if (this.parentNodeUID == null)
       return null;
     if (goingDown) {
       if (this.childNodes.length > 0)
@@ -308,7 +308,7 @@ Layer = Klass({
     node.parentNodeUID = this.uid;
     this.childNodes.push(node.uid);
   },
-  
+
   prependChild : function(node) {
     if (node.parentNodeUID == this.uid && this.childNodes[0] == node.uid)
       return;
@@ -317,7 +317,7 @@ Layer = Klass({
     node.parentNodeUID = this.uid;
     this.childNodes.unshift(node.uid);
   },
-  
+
   insertChildBefore : function(node, sibling) {
     if (node.hasParentNode())
       node.getParentNode().removeChild(node);
@@ -325,7 +325,7 @@ Layer = Klass({
     var i = this.childNodes.indexOf(sibling.uid);
     this.childNodes.splice(i, 0, node.uid);
   },
-  
+
   insertChildAfter : function(node, sibling) {
     if (node.hasParentNode())
       node.getParentNode().removeChild(node);
@@ -346,6 +346,20 @@ Layer = Klass({
     node.parentNodeUID = null;
   },
 
+  isChildOf : function(layer) {
+    var o = this;
+    while (o) {
+      if (layer.uid == o.parentNodeUID)
+        return true;
+      o = this.layerManager.getLayerByUID(o.parentNodeUID);
+    }
+    return false;
+  },
+
+  isParentOf : function(layer) {
+    return layer.isChildOf(this);
+  },
+
   show : function(){
     this.display = true;
   },
@@ -361,7 +375,7 @@ Layer = Klass({
   drawArc : function(x,y,r,a1,a2, color, composite, lineWidth, stroke, closed) {},
 
   drawImage : function(image, x, y, w, h, composite) {},
-  
+
   rect : function(x,y,w,h) {
     this.subPolygon([
       {x:x, y:y}, {x:x, y:y+h}, {x:x+w, y:y+h}, {x:x+w, y:y}
@@ -380,12 +394,12 @@ CanvasLayer = Klass(Layer, {
     }
     this.ctx = this.canvas.getContext('2d');
   },
-  
+
   resize : function(w,h) {
     this.canvas.width = w;
     this.canvas.height = h;
   },
-  
+
   upsize : function(w, h) {
     if (w>this.canvas.width || h>this.canvas.height) {
       this.resize(w,h);
@@ -397,7 +411,7 @@ CanvasLayer = Klass(Layer, {
     var h = this.canvas.height;
     return {left: this.x, top: this.y, right: this.x+w, bottom: this.y+h, width: w, height: h};
   },
-  
+
   copyProperties : function(tgt) {
     tgt.canvas = E.canvas(this.canvas.width, this.canvas.height);
     tgt.ctx = tgt.canvas.getContext('2d');
@@ -426,7 +440,7 @@ CanvasLayer = Klass(Layer, {
   scale : function(x,y) {
     this.ctx.scale(x,y);
   },
-  
+
   beginPath : function() {
     this.ctx.beginPath();
   },
@@ -532,7 +546,7 @@ TiledLayer = Klass(Layer, {
   recycleCount : 0,
   returnCount : 0,
   COWCount : 0,
-  
+
   doNotPoolTiles : navigator.userAgent.match(/Firefox\/4/), //FIXME UGH
 
   prefillAllocPool : function(count) {
@@ -542,7 +556,7 @@ TiledLayer = Klass(Layer, {
       TiledLayer.totalAllocCount++;
     }
   },
-  
+
   printAllocStats : function(msg) {
     Magi.console.spam(msg+
       ' :: allocs: '+this.allocCount+
@@ -556,7 +570,7 @@ TiledLayer = Klass(Layer, {
   resetAllocStats : function() {
     this.COWCount = this.allocCount = this.recycleCount = this.returnCount = 0;
   },
-  
+
   getNewCanvas : function() {
     if (TiledLayer.allocPool.length == 0) {
       TiledLayer.prefillAllocPool(TiledLayer.doNotPoolTiles ? 1 : 64);
@@ -565,7 +579,7 @@ TiledLayer = Klass(Layer, {
     }
     return TiledLayer.allocPool.shift();
   },
-  
+
   returnCanvas : function(c) {
     if (TiledLayer.doNotPoolTiles)
       return;
@@ -575,8 +589,8 @@ TiledLayer = Klass(Layer, {
     TiledLayer.allocPool.push(c);
   },
 
-  
-  
+
+
   initializeLayer: function() {
     this.tiles = {};
   },
@@ -729,7 +743,7 @@ TiledLayer = Klass(Layer, {
     }
     this.tiles = {};
   },
-  
+
   compositeTo : function(ctx, opacity, composite) {
     ctx.globalAlpha = opacity;
     ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
