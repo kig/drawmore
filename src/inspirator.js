@@ -1,6 +1,6 @@
 RefSearch = {
   searchTag : function(tag) {
-    var object = byId('refSearch').getElementsByTagName('object')[0];
+    var object = byId('refSearch').getElementsByTagName('embed')[0];
     var etag = encodeURIComponent(tag);
     var newObject = E('embed',
       {
