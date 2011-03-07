@@ -1,6 +1,6 @@
-LayerManagement = {
+Drawmore.Modules.Layers = {
   // Layers
-  
+
   setLayerComposite : function(uid, composite) {
     this.executeTimeJump();
     var layer = this.layerManager.getLayerByUID(uid);
@@ -10,7 +10,7 @@ LayerManagement = {
     this.updateChangedBox(layer.getBoundingBox());
     this.requestRedraw();
   },
-  
+
   addLayerMask : function(uid) {
     this.executeTimeJump();
     var layer = this.layerManager.getLayerByUID(uid);
@@ -24,7 +24,7 @@ LayerManagement = {
     this.updateChangedBox(bbox);
     this.requestRedraw();
    },
-   
+
   addCurrentLayerMask : function() {
     this.executeTimeJump();
     if (!this.currentLayer) return;

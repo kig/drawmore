@@ -1,4 +1,4 @@
-UI = {
+Drawmore.Modules.UI = {
 
   keyBindings : {
     resetView : [Key.ESC],
@@ -86,13 +86,13 @@ UI = {
       ev.preventDefault();
     }, false);
   },
-  
+
   pushAction : function(methodName, args) {
     var hs = new HistoryState(methodName, args, false);
     this.actionQueue.push(hs);
     this.requestRedraw();
   },
-  
+
   runActions : function() {
     if (this.inRunActions) return;
     this.inRunActions = true;
@@ -103,7 +103,7 @@ UI = {
     this.actionQueue.splice(0);
     this.inRunActions = false;
   },
-  
+
   executeTimeJump : function() {
     if (this.inTimeJump) return;
     this.inTimeJump = true;
@@ -155,20 +155,20 @@ UI = {
       draw.absoluteCurrent = draw.getAbsolutePoint(draw.current);
       if (Mouse.state[Mouse.LEFT] && draw.mousedown) {
         if (draw.prev != null) {
-          if (!ev.shiftKey && draw.constraint != null) {
-            draw.removeTemporaryConstraint(draw.constraint);
-            draw.constraint = null;
+          if (!ev.shiftKey && draw.ruler != null) {
+            draw.removeTemporaryRuler(draw.ruler);
+            draw.ruler = null;
           }
-          if (ev.shiftKey && draw.constraint == null) {
+          if (ev.shiftKey && draw.ruler == null) {
             var dx = draw.absoluteCurrent.x - draw.absolutePrev.x;
             var dy = draw.absoluteCurrent.y - draw.absolutePrev.y;
             if (Math.abs(dx) > Math.abs(dy))
-              draw.constraint = new Constraints.ConstantY(draw.absolutePrev.y);
+              draw.ruler = new Rulers.ConstantY(draw.absolutePrev.y);
             else
-              draw.constraint = new Constraints.ConstantX(draw.absolutePrev.x);
-            draw.addTemporaryConstraint(draw.constraint);
+              draw.ruler = new Rulers.ConstantX(draw.absolutePrev.x);
+            draw.addTemporaryRuler(draw.ruler);
           }
-          draw.applyConstraints(draw.absoluteCurrent);
+          draw.applyRulers(draw.absoluteCurrent);
           draw.pushAction('drawLine', [draw.absolutePrev, draw.absoluteCurrent]);
         }
         draw.prev = draw.current;
@@ -189,9 +189,9 @@ UI = {
           draw.erasing = true;
         draw.pushAction('beginStroke', []);
         if (ev.shiftKey && draw.mouseup) {
-          if (draw.constraint != null) {
-            draw.removeTemporaryConstraint(draw.constraint);
-            draw.constraint = null;
+          if (draw.ruler != null) {
+            draw.removeTemporaryRuler(draw.ruler);
+            draw.ruler = null;
           }
           draw.pushAction('drawLine', [draw.absoluteMouseup, draw.absoluteCurrent]);
           draw.prev = null;
@@ -232,7 +232,7 @@ UI = {
       draw.pushAction('endStroke', [draw.erasing]);
       draw.erasing = false;
     };
-    
+
     this.listeners['keydown'] = function(ev) {
       draw.updateInputTime();
       if (Key.match(ev, [Key.ALT]))
@@ -627,5 +627,5 @@ UI = {
     this.showHistograms = !this.showHistograms;
     this.requestRedraw();
   }
-  
+
 };

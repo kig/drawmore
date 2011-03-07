@@ -6,6 +6,9 @@
     <title>&#9733; Drawmore &#9733;</title>
     <link rel="stylesheet" href="css/layerwidget.css" type="text/css">
     <link rel="stylesheet" href="css/inspirator.css" type="text/css">
+
+    <script type="text/javascript" src="src/drawmore_header.js"></script>
+
     <script type="text/javascript" src="src/matrix.js"></script>
     <script type="text/javascript" src="src/util.js"></script>
     <script type="text/javascript" src="src/file_format.js"></script>
@@ -19,8 +22,18 @@
     <script type="text/javascript" src="src/layerwidget.js"></script>
     <script type="text/javascript" src="src/upload_util.js"></script>
     <script type="text/javascript" src="src/inspirator.js"></script>
-    <script type="text/javascript" src="src/layer_management.js"></script>
-    <script type="text/javascript" src="src/ui.js"></script>
+
+    <script type="text/javascript" src="src/modules/background.js"></script>
+    <script type="text/javascript" src="src/modules/brush_strokes.js"></script>
+    <script type="text/javascript" src="src/modules/color_picking.js"></script>
+    <script type="text/javascript" src="src/modules/draw_loop.js"></script>
+    <script type="text/javascript" src="src/modules/file_io.js"></script>
+    <script type="text/javascript" src="src/modules/layers.js"></script>
+    <script type="text/javascript" src="src/modules/palette.js"></script>
+    <script type="text/javascript" src="src/modules/rulers.js"></script>
+    <script type="text/javascript" src="src/modules/state.js"></script>
+    <script type="text/javascript" src="src/modules/ui.js"></script>
+
     <script type="text/javascript" src="src/drawmore.js"></script>
     <!--<script type="text/javascript" src="defaultImage.js"></script>-->
     <script>
@@ -190,7 +203,7 @@
           this.editing = false;
         }, false);
 
-        draw = new Drawmore(c, {
+        draw = new Drawmore.App(c, {
           colorPicker : colorPicker,
           onopacitychange : function(o) {
             var s = [];
@@ -628,7 +641,7 @@
       <p>feedback to <a href="http://twitter.com/ilmarihei">twitter</a></p>
       <p>patches and bugs to <a href="http://github.com/kig/scribble">github</a></p>
       <p>ilmari.heikkinen@gmail.com</p>
-      <p>v 2011-03-06.22.9</p>
+      <p>v 2011-03-07.23.4</p>
     </div>
   </body>
 </html>
