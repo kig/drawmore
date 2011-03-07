@@ -19,6 +19,7 @@ Drawmore.Modules.Layers = {
     var bbox = layer.getBoundingBox();
     mask.globalCompositeOperation = 'destination-out';
     layer.prependChild(mask);
+    this.setCurrentLayer(mask.uid, false);
     this.addHistoryState(new HistoryState('addLayerMask', [uid], true));
     this.layerWidget.requestRedraw();
     this.updateChangedBox(bbox);
@@ -52,6 +53,8 @@ Drawmore.Modules.Layers = {
     var prev = this.currentLayer.getPreviousNode();
     if (prev && prev.uid != this.currentLayer.parentNodeUID) {
       var uid = this.currentLayer.uid;
+      if (this.currentLayer.globalCompositeOperation == 'source-over' && this.currentLayer.parentNodeUID == this.topLayer.uid)
+        this.currentLayer.globalCompositeOperation = 'source-atop';
       if (prev.parentNodeUID != this.currentLayer.parentNodeUID)
         prev = prev.getParentNode();
       this.indentLayer(uid, prev.uid);
@@ -70,10 +73,12 @@ Drawmore.Modules.Layers = {
       var parent = this.currentLayer.getParentNode();
       var cc = parent.childNodes;
       var nextLayers = cc.slice(cc.indexOf(uid)+1);
-      for (var i=nextLayers.length-1; i>=0; i--) {
-        this.currentLayer.prependChild(this.layerManager.getLayerByUID(nextLayers[i]));
+      for (var i=0; i<nextLayers.length; i++) {
+        this.currentLayer.appendChild(this.layerManager.getLayerByUID(nextLayers[i]));
       }
       this.unindentLayer(uid);
+      if (this.currentLayer.globalCompositeOperation == 'source-atop' && this.currentLayer.parentNodeUID == this.topLayer.uid)
+        this.currentLayer.globalCompositeOperation = 'source-over';
       this.addHistoryState(new HistoryState('unindentCurrentLayer', [], true));
       this.layerWidget.requestRedraw();
       this.updateChangedBox(this.currentLayer.getBoundingBox());
@@ -316,11 +321,15 @@ Drawmore.Modules.Layers = {
       this.topLayer.appendChild(layer);
       this.setCurrentLayer(layer.uid, false);
     } else {
+      if (layer.globalCompositeOperation == 'source-over')
+        layer.globalCompositeOperation = 'source-atop';
       if (this.currentLayer.childNodes.length > 0) {
         this.indentLayer(layer.uid, this.currentLayer.uid);
       } else {
         this.currentLayer.getParentNode().insertChildAfter(layer, this.currentLayer);
       }
+      if (layer.parentNodeUID == this.topLayer.uid)
+        layer.globalCompositeOperation = 'source-over';
       this.setCurrentLayer(layer.uid, false);
     }
     this.layerWidget.requestRedraw();
@@ -332,8 +341,12 @@ Drawmore.Modules.Layers = {
       this.topLayer.prependChild(layer);
       this.setCurrentLayer(layer.uid, false);
     } else {
+      if (layer.globalCompositeOperation == 'source-over')
+        layer.globalCompositeOperation = 'source-atop';
       this.currentLayer.getParentNode().insertChildBefore(layer, this.currentLayer);
       this.setCurrentLayer(layer.uid, false);
+      if (layer.parentNodeUID == this.topLayer.uid)
+        layer.globalCompositeOperation = 'source-over';
     }
     this.layerWidget.requestRedraw();
     this.requestRedraw();
@@ -417,17 +430,25 @@ Drawmore.Modules.Layers = {
       return -1;
   },
 
+  isLayerBefore : function(a, b) {
+    return this.getLayerIndex(a) < this.getLayerIndex(b);
+  },
+
   moveLayer : function(srcUID, dstUID) {
     this.executeTimeJump();
     if (srcUID == dstUID || srcUID == null || dstUID == null) return;
     var src = this.layerManager.getLayerByUID(srcUID);
     var dst = this.layerManager.getLayerByUID(dstUID);
-    if (this.getLayerIndex(src) < this.getLayerIndex(dst)) {
+    if (this.isLayerBefore(src,dst)) {
+      if (src.globalCompositeOperation == 'source-over' && src.parentNodeUID == this.topLayer.uid)
+        src.globalCompositeOperation = 'source-atop';
       if (dst.childNodes.length > 0) dst.prependChild(src);
       else dst.getParentNode().insertChildAfter(src, dst);
     } else {
       dst.getParentNode().insertChildBefore(src, dst);
     }
+    if (src.globalCompositeOperation == 'source-atop' && src.parentNodeUID == this.topLayer.uid)
+      src.globalCompositeOperation = 'source-over';
     this.updateChangedBox(src.getBoundingBox());
     this.updateChangedBox(dst.getBoundingBox());
     this.addHistoryState(new HistoryState('moveLayer', [srcUID, dstUID], true));

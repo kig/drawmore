@@ -44,7 +44,8 @@ Drawmore.Modules.UI = {
     layerBelow: ['a'],
     duplicateCurrentLayer: ['c'],
     toggleCurrentLayer: ['v'],
-    groupLayer: ['g'],
+    indentCurrentLayer: ['g'],
+    addCurrentLayerMask: ['b'],
 
     toggleUI: [Key.TAB, '0'],
     toggleHelp: [191] // question mark
@@ -313,11 +314,14 @@ Drawmore.Modules.UI = {
           draw.newLayerBelow();
           ev.preventDefault();
 
-        } else if (Key.match(ev,  draw.keyBindings.groupLayer)) {
+        } else if (Key.match(ev,  draw.keyBindings.indentCurrentLayer)) {
           if (ev.shiftKey)
             draw.unindentCurrentLayer();
           else
             draw.indentCurrentLayer();
+
+        } else if (Key.match(ev,  draw.keyBindings.addCurrentLayerMask)) {
+          draw.addCurrentLayerMask();
 
         } else if (Key.match(ev, draw.keyBindings.duplicateCurrentLayer)) {
           draw.duplicateCurrentLayer();
