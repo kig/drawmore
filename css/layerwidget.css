@@ -38,6 +38,11 @@
   color: #444;
   vertical-align: bottom;
 }
+.layers select {
+  margin-right: 2px;
+  font-size: 10px;
+  vertical-align: bottom;
+}
 .layers .current {
   background: #eee;
   color: black;
@@ -51,6 +56,7 @@
 }
 .layers span {
   margin-left: 8px;
+  vertical-align: bottom;
 }
 .layerOpacitySlider {
   cursor: pointer;
