@@ -360,7 +360,13 @@ Layer = Klass({
 
   drawArc : function(x,y,r,a1,a2, color, composite, lineWidth, stroke, closed) {},
 
-  drawImage : function(image, x, y, w, h, composite) {}
+  drawImage : function(image, x, y, w, h, composite) {},
+  
+  rect : function(x,y,w,h) {
+    this.subPolygon([
+      {x:x, y:y}, {x:x, y:y+h}, {x:x+w, y:y+h}, {x:x+w, y:y}
+    ]);
+  }
 
 });
 
