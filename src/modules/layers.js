@@ -461,6 +461,7 @@ Drawmore.Modules.Layers = {
     var layer = this.layerManager.getLayerByUID(uid);
     if (layer == null) throw ("deleteLayer: no layer with UID "+uid);
     if (layer == this.currentLayer) {
+      layer.childNodes = [];
       var prev = layer.getPreviousNode();
       if (prev && prev.uid != this.topLayer.uid) {
         this.setCurrentLayer(prev.uid, false);
