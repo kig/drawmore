@@ -1,4 +1,6 @@
-Constraint = Klass({
+Ruler = Klass({
+  snapDistance : 10,
+
   initialize: function() {},
 
   withinRange : function(point) {
@@ -16,9 +18,9 @@ Constraint = Klass({
   }
 });
 
-Constraints = {};
+Rulers = {};
 
-Constraints.ConstantX = Klass(Constraint, {
+Rulers.ConstantX = Klass(Ruler, {
   initialize : function(x) {
     this.x = x;
   },
@@ -29,7 +31,7 @@ Constraints.ConstantX = Klass(Constraint, {
   }
 });
 
-Constraints.ConstantY = Klass(Constraint, {
+Rulers.ConstantY = Klass(Ruler, {
   initialize : function(y) {
     this.y = y;
   },
@@ -40,3 +42,14 @@ Constraints.ConstantY = Klass(Constraint, {
   }
 });
 
+Rulers.SnapX = Klass(Rulers.ConstantX, {
+  withinRange : function(point) {
+    return (Math.abs(point.x - this.x) < Ruler.snapDistance)
+  }
+});
+
+Rulers.SnapY = Klass(Rulers.ConstantY, {
+  withinRange : function(point) {
+    return (Math.abs(point.y - this.y) < Ruler.snapDistance)
+  }
+});
