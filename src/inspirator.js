@@ -2,19 +2,20 @@ RefSearch = {
   searchTag : function(tag) {
     var object = byId('refSearch').getElementsByTagName('object')[0];
     var etag = encodeURIComponent(tag);
-    var newObject = OBJECT(
-      PARAM({
-        name:'flashvars',
-        value: (
-          'offsite=true&lang=en-us&page_show_url=%2Fphotos%2Ftags%2F'+etag+
-          '%2Fshow%2F&page_show_back_url=%2Fphotos%2Ftags%2F'+etag+
-          '%2F&tags='+etag+
-          '&jump_to=&start_index='
-        )
-      }),
-      PARAM({ name:'movie', value:'http://www.flickr.com/apps/slideshow/show.swf?v=71649' }),
-      PARAM({ name:'allowFullScreen', value:'true' }),
-    {width:300, height:300});
+    var newObject = E('embed',
+      {
+        src: (
+          'http://www.flickr.com/apps/slideshow/show.swf?v=71649&' + (
+            'offsite=true&lang=en-us&page_show_url=%2Fphotos%2Ftags%2F'+etag+
+            '%2Fshow%2F&page_show_back_url=%2Fphotos%2Ftags%2F'+etag+
+            '%2F&tags='+etag+
+            '&jump_to=&start_index=&allowFullScreen=true'
+          )
+        ),
+        width: 300,
+        height: 300
+      }
+    );
     object.parentNode.insertBefore(newObject, object);
     object.parentNode.removeChild(object);
   }

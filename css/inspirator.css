@@ -5,7 +5,7 @@
   position: relative;
   width: 300px;
 }
-#refContainer object {
+#refContainer object, #refContainer embed {
   display: block;
   margin: 0px;
   padding: 0px;
