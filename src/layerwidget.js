@@ -104,6 +104,33 @@ LayerWidget = Klass({
     var idx = cc.length-1-cc.indexOf(layer);
     return idx;
   },
+  
+  createCompositeSelector : function(layer) {
+    var self = this;
+    var sel = SELECT(
+      { 
+        className : 'compositeSelector',
+        value : layer.globalCompositeOperation,
+        onchange : function() {
+          self.app.setLayerComposite(layer.uid, this.value);
+        },
+        onmousedown : function(ev){ ev.stopPropagation(); },
+        onmouseup : function(ev){ ev.stopPropagation(); },
+        onclick : function(ev){ ev.stopPropagation(); }
+      },
+      OPTION('Normal', {value:'source-over'}),
+      OPTION('Inside', {value:'source-atop'}),
+      OPTION('Mask', {value:'destination-out'})
+    );
+    var cc = sel.childNodes;
+    for (var i=0; i<cc.length; i++) {
+      if (cc[i].value == layer.globalCompositeOperation) {
+        cc[i].selected = true;
+        break;
+      }
+    }
+    return sel;
+  },
 
   __newLayer : function(layer, indent, isCurrent) {
     var self = this;
@@ -113,13 +140,14 @@ LayerWidget = Klass({
         layerUID : layer.uid,
         style : {marginLeft: indent*16 + 'px'}
       },
+      this.createCompositeSelector(layer),
       DIV(
         {
           className: 'layerOpacitySlider',
           onmousedown : function(ev) {
             this.firstChild.makeActive(ev);
             var x = Mouse.getRelativeCoords(this,ev).x-10;
-            this.firstChild.setOpacity(x/134);
+            this.firstChild.setOpacity(x/188);
             self.app.setLayerOpacity(self.activeOpacity.layerUID, self.activeOpacity.opacity);
             Event.stop(ev);
           }
@@ -127,7 +155,7 @@ LayerWidget = Klass({
         DIV(
           {
             opacity : layer.opacity,
-            style: { left: (layer.opacity*134)+'px' },
+            style: { left: (layer.opacity*188)+'px' },
             className: 'layerOpacityKnob',
             onmousedown : function(ev){
               this.makeActive(ev);
@@ -141,10 +169,10 @@ LayerWidget = Klass({
             },
             setOpacity : function(o) {
               this.opacity = Math.clamp(o, 0, 1);
-              this.style.left = (this.opacity*134)+'px';
+              this.style.left = (this.opacity*188)+'px';
             },
             move : function(dx) {
-              this.setOpacity(this.opacity + (dx / 134));
+              this.setOpacity(this.opacity + (dx / 188));
             }
           }
         )

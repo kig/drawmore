@@ -1,6 +1,16 @@
 LayerManagement = {
   // Layers
   
+  setLayerComposite : function(uid, composite) {
+    this.executeTimeJump();
+    var layer = this.layerManager.getLayerByUID(uid);
+    layer.globalCompositeOperation = composite;
+    this.addHistoryState(new HistoryState('setLayerComposite', [uid, composite], true));
+    this.layerWidget.requestRedraw();
+    this.updateChangedBox(layer.getBoundingBox());
+    this.requestRedraw();
+  },
+  
   addLayerMask : function(uid) {
     this.executeTimeJump();
     var layer = this.layerManager.getLayerByUID(uid);
@@ -8,7 +18,7 @@ LayerManagement = {
     mask.name = mask.name.replace(/Layer/, 'Mask');
     var bbox = layer.getBoundingBox();
     mask.globalCompositeOperation = 'destination-out';
-    layer.appendChild(mask);
+    layer.prependChild(mask);
     this.addHistoryState(new HistoryState('addLayerMask', [uid], true));
     this.layerWidget.requestRedraw();
     this.updateChangedBox(bbox);
@@ -26,7 +36,6 @@ LayerManagement = {
     var group = this.layerManager.getLayerByUID(groupUID);
     group.appendChild(layer);
     var isTop = (layer.parentNodeUID == this.topLayer.uid);
-    layer.globalCompositeOperation = isTop ? 'source-over' : 'source-atop';
   },
 
   unindentLayer : function(uid) {
@@ -35,7 +44,6 @@ LayerManagement = {
     var grandParent = parent.getParentNode();
     grandParent.insertChildAfter(layer, parent);
     var isTop = (layer.parentNodeUID == this.topLayer.uid);
-    layer.globalCompositeOperation = isTop ? 'source-over' : 'source-atop';
   },
 
   indentCurrentLayer : function() {
@@ -178,11 +186,7 @@ LayerManagement = {
       var target = this.createLayerObject();
       // target becomes below
       below.compositeTo(target, below.opacity, 'source-over');
-      this.currentLayer.applyTo(target,
-        this.currentLayer.parentNodeUID == below.parentNodeUID
-        ? 'source-over'
-        : 'source-atop'
-      );
+      this.currentLayer.applyTo(target);
       below.tiles = target.tiles;
       below.x = 0;
       below.y = 0;
@@ -316,8 +320,6 @@ LayerManagement = {
         this.indentLayer(layer.uid, this.currentLayer.uid);
       } else {
         this.currentLayer.getParentNode().insertChildAfter(layer, this.currentLayer);
-        if (this.currentLayer.parentNodeUID != this.topLayer.uid)
-          layer.globalCompositeOperation = 'source-atop'; // layer group
       }
       this.setCurrentLayer(layer.uid, false);
     }
@@ -331,9 +333,6 @@ LayerManagement = {
       this.setCurrentLayer(layer.uid, false);
     } else {
       this.currentLayer.getParentNode().insertChildBefore(layer, this.currentLayer);
-      if (this.currentLayer.parentNodeUID != this.topLayer.uid) {
-        layer.globalCompositeOperation = 'source-atop'; // layer group
-      }
       this.setCurrentLayer(layer.uid, false);
     }
     this.layerWidget.requestRedraw();
