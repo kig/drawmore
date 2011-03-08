@@ -635,6 +635,16 @@ Drawmore.Modules.UI = {
   toggleHistograms : function() {
     this.showHistograms = !this.showHistograms;
     this.requestRedraw();
+  },
+
+  toggleDrawAreas : function() {
+    this.showDrawAreas = !this.showDrawAreas;
+    this.requestRedraw();
+  },
+
+  toggleCompositeDepth : function() {
+    this.showCompositeDepth = !this.showCompositeDepth;
+    this.requestRedraw();
   }
 
 };

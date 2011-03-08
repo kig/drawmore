@@ -63,6 +63,23 @@ LayerManager = Klass({
 });
 
 Layer = Klass({
+  showCompositeDepth : false,
+
+  initCompositeDepthCanvas : function(w,h) {
+    if (!this.compositeDepthCanvas) {
+      this.compositeDepthCanvas = E.canvas(w,h);
+      this.compositeDepthCtx = this.compositeDepthCanvas.getContext('2d');
+      this.compositeDepthCtx.globalAlpha = 0.1;
+      this.compositeDepthCtx.fillStyle = 'magenta';
+    }
+    if (this.compositeDepthCanvas.width != w || this.compositeDepthCanvas.height != h) {
+      this.compositeDepthCanvas.width = w;
+      this.compositeDepthCanvas.height = h;
+    } else {
+      this.compositeDepthCtx.clearRect(0,0,w,h);
+    }
+  },
+
   display : true,
   isLayer : true,
   x : 0,
@@ -426,6 +443,9 @@ CanvasLayer = Klass(Layer, {
   },
 
   compositeTo : function(ctx, opacity, composite) {
+    if (Layer.showCompositeDepth) {
+      Layer.compositeDepthCtx.fillRect(this.x, this.y, this.canvas.width, this.canvas.height);
+    }
     ctx.globalAlpha = opacity;
     ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
     var s = this.compensateZoom || 1;
@@ -775,6 +795,9 @@ TiledLayer = Klass(Layer, {
     for (var f in this.tiles) {
       var t = this.tiles[f];
       ctx.drawImage(t.canvas, this.x+t.x*this.tileSize, this.y+t.y*this.tileSize);
+      if (Layer.showCompositeDepth) {
+        Layer.compositeDepthCtx.fillRect(this.x+t.x*this.tileSize, this.y+t.y*this.tileSize, this.tileSize, this.tileSize);
+      }
     }
   },
 

@@ -31,6 +31,11 @@ Drawmore.Modules.DrawLoop = {
   updateDisplay : function() {
     this.executeTimeJump();
     var t0 = new Date().getTime();
+    Layer.showCompositeDepth = this.showCompositeDepth;
+    if (this.showCompositeDepth) {
+      Layer.initCompositeDepthCanvas(this.width,this.height);
+      Layer.compositeDepthCtx.save();
+    }
     this.ctx.save();
     if (!this.needFullRedraw && this.changedBox && !this.flippedX && !this.flippedY) {
       if (this.changedBox.left <= this.changedBox.right && this.changedBox.top <= this.changedBox.bottom) {
@@ -44,17 +49,29 @@ Drawmore.Modules.DrawLoop = {
           this.ctx.strokeStyle = 'red';
           this.ctx.strokeRect(0,0,w,h);
         }
+        if (this.showCompositeDepth) {
+          Layer.compositeDepthCtx.beginPath();
+          Layer.compositeDepthCtx.rect(x,y,w,h);
+          Layer.compositeDepthCtx.clip();
+          Layer.compositeDepthCtx.translate(this.panX, this.panY);
+        }
         this.ctx.beginPath();
         this.ctx.rect(0,0,w,h);
         this.ctx.clip();
         this.drawMainCanvas(x-this.panX, y-this.panY, this.changedBox.width*this.zoom, this.changedBox.height*this.zoom);
       }
     } else {
+      if (this.showCompositeDepth)
+        Layer.compositeDepthCtx.translate(this.panX, this.panY);
       this.drawMainCanvas(-this.panX, -this.panY, this.width, this.height);
       this.needFullRedraw = false;
     }
     this.changedBox = null;
     this.ctx.restore();
+    if (this.showCompositeDepth) {
+      Layer.compositeDepthCtx.restore();
+      this.ctx.drawImage(Layer.compositeDepthCanvas, 0, 0);
+    }
     this.layerWidget.redraw();
     this.colorPicker.redraw();
     var t1 = new Date().getTime();

@@ -54,6 +54,7 @@ Drawmore.App = Klass(
 
   showHistograms: false,
   showDrawAreas: false,
+  showCompositeDepth: false,
 
   initialize : function(canvas, config) {
     this.canvas = canvas;
