@@ -466,7 +466,7 @@ Drawmore.Modules.UI = {
   keepResizingBrush : function() {
     if (!this.resizingBrush) return;
     var d = Math.max(this.current.x - this.brushResizeX, 0);
-    var dx = Math.clamp(d, this.minimumBrushSize, this.maximumBrushSize)
+    var dx = Math.clamp(d, this.minimumBrushSize*this.zoom, this.maximumBrushSize*this.zoom)
     this.setLineWidth(dx);
   },
 
@@ -474,16 +474,16 @@ Drawmore.Modules.UI = {
     if (!this.resizingBrush) return;
     this.resizingBrush = false;
     var d = Math.max(this.current.x - this.brushResizeX, 0);
-    var dx = Math.clamp(d, this.minimumBrushSize, this.maximumBrushSize)
+    var dx = Math.clamp(d, this.minimumBrushSize*this.zoom, this.maximumBrushSize*this.zoom)
     this.setLineWidth(dx);
   },
 
   brushSizeUp : function() {
-    this.setLineWidth(Math.clamp(this.lineWidth*1.5, this.minimumBrushSize, this.maximumBrushSize));
+    this.setLineWidth(Math.clamp(this.lineWidth*1.5, this.minimumBrushSize*this.zoom, this.maximumBrushSize*this.zoom));
   },
 
   brushSizeDown : function() {
-    this.setLineWidth(Math.clamp(this.lineWidth/1.5, this.minimumBrushSize, this.maximumBrushSize));
+    this.setLineWidth(Math.clamp(this.lineWidth/1.5, this.minimumBrushSize*this.zoom, this.maximumBrushSize*this.zoom));
   },
 
 
