@@ -67,11 +67,11 @@ Drawmore.Modules.State = {
     this.newLayer();
     this.setColor(this.defaultColor);
     this.setBackground(this.defaultBackground);
-    this.setLineWidth(this.defaultLineWidth);
     this.setOpacity(1);
     this.resetFlip();
     this.clear();
     this.resetView();
+    this.setLineWidth(this.defaultLineWidth);
     this.addHistoryBarrier();
   },
 
