@@ -358,14 +358,6 @@ Drawmore.Modules.Layers = {
     var layer = this.currentLayer.copy(false);
     layer.uid = this.layerUID++;
     this.layerManager.addLayer(layer);
-    var m = layer.name.match(/ \(copy( \d+)?\)$/);
-    if (m) {
-      m[1] = m[1] || 0;
-      var cidx = parseInt(m[1])+1;
-      layer.name = layer.name.replace(/copy( \d+)?\)$/, 'copy '+cidx+')');
-    } else {
-      layer.name += " (copy)";
-    }
     this.addLayerAfterCurrent(layer);
     this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.addHistoryState(new HistoryState('duplicateCurrentLayer', [], true));
