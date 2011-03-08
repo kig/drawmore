@@ -222,8 +222,8 @@ Layer = Klass({
     if (src.bottom > dst.bottom) dst.bottom = src.bottom;
     if (src.left < dst.left) dst.left = src.left;
     if (src.right > dst.right) dst.right = src.right;
-    dst.width = dst.right-dst.left+1;
-    dst.height = dst.bottom-dst.top+1;
+    dst.width = dst.right-dst.left;
+    dst.height = dst.bottom-dst.top;
   },
 
   getLayerBoundingBox : function() {
@@ -652,7 +652,7 @@ TiledLayer = Klass(Layer, {
     return {
       left: this.x+left*this.tileSize, top: this.y+top*this.tileSize,
       right: this.x+right*this.tileSize, bottom: this.y+bottom*this.tileSize,
-      width: (right-left+1)*this.tileSize, height: (bottom-top+1)*this.tileSize
+      width: (right-left)*this.tileSize, height: (bottom-top)*this.tileSize
     };
   },
 
@@ -849,6 +849,7 @@ TiledLayer = Klass(Layer, {
   },
 
   subPolygon : function(path) {
+    if (path.length == 0) return;
     var hitTiles = [];
     var minX,maxX,minY,maxY;
     minX = maxX = path[0].x;

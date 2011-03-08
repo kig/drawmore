@@ -7,12 +7,16 @@ Drawmore.Modules.DrawLoop = {
     this.ctx.webkitImageSmoothingEnabled = false;
     this.ctx.imageSmoothingEnabled = false;
     if (this.zoom > 1 && !noOptimize) {
-      this.applyTo(this.tempCtx, Math.floor(x/this.zoom), Math.floor(y/this.zoom), Math.ceil(w/this.zoom), Math.ceil(h/this.zoom), this.flippedX, this.flippedY, 1);
+      this.applyTo(this.tempCtx,
+        x/this.zoom-this.zoom, y/this.zoom-this.zoom,
+        w/this.zoom+2*this.zoom, h/this.zoom+2*this.zoom,
+        this.flippedX, this.flippedY, 1);
       this.ctx.save();
         this.ctx.globalCompositeOperation = 'source-over';
+        var z2 = this.zoom*this.zoom;
         this.ctx.drawImage(this.tempCanvas,
-          0, 0, Math.round(w/this.zoom), Math.round(h/this.zoom),
-          0, 0, w, h
+          0, 0, w/this.zoom+2*this.zoom, h/this.zoom+2*this.zoom,
+          -z2, -z2, w+2*z2, h+2*z2
         );
       this.ctx.restore();
     } else {
@@ -37,13 +41,15 @@ Drawmore.Modules.DrawLoop = {
       Layer.compositeDepthCtx.save();
     }
     this.ctx.save();
+    var pX = Math.floor(this.panX/this.zoom)*this.zoom;
+    var pY = Math.floor(this.panY/this.zoom)*this.zoom;
     if (!this.needFullRedraw && this.changedBox && !this.flippedX && !this.flippedY) {
       if (this.changedBox.left <= this.changedBox.right && this.changedBox.top <= this.changedBox.bottom) {
         // Draw only the changedBox area.
-        var x = this.changedBox.left*this.zoom+this.panX;
-        var y = this.changedBox.top*this.zoom+this.panY;
-        var w = this.changedBox.width*this.zoom;
-        var h = this.changedBox.height*this.zoom;
+        var x = this.changedBox.left*this.zoom+pX;
+        var y = this.changedBox.top*this.zoom+pY;
+        var w = Math.ceil(this.changedBox.width/this.zoom)*this.zoom*this.zoom;
+        var h = Math.ceil(this.changedBox.height/this.zoom)*this.zoom*this.zoom;
         this.ctx.translate(x,y);
         if (this.showDrawAreas || Magi.console.IWantSpam) {
           this.ctx.strokeStyle = 'red';
@@ -53,17 +59,19 @@ Drawmore.Modules.DrawLoop = {
           Layer.compositeDepthCtx.beginPath();
           Layer.compositeDepthCtx.rect(x,y,w,h);
           Layer.compositeDepthCtx.clip();
-          Layer.compositeDepthCtx.translate(this.panX, this.panY);
+          Layer.compositeDepthCtx.translate(pX, pY);
         }
         this.ctx.beginPath();
         this.ctx.rect(0,0,w,h);
         this.ctx.clip();
-        this.drawMainCanvas(x-this.panX, y-this.panY, this.changedBox.width*this.zoom, this.changedBox.height*this.zoom);
+        this.drawMainCanvas(x-pX, y-pY, this.changedBox.width*this.zoom, this.changedBox.height*this.zoom);
       }
     } else {
       if (this.showCompositeDepth)
-        Layer.compositeDepthCtx.translate(this.panX, this.panY);
-      this.drawMainCanvas(-this.panX, -this.panY, this.width, this.height);
+        Layer.compositeDepthCtx.translate(pX, pY);
+      var w = Math.ceil(this.width/this.zoom)*this.zoom;
+      var h = Math.ceil(this.height/this.zoom)*this.zoom;
+      this.drawMainCanvas(-pX, -pY, w, h);
       this.needFullRedraw = false;
     }
     this.changedBox = null;

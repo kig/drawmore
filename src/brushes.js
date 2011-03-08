@@ -180,20 +180,22 @@ RoundBrush = Klass(Brush, {
     var a = Math.atan2(y2-y1, x2-x1);
     var dx = x2-x1, dy = y2-y1;
     var d = Math.sqrt(dx*dx + dy*dy);
-    var ada = Math.asin(Math.abs(r2-r1) / d);
-    if (r1 > r2) ada = -ada;
-    var da = Math.PI*0.5 + ada;
-    var cosp = Math.cos(a+da), cosm = Math.cos(a-da);
-    var sinp = Math.sin(a+da), sinm = Math.sin(a-da);
-    var points = [
-      {x: cosp*r1+x1, y: sinp*r1+y1},
-      {x: x1, y: y1},
-      {x: cosm*r1+x1, y: sinm*r1+y1},
-      {x: cosm*r2+x2, y: sinm*r2+y2},
-      {x: x2, y: y2},
-      {x: cosp*r2+x2, y: sinp*r2+y2}
-    ];
-    ctx.subPolygon(points);
+    if (d > 0) {
+      var ada = Math.asin(Math.abs(r2-r1) / d);
+      if (r1 > r2) ada = -ada;
+      var da = Math.PI*0.5 + ada;
+      var cosp = Math.cos(a+da), cosm = Math.cos(a-da);
+      var sinp = Math.sin(a+da), sinm = Math.sin(a-da);
+      var points = [
+        {x: cosp*r1+x1, y: sinp*r1+y1},
+        {x: x1, y: y1},
+        {x: cosm*r1+x1, y: sinm*r1+y1},
+        {x: cosm*r2+x2, y: sinm*r2+y2},
+        {x: x2, y: y2},
+        {x: cosp*r2+x2, y: sinp*r2+y2}
+      ];
+      ctx.subPolygon(points);
+    }
     ctx.fill(color, composite);
   },
 
