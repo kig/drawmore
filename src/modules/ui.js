@@ -1,3 +1,6 @@
+// FIXME fix keyboard focus management so that you don't end up with a
+// button stealing kb shortcuts
+
 Drawmore.Modules.UI = {
 
   keyBindings : {
@@ -173,6 +176,7 @@ Drawmore.Modules.UI = {
           draw.pushAction('drawLine', [draw.absolutePrev, draw.absoluteCurrent]);
         }
         draw.prev = draw.current;
+        draw.absolutePrevPrev = draw.absolutePrev;
         draw.absolutePrev = draw.absoluteCurrent;
         ev.preventDefault();
       }
@@ -225,6 +229,7 @@ Drawmore.Modules.UI = {
       if (!Mouse.state[Mouse.LEFT]) {
         draw.prev = null;
         draw.absolutePrev = null;
+        draw.absolutePrevPrev = null;
       }
       if (ev.button == Mouse.MIDDLE) {
         draw.stopPanning();

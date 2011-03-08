@@ -82,6 +82,27 @@ Drawmore.Modules.BrushStrokes = {
     this.requestRedraw();
   },
 
+  drawQuadratic : function(a, b, c) {
+    this.executeTimeJump();
+    if (!this.strokeInProgress) return;
+    if (!a.absolute)
+      a = this.getAbsolutePoint(a);
+    if (!b.absolute)
+      b = this.getAbsolutePoint(b);
+    if (!c.absolute)
+      c = this.getAbsolutePoint(c);
+    this.brush.drawQuadratic(
+      this.strokeLayer, this.colorStyle, 'source-over',
+      a.x, a.y, a.r,
+      b.x, b.y, b.r,
+      c.x, c.y, c.r,
+      a.brushTransform
+    );
+    this.updateChangedBox(this.strokeLayer.getBoundingBox());
+    this.addHistoryState(new HistoryState('drawQuadratic', [a, b, c]));
+    this.requestRedraw();
+  },
+
 
   // Brush state
 

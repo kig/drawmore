@@ -474,6 +474,26 @@ CanvasLayer = Klass(Layer, {
     ctx.closePath();
   },
 
+  subQuadratic : function(path) {
+    var ctx = this.ctx;
+    ctx.moveTo(path[0].x, path[0].y);
+    for (var i=1; i<path.length; i++) {
+      var u = path[i];
+      ctx.quadraticCurveTo(u.cx, u.cy, u.x, u.y);
+    }
+    ctx.closePath();
+  },
+
+  subCubic : function(path) {
+    var ctx = this.ctx;
+    ctx.moveTo(path[0].x, path[0].y);
+    for (var i=1; i<path.length; i++) {
+      var u = path[i];
+      ctx.cubicCurveTo(u.c1x, u.c1y, u.c2x, u.c2y, u.x, u.y);
+    }
+    ctx.closePath();
+  },
+
   subArc : function(x,y,r,a1,a2,closed) {
     this.ctx.arc(x,y,r,a1,a2);
     if (closed)
@@ -832,6 +852,82 @@ TiledLayer = Klass(Layer, {
       for (var i=1; i<path.length; i++) {
         var u = path[i];
         ctx.lineTo(u.x-ox, u.y-oy);
+      }
+      ctx.closePath();
+      t.hasNewPath = true;
+    }
+  },
+
+  subQuadratic : function(path) {
+    var hitTiles = [];
+    var minX,maxX,minY,maxY;
+    minX = maxX = path[0].x;
+    minY = maxY = path[0].y;
+    for (var i=1; i<path.length; i++) {
+      var p = path[i];
+      if (p.x < minX) minX = p.x;
+      else if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      else if (p.y > maxY) maxY = p.y;
+    }
+    var fx = Math.floor(minX/this.tileSize);
+    var fy = Math.floor(minY/this.tileSize);
+    var lx = Math.floor(maxX/this.tileSize);
+    var ly = Math.floor(maxY/this.tileSize);
+    for (var tx=fx; tx <= lx; tx++)
+      for (var ty=fy; ty <= ly; ty++)
+        hitTiles.push({x:tx, y:ty});
+    for (var j=0; j<hitTiles.length; j++) {
+      var tile = hitTiles[j];
+      var t = this.getTile(tile.x, tile.y, true);
+      var ctx = t.context;
+      var ox = tile.x*this.tileSize, oy = tile.y*this.tileSize;
+      if (t.useNewPath) {
+        ctx.beginPath();
+        t.useNewPath = false;
+      }
+      ctx.moveTo(path[0].x-ox, path[0].y-oy);
+      for (var i=1; i<path.length; i++) {
+        var u = path[i];
+        ctx.quadraticCurveTo(u.cx-ox, u.cy-oy, u.x-ox, u.y-oy);
+      }
+      ctx.closePath();
+      t.hasNewPath = true;
+    }
+  },
+
+  subCubic : function(path) {
+    var hitTiles = [];
+    var minX,maxX,minY,maxY;
+    minX = maxX = path[0].x;
+    minY = maxY = path[0].y;
+    for (var i=1; i<path.length; i++) {
+      var p = path[i];
+      if (p.x < minX) minX = p.x;
+      else if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      else if (p.y > maxY) maxY = p.y;
+    }
+    var fx = Math.floor(minX/this.tileSize);
+    var fy = Math.floor(minY/this.tileSize);
+    var lx = Math.floor(maxX/this.tileSize);
+    var ly = Math.floor(maxY/this.tileSize);
+    for (var tx=fx; tx <= lx; tx++)
+      for (var ty=fy; ty <= ly; ty++)
+        hitTiles.push({x:tx, y:ty});
+    for (var j=0; j<hitTiles.length; j++) {
+      var tile = hitTiles[j];
+      var t = this.getTile(tile.x, tile.y, true);
+      var ctx = t.context;
+      var ox = tile.x*this.tileSize, oy = tile.y*this.tileSize;
+      if (t.useNewPath) {
+        ctx.beginPath();
+        t.useNewPath = false;
+      }
+      ctx.moveTo(path[0].x-ox, path[0].y-oy);
+      for (var i=1; i<path.length; i++) {
+        var u = path[i];
+        ctx.cubicCurveTo(u.c1x-ox, u.c1y-oy, u.c2x-ox, u.c2y-oy, u.x-ox, u.y-oy);
       }
       ctx.closePath();
       t.hasNewPath = true;

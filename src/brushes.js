@@ -130,6 +130,40 @@ PolygonBrush = Klass(Brush, {
       ]));
     }
     ctx.fill(color, composite);
+  },
+
+  drawQuadratic : function(ctx, color, composite, x1, y1, r1, cx, cy, cr, x2, y2, r2, transform) {
+    if (this.stipple) {
+      this.drawPoint(ctx, color, composite, x2, y2, r2);
+      return;
+    }
+    ctx.beginPath();
+    var path = this.ccwSort(this.getTransformedPath(transform));
+    ctx.subPolygon(path.map(function(p){
+      return {x: p.x*Math.max(0.1,r1-0.5)+x1, y: p.y*Math.max(0.1,r1-0.5)+y1};
+    }));
+    ctx.subPolygon(path.map(function(p){
+      return {x: p.x*Math.max(0.1,r2-0.5)+x2, y: p.y*Math.max(0.1,r2-0.5)+y2};
+    }));
+    var u = path[path.length-1];
+    var v = path[0];
+    ctx.subQuadratic(this.ccwSort([
+      {x:x1+u.x*r1, y:y1+u.y*r1, cx:cx+u.x*cr, cy:cy+u.y*cr},
+      {x:x1+v.x*r1, y:y1+v.y*r1, cx:cx+v.x*cr, cy:cy+v.y*cr},
+      {x:x2+v.x*r2, y:y2+v.y*r2, cx:cx+v.x*cr, cy:cy+v.y*cr},
+      {x:x2+u.x*r2, y:y2+u.y*r2, cx:cx+u.x*cr, cy:cy+u.y*cr}
+    ]));
+    for (var i=1; i<path.length; i++) {
+      var u = path[i-1];
+      var v = path[i];
+      ctx.subQuadratic(this.ccwSort([
+        {x:x1+u.x*r1, y:y1+u.y*r1, cx:cx+u.x*cr, cy:cy+u.y*cr},
+        {x:x1+v.x*r1, y:y1+v.y*r1, cx:cx+v.x*cr, cy:cy+v.y*cr},
+        {x:x2+v.x*r2, y:y2+v.y*r2, cx:cx+v.x*cr, cy:cy+v.y*cr},
+        {x:x2+u.x*r2, y:y2+u.y*r2, cx:cx+u.x*cr, cy:cy+u.y*cr}
+      ]));
+    }
+    ctx.fill(color, composite);
   }
 });
 
@@ -149,15 +183,42 @@ RoundBrush = Klass(Brush, {
     var ada = Math.asin(Math.abs(r2-r1) / d);
     if (r1 > r2) ada = -ada;
     var da = Math.PI*0.5 + ada;
+    var cosp = Math.cos(a+da), cosm = Math.cos(a-da);
+    var sinp = Math.sin(a+da), sinm = Math.sin(a-da);
     var points = [
-      {x: Math.cos(a+da)*r1+x1, y: Math.sin(a+da)*r1+y1},
+      {x: cosp*r1+x1, y: sinp*r1+y1},
       {x: x1, y: y1},
-      {x: Math.cos(a-da)*r1+x1, y: Math.sin(a-da)*r1+y1},
-      {x: Math.cos(a-da)*r2+x2, y: Math.sin(a-da)*r2+y2},
+      {x: cosm*r1+x1, y: sinm*r1+y1},
+      {x: cosm*r2+x2, y: sinm*r2+y2},
       {x: x2, y: y2},
-      {x: Math.cos(a+da)*r2+x2, y: Math.sin(a+da)*r2+y2}
+      {x: cosp*r2+x2, y: sinp*r2+y2}
     ];
     ctx.subPolygon(points);
+    ctx.fill(color, composite);
+  },
+
+  drawQuadratic : function(ctx, color, composite, x1, y1, r1, cx, cy, cr, x2, y2, r2) {
+    ctx.beginPath();
+    ctx.subArc(x1, y1, (Math.max(0.1,r1-0.25)), 0, Math.PI*2);
+    ctx.subArc(x2, y2, (Math.max(0.1,r2-0.25)), 0, Math.PI*2);
+    var a = Math.atan2(y2-y1, x2-x1);
+    var dx = x2-x1, dy = y2-y1;
+    var d = Math.sqrt(dx*dx + dy*dy);
+    var ada = Math.asin(Math.abs(r2-r1) / d);
+    if (r1 > r2) ada = -ada;
+    var da = Math.PI*0.5 + ada;
+    var cosp = Math.cos(a+da), cosm = Math.cos(a-da);
+    var sinp = Math.sin(a+da), sinm = Math.sin(a-da);
+    var points = [
+      {x: cosp*r1+x1, y: sinp*r1+y1, cx: x1, cy: y1},
+      {x: x1, y: y1, cx: x1, cy: y1},
+      {x: cosm*r1+x1, y: sinm*r1+y1, cx: x1, cy: y1},
+      {x: cosm*r2+x2, y: sinm*r2+y2, cx: cosm*cr+cx, cy: sinm*cr+cy},
+      {x: x2, y: y2, cx: x2, cy: y2},
+      {x: cosp*r2+x2, y: sinp*r2+y2, cx: x2, cy: y2},
+      {x: cosp*r1+x1, y: sinp*r1+y1, cx: cosp*cr+cx, cy: sinp*cr+cy}
+    ];
+    ctx.subQuadratic(points);
     ctx.fill(color, composite);
   }
 });
