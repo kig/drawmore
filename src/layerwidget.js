@@ -10,15 +10,15 @@ LayerWidget = Klass({
     var self = this;
     this.element.appendChild(
       DIV(
-        BUTTON("+", {title: 'New layer', onclick: function(ev) {self.app.newLayer();this.blur();}, onkeyup: Event.cancel}),
-        BUTTON("-", {title: 'Delete layer', onclick: function(ev) {self.app.deleteCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
-        BUTTON("x2", {title: 'Duplicate layer', onclick: function(ev) {self.app.duplicateCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
-        BUTTON("\u2194", {title: 'Flip layer horizontally', onclick: function(ev) {self.app.flipCurrentLayerHorizontally();this.blur();}, onkeyup: Event.cancel}),
-        BUTTON("\u2195", {title: 'Flip layer vertically', onclick: function(ev) {self.app.flipCurrentLayerVertically();this.blur();}, onkeyup: Event.cancel}),
-        BUTTON("<", {title: 'Unindent', onclick: function(ev) {self.app.unindentCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
-        BUTTON(">", {title: 'Indent', onclick: function(ev) {self.app.indentCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
-        BUTTON("M", {title: 'Add Layer Mask', onclick: function(ev) {self.app.addCurrentLayerMask();this.blur();}, onkeyup: Event.cancel}),
-        BUTTON("\u21a7", {title: 'Merge down', onclick: function(ev) {self.app.mergeDown();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("+", {title: 'New layer (alt-q)', onclick: function(ev) {self.app.newLayer();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("-", {title: 'Delete layer (shift-delete)', onclick: function(ev) {self.app.deleteCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("x2", {title: 'Duplicate layer (alt-c)', onclick: function(ev) {self.app.duplicateCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("\u2194", {title: 'Flip layer horizontally (alt-x)', onclick: function(ev) {self.app.flipCurrentLayerHorizontally();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("\u2195", {title: 'Flip layer vertically (shift-alt-x)', onclick: function(ev) {self.app.flipCurrentLayerVertically();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("<", {title: 'Unindent (shift-alt-g)', onclick: function(ev) {self.app.unindentCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON(">", {title: 'Indent (alt-g)', onclick: function(ev) {self.app.indentCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("M", {title: 'Add Layer Mask (alt-b)', onclick: function(ev) {self.app.addCurrentLayerMask();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("\u21a7", {title: 'Merge down (shift-a)', onclick: function(ev) {self.app.mergeDown();this.blur();}, onkeyup: Event.cancel}),
         BUTTON("\u21a1", {title: 'Merge visible', onclick: function(ev) {self.app.mergeVisible();this.blur();}, onkeyup: Event.cancel}),
         BUTTON("_", {title: 'Flatten image', onclick: function(ev) {self.app.mergeAll();this.blur();}, onkeyup: Event.cancel})
       )

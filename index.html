@@ -535,25 +535,25 @@
   <body>
     <canvas id="mainCanvas"></canvas>
     <div id="buttonBar">
-      <button onclick='draw.undo();this.blur();'>Undo</button>
-      <button onclick='draw.redo();this.blur();'>Redo</button>
+      <button onclick='draw.undo();this.blur();' title='z'>Undo</button>
+      <button onclick='draw.redo();this.blur();' title='shift-z'>Redo</button>
       Brush
-      <button onclick='draw.previousBrush();this.blur();' showbrush>&lt;</button>
-      <button onclick='draw.nextBrush();this.blur();' showbrush>&gt;</button>
-      <button onclick='draw.brushSizeUp();this.blur();' showbrush>+</button>
-      <button onclick='draw.brushSizeDown();this.blur();' showbrush>-</button>
+      <button onclick='draw.previousBrush();this.blur();' showbrush title='g'>&lt;</button>
+      <button onclick='draw.nextBrush();this.blur();' showbrush title='t'>&gt;</button>
+      <button onclick='draw.brushSizeUp();this.blur();' showbrush title='e'>+</button>
+      <button onclick='draw.brushSizeDown();this.blur();' showbrush title='d'>-</button>
       Opacity 
-      <button onclick='draw.opacityUp();this.blur();' showbrush>+</button>
-      <button onclick='draw.opacityDown();this.blur();' showbrush>-</button>
+      <button onclick='draw.opacityUp();this.blur();' showbrush title='w'>+</button>
+      <button onclick='draw.opacityDown();this.blur();' showbrush title='s'>-</button>
       Layer
-      <button onclick='draw.clear();this.blur();'>Clear</button>
+      <button onclick='draw.clear();this.blur();' title='delete'>Clear</button>
       Zoom 
-      <button onclick='draw.zoomIn();this.blur();'>+</button>
-      <button onclick='draw.zoomOut();this.blur();'>-</button>
-      <button onclick = 'draw.resetView();this.blur();'>Reset</button>
+      <button onclick='draw.zoomIn();this.blur();' title='v'>+</button>
+      <button onclick='draw.zoomOut();this.blur();' title='shift-v'>-</button>
+      <button onclick = 'draw.resetView();this.blur();' title='esc'>Reset</button>
       Mirror
-      <button onclick='draw.flipX();this.blur();'>X</button>
-      <button onclick='draw.flipY();this.blur();'>Y</button>
+      <button onclick='draw.flipX();this.blur();' title='x'>X</button>
+      <button onclick='draw.flipY();this.blur();' title='shift-x'>Y</button>
       <button onclick = 'draw.resetFlip();this.blur();'>Reset</button>
       Debug
       <button onclick='draw.toggleHistograms();this.blur();'>Stats</button>
@@ -673,7 +673,7 @@
       <p>feedback to <a href="http://twitter.com/ilmarihei">twitter</a></p>
       <p>patches and bugs to <a href="http://github.com/kig/scribble">github</a></p>
       <p>ilmari.heikkinen@gmail.com</p>
-      <p>v 2011-03-08.24.7</p>
+      <p>v 2011-03-08.24.9</p>
     </div>
   </body>
 </html>
