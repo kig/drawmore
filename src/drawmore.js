@@ -57,6 +57,13 @@ Drawmore.App = Klass(
 
   initialize : function(canvas, config) {
     this.canvas = canvas;
+    this.canvas.style.setProperty("image-rendering", "optimizeSpeed", "important");
+    if (typeof WebGL2D != 'undefined') {
+      WebGL2D.enable(this.canvas);
+      this.ctx = canvas.getContext('webgl-2d');
+    } else {
+      this.ctx = canvas.getContext('2d');
+    }
     this.statsCanvas = E.canvas(140, 140);
     this.statsCtx = this.statsCanvas.getContext('2d');
     this.canvas.parentNode.appendChild(this.statsCanvas);
@@ -65,8 +72,6 @@ Drawmore.App = Klass(
     this.statsCanvas.style.pointerEvents = 'none';
     this.statsCanvas.style.left = this.statsCanvas.style.top = '0px';
     Object.extend(this, config);
-    this.canvas.style.setProperty("image-rendering", "optimizeSpeed", "important");
-    this.ctx = canvas.getContext('2d');
     var c = this.getCSSCursor();
     this.canvas.style.cursor = 'url('+c.toDataURL()+') 1 1,crosshair';
     Undoable.initialize.call(this);

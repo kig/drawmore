@@ -392,7 +392,12 @@ CanvasLayer = Klass(Layer, {
     } else {
       this.canvas = E.canvas(w,h);
     }
-    this.ctx = this.canvas.getContext('2d');
+    if (typeof WebGL2D != 'undefined') {
+      WebGL2D.enable(this.canvas);
+      this.ctx = this.canvas.getContext('webgl-2d');
+    } else {
+      this.ctx = this.canvas.getContext('2d');
+    }
   },
 
   resize : function(w,h) {
