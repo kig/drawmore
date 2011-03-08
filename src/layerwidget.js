@@ -13,8 +13,11 @@ LayerWidget = Klass({
         BUTTON("+", {title: 'New layer', onclick: function(ev) {self.app.newLayer();this.blur();}, onkeyup: Event.cancel}),
         BUTTON("-", {title: 'Delete layer', onclick: function(ev) {self.app.deleteCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
         BUTTON("x2", {title: 'Duplicate layer', onclick: function(ev) {self.app.duplicateCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
-        //BUTTON("\u2194", {title: 'Flip layer horizontally', onclick: function(ev) {self.app.flipCurrentLayerHorizontally();this.blur();}, onkeyup: Event.cancel}),
-        //BUTTON("\u2195", {title: 'Flip layer vertically', onclick: function(ev) {self.app.flipCurrentLayerVertically();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("\u2194", {title: 'Flip layer horizontally', onclick: function(ev) {self.app.flipCurrentLayerHorizontally();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("\u2195", {title: 'Flip layer vertically', onclick: function(ev) {self.app.flipCurrentLayerVertically();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("<", {title: 'Unindent', onclick: function(ev) {self.app.unindentCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON(">", {title: 'Indent', onclick: function(ev) {self.app.indentCurrentLayer();this.blur();}, onkeyup: Event.cancel}),
+        BUTTON("M", {title: 'Add Layer Mask', onclick: function(ev) {self.app.addCurrentLayerMask();this.blur();}, onkeyup: Event.cancel}),
         BUTTON("\u21a7", {title: 'Merge down', onclick: function(ev) {self.app.mergeDown();this.blur();}, onkeyup: Event.cancel}),
         BUTTON("\u21a1", {title: 'Merge visible', onclick: function(ev) {self.app.mergeVisible();this.blur();}, onkeyup: Event.cancel}),
         BUTTON("_", {title: 'Flatten image', onclick: function(ev) {self.app.mergeAll();this.blur();}, onkeyup: Event.cancel})

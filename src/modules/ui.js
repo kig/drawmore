@@ -141,7 +141,7 @@ Drawmore.Modules.UI = {
 
     this.listeners['mousemove'] = function(ev) {
       draw.updateInputTime();
-      if (ev.target == draw.canvas) {
+      if (ev.target == draw.canvas || ev.target.hasAttribute('showbrush')) {
         draw.cursor.show();
       } else {
         draw.cursor.hide();

@@ -1,6 +1,6 @@
 .layerWidget {
   padding: 4px;
-  width: 172px;
+  width: 210px;
 }
 .layerWidget button {
   width: 24px;
@@ -10,7 +10,7 @@
   font-size: 12px;
 }
 .layers {
-  width: 156px;
+  width: 210px;
   list-style: none;
   margin: 0px;
   margin-bottom: 2px;

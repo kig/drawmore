@@ -77,7 +77,7 @@ BrushCursor = Klass({
   initialize : function() {
     this.cursorCanvas = E.canvas(this.sz, this.sz);
     this.cursorCanvas.style.position = 'absolute';
-    this.cursorCanvas.style.zIndex = '5';
+    this.cursorCanvas.style.zIndex = '15';
     this.cursorCanvas.style.pointerEvents = 'none';
     document.body.appendChild(this.cursorCanvas);
   },

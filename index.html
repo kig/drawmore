@@ -94,9 +94,6 @@
         byId('new').onclick = function(){
           draw.newDocument();
         };
-        byId('toggleHistograms').onclick = function(){
-          draw.toggleHistograms();
-        };
 
         var picker = byId('colorPicker');
         var colorPicker = new ColorPicker(picker, 100, 100, function(c) {
@@ -225,7 +222,7 @@
             byId('backgroundColor').style.backgroundColor = s;
           },
           toggleUI : function(){
-            var f = byId('fileIO');
+            var f = byId('buttonBar');
             var p = byId('colorPicker');
             var l = byClass('layerWidget');
             var inspirator = byId('TheInspirator');
@@ -330,14 +327,6 @@
         left: 0px;
         top: 0px;
         z-index: 0;
-      }
-
-      #fileIO {
-        text-align: right;
-        z-index: 10;
-        bottom: 4px;
-        right: 4px;
-        position: absolute;
       }
 
       #palette {
@@ -450,7 +439,7 @@
         z-index: 10;
         display: none;
         position: absolute;
-        left: 170px;
+        left: 220px;
         top: 0px;
         bottom: 0px;
         overflow-y: auto;
@@ -523,13 +512,55 @@
         transition-property: border-radius;
         transition-duration: 0.5s;
       }
+      
+      #buttonBar {
+        text-align: right;
+        z-index: 10;
+        bottom: 4px;
+        right: 4px;
+        font-size:12px;
+        position:absolute;
+        vertical-align: bottom;
+      }
+      #buttonBar button {
+        font-size:10px;
+        padding-left: 2px;
+        padding-right: 2px;
+        min-width: 14px;
+        margin-bottom: -2px;
+        vertical-align: bottom;
+      }
     </style>
   </head>
   <body>
     <canvas id="mainCanvas"></canvas>
-    <div id="fileIO">
+    <div id="buttonBar">
+      <button onclick='draw.undo();this.blur();'>Undo</button>
+      <button onclick='draw.redo();this.blur();'>Redo</button>
+      Brush
+      <button onclick='draw.previousBrush();this.blur();' showbrush>&lt;</button>
+      <button onclick='draw.nextBrush();this.blur();' showbrush>&gt;</button>
+      <button onclick='draw.brushSizeUp();this.blur();' showbrush>+</button>
+      <button onclick='draw.brushSizeDown();this.blur();' showbrush>-</button>
+      Opacity 
+      <button onclick='draw.opacityUp();this.blur();' showbrush>+</button>
+      <button onclick='draw.opacityDown();this.blur();' showbrush>-</button>
+      Layer
+      <button onclick='draw.clear();this.blur();'>Clear</button>
+      Zoom 
+      <button onclick='draw.zoomIn();this.blur();'>+</button>
+      <button onclick='draw.zoomOut();this.blur();'>-</button>
+      <button onclick = 'draw.resetView();this.blur();'>Reset</button>
+      Mirror
+      <button onclick='draw.flipX();this.blur();'>X</button>
+      <button onclick='draw.flipY();this.blur();'>Y</button>
+      <button onclick = 'draw.resetFlip();this.blur();'>Reset</button>
+      Debug
+      <button onclick='draw.toggleHistograms();this.blur();'>Stats</button>
+      <button onclick='draw.toggleCompositeDepth();this.blur();'>Composite</button>
+      <button onclick='draw.toggleDrawAreas();this.blur();'>Redraws</button>
+      Document
       <button id="new">New</button>
-      <button id="toggleHistograms">Toggle stats</button>
 <!--      <input type="file" id="load" value="" />
       <button id="save">Save</button>-->
       <button id="export">Export Image</button>
@@ -564,7 +595,7 @@
     <div id="TheInspirator">
       <div id="refSearch" src="">
         <div id="refContainer">
-          <embed width="300" height="300"></embed>
+          <embed width="0" height="0"></embed>
           <input id="refSearchInput" spellcheck="false" type="text" value="" placeholder="Search for refs" onchange="RefSearch.searchTag(this.value);return false;">
         </div>
       </div>
