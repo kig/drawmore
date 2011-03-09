@@ -536,6 +536,11 @@
         margin-bottom: -2px;
         vertical-align: bottom;
       }
+      #buttonBar input {
+        margin-bottom: 1px;
+        margin-left: 0px;
+        vertical-align: bottom;
+      }
     </style>
   </head>
   <body>
@@ -548,12 +553,14 @@
       <button onclick='draw.nextBrush();this.blur();' showbrush title='t'>&gt;</button>
       <button onclick='draw.brushSizeUp();this.blur();' showbrush title='e'>+</button>
       <button onclick='draw.brushSizeDown();this.blur();' showbrush title='d'>-</button>
-      Pressure
-      <button onclick='draw.togglePressureControlsSize();this.blur();'>Size</button>
-      <button onclick='draw.togglePressureControlsOpacity();this.blur();'>Opacity</button>
-      Opacity
-      <button onclick='draw.opacityUp();this.blur();' showbrush title='w'>+</button>
-      <button onclick='draw.opacityDown();this.blur();' showbrush title='s'>-</button>
+      <button onclick='draw.brushBlendUp();this.blur();' showbrush title='Blend factor up (shift-t)'>B+</button>
+      <button onclick='draw.brushBlendDown();this.blur();' showbrush title='Blend factor down (shift-g)'>B-</button>
+      <button onclick='draw.opacityUp();this.blur();' showbrush title='Opacity up (w)'>O+</button>
+      <button onclick='draw.opacityDown();this.blur();' showbrush title='Opacity down (s)'>O-</button>
+      Wacom
+      S <input type="checkbox" onclick='draw.togglePressureControlsSize();this.blur();' title="Pressure controls brush size" checked>
+      B <input type="checkbox" onclick='draw.togglePressureControlsBlend();this.blur();' title="Pressure controls blend factor" checked>
+      O <input type="checkbox" onclick='draw.togglePressureControlsOpacity();this.blur();' title="Pressure controls opacity">
       Layer
       <button onclick='draw.clear();this.blur();' title='delete'>Clear</button>
       Zoom

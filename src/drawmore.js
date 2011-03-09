@@ -13,12 +13,14 @@ Drawmore.App = Klass(
 {
 
   pressureControlsSize : true,
+  pressureControlsBlend : true,
   pressureControlsOpacity : false,
 
   panX : 0,
   panY : 0,
   zoom : 1,
 
+  brushBlendFactor : 1,
   lineWidth : 1,
   opacity : 1,
   color : ColorUtils.colorVec(0,0,0,1),

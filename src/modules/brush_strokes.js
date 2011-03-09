@@ -35,14 +35,19 @@ Drawmore.Modules.BrushStrokes = {
     np.r = (this.lineWidth/2)/this.zoom;
     np.opacity = 1;
     if (this.pressureControlsSize)
-      np.r = Math.max(this.zoom*0.75*0.5, (np.pressure * 1.75 + 0.25)*np.r);
+      np.r = Math.max(this.zoom*0.75*0.5, (np.pressure * 0.75 + 0.25)*np.r);
     if (this.pressureControlsOpacity)
       np.opacity *= np.pressure;
+    np.blend = this.brushBlendFactor;
+    if (this.pressureControlsBlend)
+      np.blend = np.r < 2 ? Math.min(1, np.blend * (0.5 + np.pressure)) : np.blend*np.pressure;
+    if (np.blend < 1)
+      np.blendColor = this.colorAt(this.ctx, p.x, p.y, 2);
     np.brushTransform = this.getBrushTransform();
     np.absolute = true;
     return np;
   },
-  
+
   appendTabletData : function(point, event) {
     if (this.wacomPlugin && this.wacomPlugin.isWacom) {
       point.pressure = this.wacomPlugin.pressure;
@@ -57,7 +62,7 @@ Drawmore.Modules.BrushStrokes = {
       point.pressure = 1;
     }
   },
-  
+
   getBrushTransform : function() {
     return [
       this.flippedX ? -1 : 1, 0,
@@ -70,8 +75,13 @@ Drawmore.Modules.BrushStrokes = {
     if (!this.strokeInProgress) return;
     if (!xy.absolute)
       xy = this.getAbsolutePoint(xy);
+    var c = this.color;
+    if (xy.blend < 1) {
+      c = this.tween(xy.blendColor, this.color, xy.blend);
+    }
+    c[3] *= xy.opacity;
     this.brush.drawPoint(
-      this.strokeLayer, this.colorStyle.replace(/1\)$/,xy.opacity+')'), 'source-over',
+      this.strokeLayer, this.colorToStyle(c), 'source-over',
       xy.x, xy.y, xy.r,
       xy.brushTransform
     );
@@ -87,8 +97,14 @@ Drawmore.Modules.BrushStrokes = {
       a = this.getAbsolutePoint(a);
     if (!b.absolute)
       b = this.getAbsolutePoint(b);
+    var c = this.color;
+    if (a.blend < 1 || b.blend < 1) {
+      c = this.tween(a.blendColor||this.color, b.blendColor||this.color, 0.5);
+      c = this.tween(c, this.color, (a.blend+b.blend)*0.5, c);
+    }
+    c[3] *= b.opacity;
     this.brush.drawLine(
-      this.strokeLayer, this.colorStyle.replace(/1\)$/,b.opacity+')'), 'destination-atop',
+      this.strokeLayer, this.colorToStyle(c), b.opacity < 1 ? 'destination-atop' : 'source-over',
       a.x, a.y, a.r,
       b.x, b.y, b.r,
       a.brushTransform
@@ -121,13 +137,17 @@ Drawmore.Modules.BrushStrokes = {
 
 
   // Brush state
-  
+
   togglePressureControlsOpacity : function() {
     this.pressureControlsOpacity = !this.pressureControlsOpacity;
   },
-  
+
   togglePressureControlsSize : function() {
     this.pressureControlsSize = !this.pressureControlsSize;
+  },
+
+  togglePressureControlsBlend : function() {
+    this.pressureControlsBlend = !this.pressureControlsBlend;
   },
 
   addRoundBrush : function() {
@@ -180,6 +200,10 @@ Drawmore.Modules.BrushStrokes = {
     this.setBrush(this.brushIndex);
     this.brushes.splice(idx, 1);
     this.addHistoryState(new HistoryState('deleteBrush',  [idx]));
+  },
+
+  setBrushBlendFactor : function(f) {
+    this.brushBlendFactor = Math.clamp(f, 0, 1);
   },
 
   setColor : function(color) {

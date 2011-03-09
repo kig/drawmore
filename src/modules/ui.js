@@ -204,7 +204,13 @@ Drawmore.Modules.UI = {
             draw.removeTemporaryRuler(draw.ruler);
             draw.ruler = null;
           }
-          draw.pushAction('drawLine', [draw.absoluteMouseup, draw.absoluteCurrent]);
+          var mu = Object.clone(draw.mouseup);
+          mu.pressure = 1;
+          var mc = Object.clone(draw.current);
+          mc.pressure = 1;
+          var unModAbsoluteMouseup = draw.getAbsolutePoint(mu);
+          var unModAbsoluteCurrent = draw.getAbsolutePoint(mc);
+          draw.pushAction('drawLine', [unModAbsoluteMouseup, unModAbsoluteCurrent]);
           draw.prev = null;
         } else {
           draw.pushAction('drawPoint', [draw.absoluteCurrent]);
@@ -384,10 +390,16 @@ Drawmore.Modules.UI = {
           draw.brushSizeDown();
 
         } else if (Key.match(ev,  draw.keyBindings.previousBrush)) {
-          draw.previousBrush();
+          if (ev.shiftKey)
+            draw.brushBlendDown();
+          else
+            draw.previousBrush();
 
         } else if (Key.match(ev,  draw.keyBindings.nextBrush)) {
-          draw.nextBrush();
+          if (ev.shiftKey)
+            draw.brushBlendUp();
+          else
+            draw.nextBrush();
 
         } else if (Key.match(ev, draw.keyBindings.flip)) {
           if (ev.shiftKey)
@@ -491,6 +503,14 @@ Drawmore.Modules.UI = {
 
   brushSizeDown : function() {
     this.setLineWidth(Math.clamp(this.lineWidth/1.5, this.minimumBrushSize*this.zoom, this.maximumBrushSize*this.zoom));
+  },
+
+  brushBlendUp : function() {
+    this.setBrushBlendFactor(this.brushBlendFactor + 0.25);
+  },
+
+  brushBlendDown : function() {
+    this.setBrushBlendFactor(this.brushBlendFactor - 0.25);
   },
 
 
