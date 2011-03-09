@@ -628,7 +628,9 @@ TiledLayer = Klass(Layer, {
   returnCanvas : function(c) {
     if (TiledLayer.doNotPoolTiles)
       return;
-    c.getContext('2d').clearRect(0,0,this.tileSize,this.tileSize);
+    var ctx = c.getContext('2d');
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0,0,this.tileSize,this.tileSize);
     c.recycled = true;
     TiledLayer.returnCount++;
     TiledLayer.allocPool.push(c);

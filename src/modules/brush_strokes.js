@@ -49,7 +49,7 @@ Drawmore.Modules.BrushStrokes = {
   },
 
   appendTabletData : function(point, event) {
-    if (this.wacomPlugin && this.wacomPlugin.isWacom) {
+    if (this.wacomPlugin && this.wacomPlugin.isWacom && (this.wacomPlugin.pointerType == 1 || this.wacomPlugin.pointerType == 3)) {
       point.pressure = this.wacomPlugin.pressure;
       /*
       point.rotation = this.wacomPlugin.rotationRad;
