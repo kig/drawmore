@@ -33,15 +33,31 @@ Drawmore.Modules.BrushStrokes = {
     np.x = pX/this.zoom;
     np.y = pY/this.zoom;
     np.r = (this.lineWidth/2)/this.zoom;
+    np.opacity = 1;
     if (this.pressureControlsSize)
-      np.r *= np.pressure;
+      np.r = Math.max(this.zoom*0.75*0.5, (np.pressure * 1.75 + 0.25)*np.r);
     if (this.pressureControlsOpacity)
       np.opacity *= np.pressure;
     np.brushTransform = this.getBrushTransform();
     np.absolute = true;
     return np;
   },
-
+  
+  appendTabletData : function(point, event) {
+    if (this.wacomPlugin && this.wacomPlugin.isWacom) {
+      point.pressure = this.wacomPlugin.pressure;
+      /*
+      point.rotation = this.wacomPlugin.rotationRad;
+      point.tiltX = this.wacomPlugin.tiltX;
+      point.tiltY = this.wacomPlugin.tiltY;
+      point.tangentialPressure = this.wacomPlugin.tangentialPressure;
+      point.pointerType  = this.wacomPlugin.pointerType;
+      */
+    } else {
+      point.pressure = 1;
+    }
+  },
+  
   getBrushTransform : function() {
     return [
       this.flippedX ? -1 : 1, 0,
@@ -55,7 +71,7 @@ Drawmore.Modules.BrushStrokes = {
     if (!xy.absolute)
       xy = this.getAbsolutePoint(xy);
     this.brush.drawPoint(
-      this.strokeLayer, this.colorStyle, 'source-over',
+      this.strokeLayer, this.colorStyle.replace(/1\)$/,xy.opacity+')'), 'source-over',
       xy.x, xy.y, xy.r,
       xy.brushTransform
     );
@@ -72,7 +88,7 @@ Drawmore.Modules.BrushStrokes = {
     if (!b.absolute)
       b = this.getAbsolutePoint(b);
     this.brush.drawLine(
-      this.strokeLayer, this.colorStyle, 'source-over',
+      this.strokeLayer, this.colorStyle.replace(/1\)$/,b.opacity+')'), 'destination-atop',
       a.x, a.y, a.r,
       b.x, b.y, b.r,
       a.brushTransform
@@ -105,6 +121,14 @@ Drawmore.Modules.BrushStrokes = {
 
 
   // Brush state
+  
+  togglePressureControlsOpacity : function() {
+    this.pressureControlsOpacity = !this.pressureControlsOpacity;
+  },
+  
+  togglePressureControlsSize : function() {
+    this.pressureControlsSize = !this.pressureControlsSize;
+  },
 
   addRoundBrush : function() {
     this.executeTimeJump();

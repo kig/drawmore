@@ -12,6 +12,9 @@ Drawmore.App = Klass(
   Drawmore.Modules.UI,
 {
 
+  pressureControlsSize : true,
+  pressureControlsOpacity : false,
+
   panX : 0,
   panY : 0,
   zoom : 1,

@@ -115,7 +115,7 @@ Drawmore.Modules.UI = {
     this.runActions();
     this.inTimeJump = false;
   },
-
+  
   createListeners : function() {
     var draw = this;
 
@@ -147,6 +147,7 @@ Drawmore.Modules.UI = {
         draw.cursor.hide();
       }
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
+      draw.appendTabletData(draw.current,ev);
       if (draw.panning)
         draw.keepPanning();
       if (draw.moving)
@@ -186,6 +187,7 @@ Drawmore.Modules.UI = {
       draw.updateInputTime();
       draw.stopResizingBrush();
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
+      draw.appendTabletData(draw.current,ev);
       draw.absoluteCurrent = draw.getAbsolutePoint(draw.current);
       draw.cursor.moveTo(draw.current.x, draw.current.y);
       if (Mouse.state[Mouse.LEFT] && ev.target == draw.canvas) {
@@ -225,6 +227,7 @@ Drawmore.Modules.UI = {
         ev.preventDefault();
       draw.mousedown = false;
       draw.mouseup = Mouse.getRelativeCoords(draw.canvas, ev);
+      draw.appendTabletData(draw.mouseup,ev);
       draw.absoluteMouseup = draw.getAbsolutePoint(draw.mouseup);
       if (!Mouse.state[Mouse.LEFT]) {
         draw.prev = null;

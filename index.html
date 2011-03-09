@@ -200,7 +200,9 @@
           this.editing = false;
         }, false);
 
+        var wacomPlugin = byId('wacom-plugin');
         draw = new Drawmore.App(c, {
+          wacomPlugin : wacomPlugin,
           colorPicker : colorPicker,
           onopacitychange : function(o) {
             var s = [];
@@ -542,6 +544,9 @@
       <button onclick='draw.nextBrush();this.blur();' showbrush title='t'>&gt;</button>
       <button onclick='draw.brushSizeUp();this.blur();' showbrush title='e'>+</button>
       <button onclick='draw.brushSizeDown();this.blur();' showbrush title='d'>-</button>
+      Pressure
+      <button onclick='draw.togglePressureControlsSize();this.blur();'>Size</button>
+      <button onclick='draw.togglePressureControlsOpacity();this.blur();'>Opacity</button>
       Opacity 
       <button onclick='draw.opacityUp();this.blur();' showbrush title='w'>+</button>
       <button onclick='draw.opacityDown();this.blur();' showbrush title='s'>-</button>
@@ -673,7 +678,9 @@
       <p>feedback to <a href="http://twitter.com/ilmarihei">twitter</a></p>
       <p>patches and bugs to <a href="http://github.com/kig/scribble">github</a></p>
       <p>ilmari.heikkinen@gmail.com</p>
-      <p>v 2011-03-08.24.12</p>
+      <p>v 2011-03-09.24.1</p>
     </div>
+    <embed name="wacom-plugin" id="wacom-plugin" type="application/x-wacom-tablet" HIDDEN="TRUE" 
+      pluginspage="http://www.wacom.com/productsupport/plugin.php"></embed>
   </body>
 </html>
