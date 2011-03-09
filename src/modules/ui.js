@@ -115,7 +115,11 @@ Drawmore.Modules.UI = {
     this.runActions();
     this.inTimeJump = false;
   },
-  
+
+  isEraser : function(ev) {
+    return this.wacomPlugin.isEraser;
+  },
+
   createListeners : function() {
     var draw = this;
 
@@ -192,7 +196,7 @@ Drawmore.Modules.UI = {
       draw.cursor.moveTo(draw.current.x, draw.current.y);
       if (Mouse.state[Mouse.LEFT] && ev.target == draw.canvas) {
         draw.mousedown = true;
-        if (ev.altKey)
+        if (ev.altKey || draw.isEraser(ev))
           draw.erasing = true;
         draw.pushAction('beginStroke', []);
         if (ev.shiftKey && draw.mouseup) {
