@@ -149,9 +149,9 @@ BrushCursor = Klass({
         ctx.font = '7px sans-serif';
         var s = origDiameter.toString().substring(0,4);
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(s,5,2);
+        ctx.fillText(s,5,1);
         ctx.fillStyle = '#000000';
-        ctx.fillText(s,6,3);
+        ctx.fillText(s,6,2);
         ctx.beginPath();
         this.brush.brushPath(ctx, 2.5, transform);
         ctx.lineWidth = 1;
@@ -178,31 +178,35 @@ BrushCursor = Klass({
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 0.5;
       ctx.stroke();
+    } else {
+      ctx.save();
+        ctx.translate(w/2, w/2);
+        ctx.rotate(Math.PI/4);
+        ctx.translate(0.5*origDiameter+5, 0);
+        ctx.beginPath();
+        ctx.strokeStyle = '#888888';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(0,-2,6,4);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = opacity;
+        ctx.fillRect(2,-2,4,4);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 1;
+        ctx.fillRect(0,-2,3,4);
+      ctx.restore();
+      ctx.save();
+        ctx.translate(w/2, w/2);
+        ctx.beginPath();
+        ctx.arc(
+          Math.cos(Math.PI+Math.PI/4)*(0.5*origDiameter+8),
+          Math.sin(Math.PI+Math.PI/4)*(0.5*origDiameter+8),
+          3, (2-(0.25+blend*1.75))*Math.PI, Math.PI*2, false);
+        ctx.strokeStyle = '#888888';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.25;
+        ctx.stroke();
+      ctx.restore();
     }
-    ctx.save();
-      ctx.translate(w/2, w/2);
-      ctx.rotate(Math.PI/4);
-      ctx.translate(0.5*origDiameter+5, 0);
-      ctx.beginPath();
-      ctx.strokeStyle = '#888888';
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(0,-2,6,4);
-      ctx.fillStyle = color;
-      ctx.globalAlpha = opacity;
-      ctx.fillRect(2,-2,4,4);
-      ctx.fillStyle = color;
-      ctx.globalAlpha = 1;
-      ctx.fillRect(0,-2,3,4);
-    ctx.restore();
-    ctx.save();
-      ctx.translate(w/2, w/2);
-      ctx.beginPath();
-      ctx.arc(0, 0, 8, (2-(0.25+blend*1.75))*Math.PI, Math.PI*2, false);
-      ctx.strokeStyle = '#888888';
-      ctx.lineWidth = 3;
-      ctx.globalAlpha = 0.5;
-      ctx.stroke();
-    ctx.restore();
     this.moveTo(this.x, this.y);
   },
 

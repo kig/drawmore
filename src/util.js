@@ -1421,11 +1421,14 @@ Event = {
 Key = {
   matchCode : function(event, code) {
     if (typeof code == 'string') {
+      var codes = code.charCodeAt(0);
       var codeL = code.toLowerCase().charCodeAt(0);
       var codeU = code.toUpperCase().charCodeAt(0);
       return (
+        event.which == codes ||
         event.which == codeL ||
         event.which == codeU ||
+        event.keyCode == codes ||
         event.keyCode == codeL ||
         event.keyCode == codeU
       );
