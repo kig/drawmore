@@ -7,7 +7,7 @@ Drawmore.Modules.UI = {
     resetView : [Key.ESC],
     pan : [Key.SPACE],
     zoom : ['v', 'm'],
-    flip: ['x'],
+    flip: [Key.HOME],
 
     undo: ['z', 'n'],
     clear : [Key.DELETE, Key.BACKSPACE],
@@ -17,6 +17,7 @@ Drawmore.Modules.UI = {
     brushResize: ['f', 'j'],
     brushSizeUp: ['e', 'i'],
     brushSizeDown: ['d','k'],
+    brushRotate: ['x'],
 
     opacityUp: ['w','o'],
     opacityDown: ['s','l'],
@@ -158,6 +159,8 @@ Drawmore.Modules.UI = {
         draw.keepMoving();
       if (draw.resizingBrush) {
         draw.keepResizingBrush();
+      } else if (draw.rotatingBrush) {
+        draw.keepRotatingBrush();
       } else {
         draw.cursor.moveTo(draw.current.x, draw.current.y);
       }
@@ -190,6 +193,7 @@ Drawmore.Modules.UI = {
     this.listeners['mousedown'] = function(ev) {
       draw.updateInputTime();
       draw.stopResizingBrush();
+      draw.stopRotatingBrush();
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
       draw.appendTabletData(draw.current,ev);
       draw.absoluteCurrent = draw.getAbsolutePoint(draw.current);
@@ -225,7 +229,10 @@ Drawmore.Modules.UI = {
           draw.startPanning();
         ev.preventDefault();
       } else if (Mouse.state[Mouse.RIGHT] && ev.target == draw.canvas) {
-        draw.startResizingBrush();
+        if (ev.shiftKey)
+          draw.startRotatingBrush();
+        else
+          draw.startResizingBrush();
         ev.preventDefault();
       }
     };
@@ -233,6 +240,7 @@ Drawmore.Modules.UI = {
     this.listeners['mouseup'] = function(ev) {
       draw.updateInputTime();
       draw.stopResizingBrush();
+      draw.stopRotatingBrush();
       if (draw.mousedown)
         ev.preventDefault();
       draw.mousedown = false;
@@ -256,6 +264,9 @@ Drawmore.Modules.UI = {
       draw.updateInputTime();
       if (Key.match(ev, [Key.ALT]))
         ev.preventDefault();
+      if (Key.match(ev, [Key.CTRL])) {
+        draw.snapping = true;
+      }
       if (ev.altKey) {
         if (Key.match(ev, draw.keyBindings.undo)) {
           if (ev.shiftKey)
@@ -264,9 +275,12 @@ Drawmore.Modules.UI = {
             draw.requestUndo(true);
           ev.preventDefault();
         }
-      } else if (!ev.altKey && !ev.ctrlKey) {
+      } else if (!ev.altKey) {
         if (Key.match(ev, draw.keyBindings.brushResize)) {
           draw.startResizingBrush();
+
+        } else if (Key.match(ev, draw.keyBindings.brushRotate)) {
+          draw.startRotatingBrush();
 
         } else if (Key.match(ev, draw.keyBindings.pan)) {
           if (ev.shiftKey)
@@ -314,9 +328,16 @@ Drawmore.Modules.UI = {
 
     this.listeners['keyup'] = function(ev) {
       draw.updateInputTime();
-      draw.stopResizingBrush();
       if (Key.match(ev, [Key.ALT]))
         ev.preventDefault();
+      if (Key.match(ev, [Key.CTRL])) {
+        draw.snapping = false;
+      }
+      if (Key.match(ev, draw.keyBindings.brushResize)) {
+        draw.stopResizingBrush();
+      } else if (Key.match(ev, draw.keyBindings.brushRotate)) {
+        draw.stopRotatingBrush();
+      }
       if (ev.altKey && !ev.ctrlKey) {
         if (Key.match(ev, draw.keyBindings.flip)) {
           if (ev.shiftKey)
@@ -374,6 +395,9 @@ Drawmore.Modules.UI = {
 
         } else if (Key.match(ev, draw.keyBindings.brushResize)) {
           draw.stopResizingBrush();
+
+        } else if (Key.match(ev, draw.keyBindings.brushRotate)) {
+          draw.stopRotatingBrush();
 
         } else if (Key.match(ev,  draw.keyBindings.opacityUp)) {
           if (!ev.shiftKey)
@@ -516,20 +540,28 @@ Drawmore.Modules.UI = {
   startRotatingBrush : function() {
     if (this.rotatingBrush) return;
     this.rotatingBrush = true;
+    this.startingBrushRotation = this.brushRotation;
     this.brushRotateX = this.current.x;
   },
 
   keepRotatingBrush : function() {
     if (!this.rotatingBrush) return;
-    var d = Math.max(this.current.x - this.brushRotateX, 0);
-    this.setBrushRotation(dx/50);
+    var d = this.current.x - this.brushRotateX;
+    this.setBrushRotation(this.uiSnap(this.startingBrushRotation + d/50, Math.PI/12));
   },
 
   stopRotatingBrush : function() {
     if (!this.rotatingBrush) return;
     this.rotatingBrush = false;
-    var d = Math.max(this.current.x - this.brushRotateX, 0);
-    this.setBrushRotation(dx/50);
+    var d = this.current.x - this.brushRotateX;
+    this.setBrushRotation(this.uiSnap(this.startingBrushRotation + d/50, Math.PI/12));
+  },
+
+  uiSnap : function(v, snap) {
+    if (this.snapping) {
+      return Math.round(v / snap) * snap;
+    }
+    return v;
   },
 
 

@@ -1479,6 +1479,10 @@ Key = {
   N_8: 56,
   N_9: 57,
 
+  SHIFT: 16,
+  CTRL: 17,
+  ALT: 18,
+
   BACKSPACE: 8,
   TAB: 9,
   ENTER: 13,

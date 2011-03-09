@@ -174,10 +174,10 @@ Drawmore.Modules.BrushStrokes = {
     this.executeTimeJump();
     this.brushIndex = idx;
     this.brush = this.brushes[idx];
-    this.cursor.requestSetBrush(this.brush, this.getBrushTransform(), this.colorStyle, this.opacity);
+    this.cursor.requestSetBrush(this.brush, this.getBrushTransform(), this.colorStyle, this.opacity, this.brushBlendFactor);
     this.addHistoryState(new HistoryState('setBrush',  [idx]));
   },
-  
+
   setBrushRotation : function(a) {
     this.executeTimeJump();
     a = a % (2*Math.PI);
@@ -188,7 +188,7 @@ Drawmore.Modules.BrushStrokes = {
       l.args[0] = a;
     else
       this.addHistoryState(new HistoryState('setBrushRotation', [a]));
-    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
+    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity, this.brushBlendFactor);
   },
 
   nextBrush : function() {
@@ -218,7 +218,7 @@ Drawmore.Modules.BrushStrokes = {
   setBrushBlendFactor : function(f) {
     this.executeTimeJump();
     this.brushBlendFactor = Math.clamp(f, 0, 1);
-    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
+    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity, this.brushBlendFactor);
   },
 
   setColor : function(color) {
@@ -231,7 +231,7 @@ Drawmore.Modules.BrushStrokes = {
     this.colorStyle = s;
     if (this.oncolorchange)
       this.oncolorchange(this.color);
-    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
+    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity, this.brushBlendFactor);
     if (this.colorPicker)
       this.colorPicker.setColor(this.color, false);
     // collapse multiple setColor calls into a single history event
@@ -249,7 +249,7 @@ Drawmore.Modules.BrushStrokes = {
     this.strokeLayer.opacity = o;
     if (this.onopacitychange)
       this.onopacitychange(o);
-    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
+    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity, this.brushBlendFactor);
     // collapse multiple setOpacity calls into a single history event
     var last = this.history.last();
     if (last && last.methodName == 'setOpacity')
@@ -261,7 +261,7 @@ Drawmore.Modules.BrushStrokes = {
   setLineWidth : function(w) {
     this.executeTimeJump();
     this.lineWidth = w;
-    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
+    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity, this.brushBlendFactor);
     // collapse multiple setLineWidth calls into a single history event
     var last = this.history.last();
     if (last && last.methodName == 'setLineWidth')

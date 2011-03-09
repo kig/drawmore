@@ -20,6 +20,7 @@ Drawmore.App = Klass(
   panY : 0,
   zoom : 1,
 
+  brushRotation : 0,
   brushBlendFactor : 1,
   lineWidth : 1,
   opacity : 1,

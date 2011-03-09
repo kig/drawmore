@@ -89,29 +89,29 @@ BrushCursor = Klass({
   show : function() {
     this.cursorCanvas.style.visibility = 'visible';
   },
-  
-  requestSetBrush : function(brush, transform, color, opacity) {
+
+  requestSetBrush : function(brush, transform, color, opacity, blend) {
     this.brush = brush;
-    this.requestUpdate(this.diameter, transform, color, opacity);
+    this.requestUpdate(this.diameter, transform, color, opacity, blend);
   },
 
-  requestUpdate : function(diameter, transform, color, opacity) {
+  requestUpdate : function(diameter, transform, color, opacity, blend) {
     if (this.updateTimeout != null) {
       clearTimeout(this.updateTimeout);
       this.updateTimeout = null;
     }
     var self = this;
     this.updateTimeout = setTimeout(function() {
-      self.update(diameter, transform, color, opacity);
+      self.update(diameter, transform, color, opacity, blend);
     }, 0);
   },
 
-  setBrush : function(brush, transform, color, opacity) {
+  setBrush : function(brush, transform, color, opacity, blend) {
     this.brush = brush;
-    this.update(this.diameter, transform, color, opacity);
+    this.update(this.diameter, transform, color, opacity, blend);
   },
 
-  update : function(diameter, transform, color, opacity) {
+  update : function(diameter, transform, color, opacity, blend) {
     var origDiameter = diameter;
     this.diameter = diameter;
     var diameter = this.brush.diameter * diameter;
@@ -193,6 +193,15 @@ BrushCursor = Klass({
       ctx.fillStyle = color;
       ctx.globalAlpha = 1;
       ctx.fillRect(0,-2,3,4);
+    ctx.restore();
+    ctx.save();
+      ctx.translate(w/2, w/2);
+      ctx.beginPath();
+      ctx.arc(0, 0, 8, (2-(0.25+blend*1.75))*Math.PI, Math.PI*2, false);
+      ctx.strokeStyle = '#888888';
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.5;
+      ctx.stroke();
     ctx.restore();
     this.moveTo(this.x, this.y);
   },

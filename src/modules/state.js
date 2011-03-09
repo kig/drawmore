@@ -70,6 +70,7 @@ Drawmore.Modules.State = {
     this.setOpacity(1);
     this.clear();
     this.resetView();
+    this.setBrushRotation(0);
     this.setLineWidth(this.defaultLineWidth);
     this.addHistoryBarrier();
   },
