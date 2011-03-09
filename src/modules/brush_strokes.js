@@ -28,8 +28,8 @@ Drawmore.Modules.BrushStrokes = {
 
   getAbsolutePoint : function(p) {
     var np = Object.extend({}, p);
-    var pX = (this.flippedX ? -np.x+this.width-this.panX : np.x-this.panX);
-    var pY = (this.flippedY ? -np.y+this.height-this.panY : np.y-this.panY);
+    var pX = np.x-this.panX;
+    var pY = np.y-this.panY;
     np.x = pX/this.zoom;
     np.y = pY/this.zoom;
     np.r = (this.lineWidth/2)/this.zoom;
@@ -65,8 +65,8 @@ Drawmore.Modules.BrushStrokes = {
 
   getBrushTransform : function() {
     return [
-      this.flippedX ? -1 : 1, 0,
-      0, this.flippedY ? -1 : 1
+      Math.cos(this.brushRotation), -Math.sin(this.brushRotation),
+      Math.sin(this.brushRotation), Math.cos(this.brushRotation)
     ];
   },
 
@@ -174,8 +174,21 @@ Drawmore.Modules.BrushStrokes = {
     this.executeTimeJump();
     this.brushIndex = idx;
     this.brush = this.brushes[idx];
-    this.cursor.requestSetBrush(this.brush, [1,0,0,1], this.colorStyle, this.opacity);
+    this.cursor.requestSetBrush(this.brush, this.getBrushTransform(), this.colorStyle, this.opacity);
     this.addHistoryState(new HistoryState('setBrush',  [idx]));
+  },
+  
+  setBrushRotation : function(a) {
+    this.executeTimeJump();
+    a = a % (2*Math.PI);
+    if (a < 0) a += (2*Math.PI);
+    this.brushRotation = a;
+    var l = this.history.last();
+    if (l.methodName == 'setBrushRotation')
+      l.args[0] = a;
+    else
+      this.addHistoryState(new HistoryState('setBrushRotation', [a]));
+    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
   },
 
   nextBrush : function() {
@@ -203,7 +216,9 @@ Drawmore.Modules.BrushStrokes = {
   },
 
   setBrushBlendFactor : function(f) {
+    this.executeTimeJump();
     this.brushBlendFactor = Math.clamp(f, 0, 1);
+    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
   },
 
   setColor : function(color) {
@@ -216,7 +231,7 @@ Drawmore.Modules.BrushStrokes = {
     this.colorStyle = s;
     if (this.oncolorchange)
       this.oncolorchange(this.color);
-    this.cursor.requestUpdate(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
+    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
     if (this.colorPicker)
       this.colorPicker.setColor(this.color, false);
     // collapse multiple setColor calls into a single history event
@@ -234,7 +249,7 @@ Drawmore.Modules.BrushStrokes = {
     this.strokeLayer.opacity = o;
     if (this.onopacitychange)
       this.onopacitychange(o);
-    this.cursor.requestUpdate(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
+    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
     // collapse multiple setOpacity calls into a single history event
     var last = this.history.last();
     if (last && last.methodName == 'setOpacity')
@@ -246,7 +261,7 @@ Drawmore.Modules.BrushStrokes = {
   setLineWidth : function(w) {
     this.executeTimeJump();
     this.lineWidth = w;
-    this.cursor.requestUpdate(this.lineWidth, [1,0,0,1], this.colorStyle, this.opacity);
+    this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity);
     // collapse multiple setLineWidth calls into a single history event
     var last = this.history.last();
     if (last && last.methodName == 'setLineWidth')

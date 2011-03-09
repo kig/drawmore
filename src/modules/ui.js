@@ -513,6 +513,25 @@ Drawmore.Modules.UI = {
     this.setBrushBlendFactor(this.brushBlendFactor - 0.25);
   },
 
+  startRotatingBrush : function() {
+    if (this.rotatingBrush) return;
+    this.rotatingBrush = true;
+    this.brushRotateX = this.current.x;
+  },
+
+  keepRotatingBrush : function() {
+    if (!this.rotatingBrush) return;
+    var d = Math.max(this.current.x - this.brushRotateX, 0);
+    this.setBrushRotation(dx/50);
+  },
+
+  stopRotatingBrush : function() {
+    if (!this.rotatingBrush) return;
+    this.rotatingBrush = false;
+    var d = Math.max(this.current.x - this.brushRotateX, 0);
+    this.setBrushRotation(dx/50);
+  },
+
 
   // Reset view
 
@@ -537,8 +556,6 @@ Drawmore.Modules.UI = {
     var dx = this.current.x - this.moveStart.x;
     var dy = this.current.y - this.moveStart.y;
     this.moveStart = this.current;
-    dx *= this.flippedX ? -1 : 1;
-    dy *= this.flippedY ? -1 : 1;
     this.moveCurrentLayer(dx/this.zoom,dy/this.zoom);
   },
 
@@ -548,8 +565,6 @@ Drawmore.Modules.UI = {
     var dx = this.current.x - this.moveStart.x;
     var dy = this.current.y - this.moveStart.y;
     this.moveStart = null;
-    dx *= this.flippedX ? -1 : 1;
-    dy *= this.flippedY ? -1 : 1;
     this.moveCurrentLayer(dx/this.zoom,dy/this.zoom);
   },
 
@@ -580,7 +595,7 @@ Drawmore.Modules.UI = {
   },
 
   pan : function(dx, dy) {
-    this.setPan(this.panX+(this.flippedX?-1:1)*dx, this.panY+(this.flippedY?-1:1)*dy);
+    this.setPan(this.panX+dx, this.panY+dy);
   },
 
   setPan : function(x, y) {
@@ -609,18 +624,9 @@ Drawmore.Modules.UI = {
     if (z < (1/16) || z > 64) return;
     this.needFullRedraw = true;
     var f = z/this.zoom;
-    if (this.flippedX) {
-      // panX is the distance of the right edge of the screen from the origin
-      this.panX = Math.floor(f*(this.panX-(this.width-this.current.x))+(this.width-this.current.x));
-    } else {
-      // panX is the distance of the left edge of the screen from the origin
-      this.panX = Math.floor(f*(this.panX-this.current.x)+this.current.x);
-    }
-    if (this.flippedY) {
-      this.panY = Math.floor(f*(this.panY-(this.height-this.current.y))+(this.height-this.current.y));
-    } else {
-      this.panY = Math.floor(f*(this.panY-this.current.y)+this.current.y);
-    }
+    // panX is the distance of the left edge of the screen from the origin
+    this.panX = Math.floor(f*(this.panX-this.current.x)+this.current.x);
+    this.panY = Math.floor(f*(this.panY-this.current.y)+this.current.y);
     this.zoom = z;
     this.requestRedraw();
   },

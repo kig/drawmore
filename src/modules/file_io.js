@@ -29,15 +29,15 @@ Drawmore.Modules.FileIO = {
     return {
       top:top, left:left, bottom:bottom, right:right,
       width:width, height:height,
-      x: this.flippedX ? right : left,
-      y: this.flippedY ? bottom : top
+      x: left,
+      y: top
     };
   },
 
   getCroppedImage : function(x,y,w,h) {
     var exportCanvas = E.canvas(w,h);
     var ctx = exportCanvas.getContext('2d');
-    this.applyTo(ctx, x, y, w, h, this.flippedX, this.flippedY, 1);
+    this.applyTo(ctx, x, y, w, h, 1);
     return exportCanvas;
   },
 

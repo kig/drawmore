@@ -143,6 +143,7 @@ Drawmore.Modules.Layers = {
   flipCurrentLayerHorizontally : function() {
     this.executeTimeJump();
     if (!this.currentLayer) return;
+    this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.currentLayer.flipX();
     this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.requestRedraw();
@@ -152,6 +153,7 @@ Drawmore.Modules.Layers = {
   flipCurrentLayerVertically : function() {
     this.executeTimeJump();
     if (!this.currentLayer) return;
+    this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.currentLayer.flipY();
     this.updateChangedBox(this.currentLayer.getBoundingBox());
     this.requestRedraw();

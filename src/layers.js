@@ -661,15 +661,14 @@ TiledLayer = Klass(Layer, {
   flipX : function() {
     var newTiles = {};
     var bbox = this.getBoundingBox();
-    var cx = (bbox.left-this.x) + 0.5*((bbox.right-this.x)-(bbox.left-this.x));
+    var cx = (bbox.left-this.x) + 0.5*bbox.width;
     var tcx = Math.floor(cx / this.tileSize);
-    var dx = cx % this.tileSize;
-    this.x -= dx ? this.tileSize-dx : 0;
+    var dx = cx-bbox.left;
     // flip individual tiles
     // flip tile coords around bbox center
     for (var f in this.tiles) {
       var tile = this.tiles[f];
-      tile.x = Math.floor(-(tile.x - tcx) + tcx)-1;
+      tile.x = Math.floor(tcx-(tile.x - tcx));
       var ctx = tile.context;
       var canvas = tile.canvas;
       if (tile.snapshotted) {
@@ -689,20 +688,22 @@ TiledLayer = Klass(Layer, {
       newTiles[p] = tile;
     }
     this.tiles = newTiles;
+    var bbox = this.getBoundingBox();
+    var ddx = dx - (cx-bbox.left);
+    this.x -= ddx;
   },
 
   flipY : function() {
     var newTiles = {};
     var bbox = this.getBoundingBox();
-    var cy = (bbox.top-this.y) + 0.5*((bbox.bottom-this.y)-(bbox.top-this.y));
+    var cy = (bbox.top-this.y) + 0.5*bbox.height;
     var tcy = Math.floor(cy / this.tileSize);
-    var dy = cy % this.tileSize;
-    this.y -= dy ? this.tileSize-dy : 0;
+    var dy = cy-bbox.top;
     // flip individual tiles
     // flip tile coords around bbox center
     for (var f in this.tiles) {
       var tile = this.tiles[f];
-      tile.y = Math.floor(-(tile.y - tcy) + tcy)-1;
+      tile.y = Math.floor(tcy-(tile.y - tcy));
       var ctx = tile.context;
       var canvas = tile.canvas;
       if (tile.snapshotted) {
@@ -722,6 +723,9 @@ TiledLayer = Klass(Layer, {
       newTiles[p] = tile;
     }
     this.tiles = newTiles;
+    var bbox = this.getBoundingBox();
+    var ddy = dy - (cy-bbox.top);
+    this.y -= ddy;
   },
 
   copyProperties : function(tgt) {

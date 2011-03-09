@@ -10,7 +10,7 @@ Drawmore.Modules.DrawLoop = {
       this.applyTo(this.tempCtx,
         x/this.zoom-this.zoom, y/this.zoom-this.zoom,
         w/this.zoom+2*this.zoom, h/this.zoom+2*this.zoom,
-        this.flippedX, this.flippedY, 1);
+        1);
       this.ctx.save();
         this.ctx.globalCompositeOperation = 'source-over';
         var z2 = this.zoom*this.zoom;
@@ -20,7 +20,7 @@ Drawmore.Modules.DrawLoop = {
         );
       this.ctx.restore();
     } else {
-      this.applyTo(this.ctx, x, y, w, h, this.flippedX, this.flippedY, this.zoom);
+      this.applyTo(this.ctx, x, y, w, h, this.zoom);
     }
   },
 
@@ -43,7 +43,7 @@ Drawmore.Modules.DrawLoop = {
     this.ctx.save();
     var pX = Math.floor(this.panX/this.zoom)*this.zoom;
     var pY = Math.floor(this.panY/this.zoom)*this.zoom;
-    if (!this.needFullRedraw && this.changedBox && !this.flippedX && !this.flippedY) {
+    if (!this.needFullRedraw && this.changedBox) {
       if (this.changedBox.left <= this.changedBox.right && this.changedBox.top <= this.changedBox.bottom) {
         // Draw only the changedBox area.
         var x = this.changedBox.left*this.zoom+pX;
@@ -187,7 +187,7 @@ Drawmore.Modules.DrawLoop = {
     }
   },
 
-  applyTo : function(ctx, x, y, w, h, flippedX, flippedY, zoom) {
+  applyTo : function(ctx, x, y, w, h, zoom) {
     this.executeTimeJump();
     var px = -x;
     var py = -y;
@@ -195,17 +195,8 @@ Drawmore.Modules.DrawLoop = {
       ctx.beginPath();
       ctx.fillStyle = this.colorToStyle(this.background);
       ctx.fillRect(0,0,w,h);
-      var xs = 1, ys = 1;
-      if (flippedX) {
-        px = px + -2*px+w;
-        xs = -1;
-      }
-      if (flippedY) {
-        py = py + -2*py+h;
-        ys = -1;
-      }
       ctx.translate(px, py);
-      ctx.scale(zoom*xs, zoom*ys);
+      ctx.scale(zoom, zoom);
       for (var i=0; i<this.tempLayerStack.length; i++)
       {
         var tl = this.tempLayerStack[i];

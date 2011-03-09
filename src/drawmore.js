@@ -54,8 +54,6 @@ Drawmore.App = Klass(
   compositingTime : 0,
 
   disableColorPick : true,
-  flippedX : false,
-  flippedY : false,
 
   showHistograms: false,
   showDrawAreas: false,
@@ -121,7 +119,6 @@ Drawmore.App = Klass(
 
   flipX : function() {
     this.executeTimeJump();
-    this.flippedX = !this.flippedX;
     this.needFullRedraw = true;
     this.requestRedraw();
     this.addHistoryState(new HistoryState('flipX',  []));
@@ -129,19 +126,9 @@ Drawmore.App = Klass(
 
   flipY : function() {
     this.executeTimeJump();
-    this.flippedY = !this.flippedY;
     this.needFullRedraw = true;
     this.requestRedraw();
     this.addHistoryState(new HistoryState('flipY',  []));
-  },
-
-  resetFlip : function() {
-    this.executeTimeJump();
-    this.flippedX = this.flippedY = false;
-    this.needFullRedraw = true;
-    this.requestRedraw();
-    this.addHistoryState(new HistoryState('resetFlip',  []));
   }
-
 
 });

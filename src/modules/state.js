@@ -68,7 +68,6 @@ Drawmore.Modules.State = {
     this.setColor(this.defaultColor);
     this.setBackground(this.defaultBackground);
     this.setOpacity(1);
-    this.resetFlip();
     this.clear();
     this.resetView();
     this.setLineWidth(this.defaultLineWidth);
@@ -98,8 +97,6 @@ Drawmore.Modules.State = {
       brushIndex : this.brushIndex,
       brushes : this.brushes.map(function(l){ return l.copy(); }),
       color : this.color,
-      flippedX : this.flippedX,
-      flippedY : this.flippedY,
       background : this.background,
       lineWidth : this.lineWidth,
       opacity : this.opacity,
@@ -133,8 +130,6 @@ Drawmore.Modules.State = {
     this.setBackground(state.background);
     this.setLineWidth(state.lineWidth);
     this.setOpacity(state.opacity);
-    this.flippedX = state.flippedX;
-    this.flippedY = state.flippedY;
   },
 
   createSnapshot : function() {
