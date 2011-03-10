@@ -7,7 +7,7 @@ Drawmore.Modules.UI = {
     resetView : [Key.ESC],
     pan : [Key.SPACE],
     zoom : ['v', 'm'],
-    flip: [Key.HOME],
+    flip: ['x'],
 
     undo: ['z', 'n'],
     clear : [Key.DELETE, Key.BACKSPACE],
