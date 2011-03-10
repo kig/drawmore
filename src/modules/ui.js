@@ -128,20 +128,34 @@ Drawmore.Modules.UI = {
       if (ev.target != draw.canvas)
         return;
       draw.updateInputTime();
-      if (ev.wheelDelta > 0)
-        draw.zoomIn();
-      else
-        draw.zoomOut();
+      if (ev.wheelDelta > 0) {
+        if (ev.shiftKey)
+          draw.opacityUp();
+        else
+          draw.brushBlendUp();
+      } else {
+        if (ev.shiftKey)
+          draw.opacityDown();
+        else
+          draw.brushBlendDown();
+      }
     };
 
     this.listeners['DOMMouseScroll'] = function(ev) {
       if (ev.target != draw.canvas)
         return;
       draw.updateInputTime();
-      if (ev.detail < 0)
-        draw.zoomIn();
-      else
-        draw.zoomOut();
+      if (ev.detail < 0) {
+        if (ev.shiftKey)
+          draw.opacityUp();
+        else
+          draw.brushBlendUp();
+      } else {
+        if (ev.shiftKey)
+          draw.opacityDown();
+        else
+          draw.brushBlendDown();
+      }
     };
 
     this.listeners['mousemove'] = function(ev) {
@@ -408,22 +422,22 @@ Drawmore.Modules.UI = {
             draw.opacityDown();
 
         } else if (Key.match(ev,  draw.keyBindings.brushSizeUp)) {
-          draw.brushSizeUp();
-
-        } else if (Key.match(ev,  draw.keyBindings.brushSizeDown)) {
-          draw.brushSizeDown();
-
-        } else if (Key.match(ev,  draw.keyBindings.previousBrush)) {
-          if (ev.shiftKey)
-            draw.brushBlendDown();
-          else
-            draw.previousBrush();
-
-        } else if (Key.match(ev,  draw.keyBindings.nextBrush)) {
           if (ev.shiftKey)
             draw.brushBlendUp();
           else
-            draw.nextBrush();
+            draw.brushSizeUp();
+
+        } else if (Key.match(ev,  draw.keyBindings.brushSizeDown)) {
+          if (ev.shiftKey)
+            draw.brushBlendDown();
+          else
+            draw.brushSizeDown();
+
+        } else if (Key.match(ev,  draw.keyBindings.previousBrush)) {
+          draw.previousBrush();
+
+        } else if (Key.match(ev,  draw.keyBindings.nextBrush)) {
+          draw.nextBrush();
 
         } else if (Key.match(ev, draw.keyBindings.flip)) {
           if (ev.shiftKey)
