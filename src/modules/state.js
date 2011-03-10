@@ -113,7 +113,7 @@ Drawmore.Modules.State = {
   },
 
   applyState : function(state) {
-    this.rulers = state.rulers;
+    this.rulers = state.rulers.slice(0);
     this.strokeInProgress = state.strokeInProgress;
     this.pickRadius = state.pickRadius;
     this.brushes = state.brushes.map(function(l){ return l.copy(); });
