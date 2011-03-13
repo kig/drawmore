@@ -6,7 +6,7 @@ Drawmore.Modules.FileIO = {
     canvas.ImgurTitle = 'Drawing';
     canvas.ImgurCaption = 'Created with Drawmore.net';
     Imgur.upload(canvas, function(obj, responseText) {
-      var input = INPUT({value: obj.upload.links.imgur_page});
+      var input = INPUT({value: obj.upload.links.imgur_page, spellcheck: false});
       var notice = DIV(
         { className : 'uploadNotice' },
         A('Image uploaded to Imgur', {href: obj.upload.links.imgur_page, target: "_new"}),
