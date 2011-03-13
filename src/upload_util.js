@@ -313,29 +313,31 @@ DnDUpload = Klass({
   }
 });
 
-ImgUR = {
-  upload : function(file) {
+Imgur = {
+  upload : function(file, callback) {
+    var caption = file.ImgurCaption;
+    var title = file.ImgurTitle;
+    var filename = file.ImgurName;
+    var type = file.tagName ? 'base64' : (typeof file == 'string' ? 'url' : 'file');
 
-    // file is from a <input> tag or from Drag'n Drop
-    // Is the file an image?
-
-    if (!file || !file.type.match(/^image.*/)) return;
-
-    // It is!
-    // Let's build a FormData object
+    if (file.tagName) {
+      var d = file.toDataURL();
+      file = d.slice(d.indexOf(',')+1);
+    }
 
     var fd = new FormData();
-    fd.append("image", file); // Append the file
-    fd.append("key", "6528448c258cff474ca9701c5bab6927");
+    fd.append("image", file);
+    fd.append("type", type);
+    if (caption) fd.append("caption", caption);
+    if (title) fd.append("title", title);
+    if (filename) fd.append("name", filename);
+    fd.append("key", "32b129eb6feaf9641b36720f76996ac3");
     // Get your own key: http://api.imgur.com/
 
-    // Create the XHR (Cross-Domain XHR FTW!!!)
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", "http://api.imgur.com/2/upload.json"); // Boooom!
+    xhr.open("POST", "http://api.imgur.com/2/upload.json");
     xhr.onload = function() {
-        // Big win!
-        // The URL of the image is:
-        JSON.parse(xhr.responseText).upload.links.imgur_page;
+        callback(JSON.parse(xhr.responseText), xhr);
     }
      // Ok, I don't handle the errors. An exercice for the reader.
      // And now, we send the formdata

@@ -67,13 +67,7 @@
         document.body.appendChild(c);
         draw = null;
 
-        byId('replay').onclick = function(){
-          draw.playbackHistory();
-        };
         /*
-        byId('save').onclick = function(){
-          draw.save();
-        };
         byId('load').onchange = function(){
           if (this.files.length > 0) {
             var reader = new FileReader();
@@ -84,16 +78,6 @@
           }
         };
         */
-        byId('export').onclick = function(){
-          draw.exportImage();
-          //var img = draw.getFullImage();
-          //img.className = "cropper";
-          //document.body.appendChild(img);
-          //new Cropper(img);
-        };
-        byId('new').onclick = function(){
-          draw.newDocument();
-        };
 
         var picker = byId('colorPicker');
         var colorPicker = new ColorPicker(picker, 100, 100, function(c) {
@@ -541,6 +525,52 @@
         margin-left: 0px;
         vertical-align: bottom;
       }
+
+      .uploadNotice {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 400px;
+        height: 120px;
+        padding: 8px;
+        margin-top: -68px;
+        margin-left: -208px;
+        background-color: rgba(0,0,0,0.8);
+        border-radius: 12px;
+        color: white;
+        text-align: center;
+        -webkit-box-shadow: 0px 2px 5px rgba(0,0,0,0.5);
+        -moz-box-shadow: 0px 2px 5px rgba(0,0,0,0.5);
+        box-shadow: 0px 2px 5px rgba(0,0,0,0.5);
+      }
+      .uploadNotice a {
+        display: block;
+        color: white;
+        font-weight: bold;
+        font-size: 24px;
+        margin-bottom: 4px;
+        text-decoration: none;
+      }
+      .uploadNotice input {
+        width: 90%;
+        outline: none;
+        font-size: 18px;
+        text-align: center;
+        border-radius: 12px;
+        background-color: rgba(255,250,220,1);
+        border: 0px;
+      }
+      .uploadNotice hr {
+        border: 0px;
+        width: 50%;
+        height: 1px;
+        margin-top: 16px;
+        margin-bottom: 12px;
+        background-color: rgba(255,255,255,0.5);
+      }
+      .uploadNotice button {
+        margin-top: 0px;
+      }
     </style>
   </head>
   <body>
@@ -572,11 +602,14 @@
       <button onclick='draw.toggleCompositeDepth();this.blur();'>Composite</button>
       <button onclick='draw.toggleDrawAreas();this.blur();'>Redraws</button>
       Document
-      <button id="new">New</button>
-<!--      <input type="file" id="load" value="" />
-      <button id="save">Save</button>-->
-      <button id="export">Export Image</button>
-      <button id="replay">Replay</button>
+      <button onclick="draw.newDocument();this.blur();">New</button>
+      <!--
+      <input type="file" id="load" value="" />
+      <button onclick="draw.save();this.blur();">Save</button>
+      -->
+      <button onclick="draw.exportImage();this.blur();">Export Image</button>
+      <button onclick="draw.uploadImage();this.blur();">Upload Image</button>
+      <button onclick="draw.playbackHistory();this.blur();">Replay</button>
     </div>
     <div id="palette">
       <input type="text" id="colorName" value="#"/>
@@ -687,7 +720,7 @@
       <p>feedback to <a href="http://twitter.com/ilmarihei">twitter</a></p>
       <p>patches and bugs to <a href="http://github.com/kig/scribble">github</a></p>
       <p>ilmari.heikkinen@gmail.com</p>
-      <p>v 2011-03-10.26.4</p>
+      <p>v 2011-03-13.28.2</p>
     </div>
     <embed name="wacom-plugin" id="wacom-plugin" type="application/x-wacom-tablet" HIDDEN="TRUE"
       pluginspage="http://www.wacom.com/productsupport/plugin.php"></embed>
