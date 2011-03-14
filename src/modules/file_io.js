@@ -11,7 +11,7 @@ Drawmore.Modules.FileIO = {
       var src = (
         'http://platform.twitter.com/widgets/tweet_button.html?count=none&lang=en'
         + '&url=' + encodeURIComponent('http://drawmore.net')
-      ) + '&text=' + encodeURIComponent('I drew '+obj.upload.links.imgur_page+' with #Drawmore');
+      ) + '&text=' + encodeURIComponent('I drew '+obj.upload.links.imgur_page+' with');
       tweeter.src = src;
 
       var input = INPUT({value: obj.upload.links.imgur_page, spellcheck: false});
