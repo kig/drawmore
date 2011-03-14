@@ -5,19 +5,28 @@ Drawmore.Modules.FileIO = {
     canvas.ImgurName = 'drawmore_image.png';
     canvas.ImgurTitle = 'Drawing';
     canvas.ImgurCaption = 'Created with Drawmore.net';
-    Imgur.upload(canvas, function(obj, responseText) {
+   Imgur.upload(canvas, function(obj, responseText) {
+    // var obj = {upload: {links: {imgur_page: 'foo'}}};
+      var tweeter = IFRAME({className: 'tweeter'});
+      var src = (
+        'http://platform.twitter.com/widgets/tweet_button.html?count=none&lang=en'
+        + '&url=' + encodeURIComponent('http://drawmore.net')
+      ) + '&text=' + encodeURIComponent('I drew '+obj.upload.links.imgur_page+' with #Drawmore');
+      tweeter.src = src;
+
       var input = INPUT({value: obj.upload.links.imgur_page, spellcheck: false});
       var notice = DIV(
         { className : 'uploadNotice' },
         A('Image uploaded to Imgur', {href: obj.upload.links.imgur_page, target: "_new"}),
         input,
+        tweeter,
         HR(),
         BUTTON("Close", {onclick: function(){this.parentNode.parentNode.removeChild(this.parentNode);}})
       );
       document.body.appendChild(notice);
       input.focus();
       input.select();
-    });
+   });
   },
 
   uploadImage : function() {

@@ -197,7 +197,14 @@
             for (var i=0; i<Math.round(o*8); i++){
               s.push("`");
             }
-            byId('foregroundColor').textContent = s.join("");
+            byId('foregroundColorOpacity').textContent = s.join("");
+          },
+          onbrushblendfactorchange : function(o) {
+            var s = [];
+            for (var i=0; i<Math.round(o*8); i++){
+              s.push("'");
+            }
+            byId('foregroundColorBlend').textContent = s.join("");
           },
           oncolorchange : function(c) {
             var s = ColorUtils.colorToStyle(c);
@@ -552,13 +559,15 @@
         text-decoration: none;
       }
       .uploadNotice input {
-        width: 90%;
+        width: 70%;
         outline: none;
-        font-size: 18px;
+        font-size: 15px;
+        height: 18px;
         text-align: center;
-        border-radius: 12px;
+        border-radius: 3px;
         background-color: rgba(255,250,220,1);
         border: 0px;
+        vertical-align:bottom;
       }
       .uploadNotice hr {
         border: 0px;
@@ -570,6 +579,15 @@
       }
       .uploadNotice button {
         margin-top: 0px;
+      }
+      .tweeter {
+        position: relative;
+        display: inline-block;
+        margin-left: 8px;
+        top: 4px;
+        border: 0;
+        width: 55px;
+        height: 20px;
       }
     </style>
   </head>
@@ -587,6 +605,7 @@
       <button onclick='draw.brushBlendDown();this.blur();' showbrush title='Blend factor down (shift-g)'>B-</button>
       <button onclick='draw.opacityUp();this.blur();' showbrush title='Opacity up (w)'>O+</button>
       <button onclick='draw.opacityDown();this.blur();' showbrush title='Opacity down (s)'>O-</button>
+      St <input type="checkbox" onclick='draw.setBrushStipple(this.checked);this.blur();' showbrush title='Brush Stipple'>
       Wacom
       S <input type="checkbox" onclick='draw.togglePressureControlsSize();this.blur();' title="Pressure controls brush size" checked>
       B <input type="checkbox" onclick='draw.togglePressureControlsBlend();this.blur();' title="Pressure controls blend factor" checked>
@@ -613,7 +632,7 @@
     </div>
     <div id="palette">
       <input type="text" id="colorName" value="#"/>
-      <div id="foregroundColor"></div>
+      <div id="foregroundColor"><div id="foregroundColorOpacity"></div><div id="foregroundColorBlend"></div></div>
       <div id="backgroundColor"></div>
 
       <div class="paletteColor" color="#000000"></div>
@@ -720,7 +739,7 @@
       <p>feedback to <a href="http://twitter.com/ilmarihei">twitter</a></p>
       <p>patches and bugs to <a href="http://github.com/kig/scribble">github</a></p>
       <p>ilmari.heikkinen@gmail.com</p>
-      <p>v 2011-03-13.28.2</p>
+      <p>v 2011-03-13.28.3</p>
     </div>
     <embed name="wacom-plugin" id="wacom-plugin" type="application/x-wacom-tablet" HIDDEN="TRUE"
       pluginspage="http://www.wacom.com/productsupport/plugin.php"></embed>

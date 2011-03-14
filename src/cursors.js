@@ -194,18 +194,6 @@ BrushCursor = Klass({
         ctx.globalAlpha = 1;
         ctx.fillRect(0,-2,3,4);
       ctx.restore();
-      ctx.save();
-        ctx.translate(w/2, w/2);
-        ctx.beginPath();
-        ctx.arc(
-          Math.cos(Math.PI+Math.PI/4)*(0.5*origDiameter+8),
-          Math.sin(Math.PI+Math.PI/4)*(0.5*origDiameter+8),
-          3, (2-(0.25+blend*1.75))*Math.PI, Math.PI*2, false);
-        ctx.strokeStyle = '#888888';
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = 0.25;
-        ctx.stroke();
-      ctx.restore();
     }
     this.moveTo(this.x, this.y);
   },

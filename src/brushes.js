@@ -100,7 +100,7 @@ PolygonBrush = Klass(Brush, {
   // one endpoint to the other
   drawLine : function(ctx, color, composite, x1, y1, r1, x2, y2, r2, transform) {
     if (this.stipple) {
-      this.drawPoint(ctx, color, composite, x2, y2, r2);
+      this.drawPoint(ctx, color, composite, x2, y2, r2, transform);
       return;
     }
     ctx.beginPath();
@@ -134,7 +134,7 @@ PolygonBrush = Klass(Brush, {
 
   drawQuadratic : function(ctx, color, composite, x1, y1, r1, cx, cy, cr, x2, y2, r2, transform) {
     if (this.stipple) {
-      this.drawPoint(ctx, color, composite, x2, y2, r2);
+      this.drawPoint(ctx, color, composite, x2, y2, r2, transform);
       return;
     }
     ctx.beginPath();

@@ -33,6 +33,7 @@ Drawmore.Modules.BrushStrokes = {
     np.x = pX/this.zoom;
     np.y = pY/this.zoom;
     np.r = (this.lineWidth/2)/this.zoom;
+    np.stipple = this.brushStipple;
     np.opacity = 1;
     if (this.pressureControlsSize)
       np.r = Math.max(this.zoom*0.75*0.5, (np.pressure * 0.75 + 0.25)*np.r);
@@ -80,6 +81,7 @@ Drawmore.Modules.BrushStrokes = {
       c = this.tween(xy.blendColor, this.color, xy.blend);
     }
     c[3] *= xy.opacity;
+    this.brush.stipple = xy.stipple;
     this.brush.drawPoint(
       this.strokeLayer, this.colorToStyle(c), 'source-over',
       xy.x, xy.y, xy.r,
@@ -103,6 +105,7 @@ Drawmore.Modules.BrushStrokes = {
       c = this.tween(c, this.color, (a.blend+b.blend)*0.5, c);
     }
     c[3] *= b.opacity;
+    this.brush.stipple = a.stipple;
     this.brush.drawLine(
       this.strokeLayer, this.colorToStyle(c), b.opacity < 1 ? 'destination-atop' : 'source-over',
       a.x, a.y, a.r,
@@ -218,7 +221,16 @@ Drawmore.Modules.BrushStrokes = {
   setBrushBlendFactor : function(f) {
     this.executeTimeJump();
     this.brushBlendFactor = Math.clamp(f, 0, 1);
+    if (this.onbrushblendfactorchange)
+      this.onbrushblendfactorchange(this.brushBlendFactor);
     this.cursor.requestUpdate(this.lineWidth, this.getBrushTransform(), this.colorStyle, this.opacity, this.brushBlendFactor);
+  },
+
+  setBrushStipple : function(f) {
+    this.executeTimeJump();
+    this.brushStipple = f;
+    if (this.onbrushstipplechange)
+      this.onbrushstipplechange(this.brushStipple);
   },
 
   setColor : function(color) {

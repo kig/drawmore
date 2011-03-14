@@ -544,11 +544,43 @@ Drawmore.Modules.UI = {
   },
 
   brushBlendUp : function() {
-    this.setBrushBlendFactor(this.brushBlendFactor + 0.25);
+    if (this.brushBlendFactor < 0.25) {
+      this.setBrushBlendFactor(0.25);
+    } else if (this.brushBlendFactor < 0.5) {
+      this.setBrushBlendFactor(0.5);
+    } else {
+      this.setBrushBlendFactor(1);
+    }
   },
 
   brushBlendDown : function() {
-    this.setBrushBlendFactor(this.brushBlendFactor - 0.25);
+    if (this.brushBlendFactor > 0.5) {
+      this.setBrushBlendFactor(0.5);
+    } else if (this.brushBlendFactor > 0.25) {
+      this.setBrushBlendFactor(0.25);
+    } else {
+      this.setBrushBlendFactor(0.125);
+    }
+  },
+
+  opacityUp : function() {
+    if (this.opacity < 0.25) {
+      this.setOpacity(0.25);
+    } else if (this.opacity < 0.5) {
+      this.setOpacity(0.5);
+    } else {
+      this.setOpacity(1);
+    }
+  },
+
+  opacityDown : function() {
+    if (this.opacity > 0.5) {
+      this.setOpacity(0.5);
+    } else if (this.opacity > 0.25) {
+      this.setOpacity(0.25);
+    } else {
+      this.setOpacity(0.125);
+    }
   },
 
   startRotatingBrush : function() {
@@ -676,30 +708,6 @@ Drawmore.Modules.UI = {
     this.zoom = z;
     this.requestRedraw();
   },
-
-
-  // Opacity keyboard control
-
-  opacityUp : function() {
-    if (this.opacity < 0.25) {
-      this.setOpacity(0.25);
-    } else if (this.opacity < 0.5) {
-      this.setOpacity(0.5);
-    } else {
-      this.setOpacity(1);
-    }
-  },
-
-  opacityDown : function() {
-    if (this.opacity > 0.5) {
-      this.setOpacity(0.5);
-    } else if (this.opacity > 0.25) {
-      this.setOpacity(0.25);
-    } else {
-      this.setOpacity(0.125);
-    }
-  },
-
 
   // UI toggles
 

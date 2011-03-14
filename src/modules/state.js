@@ -68,6 +68,8 @@ Drawmore.Modules.State = {
     this.setColor(this.defaultColor);
     this.setBackground(this.defaultBackground);
     this.setOpacity(1);
+    this.setBrushBlendFactor(1);
+    this.setBrushStipple(false);
     this.clear();
     this.resetView();
     this.setBrushRotation(0);
