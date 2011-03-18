@@ -20,6 +20,8 @@ Drawmore.Modules.State = {
     this.topLayer.uid = this.layerUID++;
     this.layerManager.addLayer(this.topLayer);
     this.strokeLayer = this.createLayerObject();
+    this.selectionLayer = this.createLayerObject();
+    this.selectionLayer.opacity = 0.5;
     this.layerWidget.requestRedraw();
     this.palette = [];
     this.rulers = [];

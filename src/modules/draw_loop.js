@@ -205,13 +205,16 @@ Drawmore.Modules.DrawLoop = {
         tl.y = y;
         tl.compensateZoom = zoom;
       }
-      if (this.strokeLayer.display && this.currentLayer != null) {
-        this.currentLayer.prependChild(this.strokeLayer);
+      var target = this.selecting ? this.selectionLayer : this.currentLayer;
+      if (this.strokeLayer.display && target != null) {
+        target.prependChild(this.strokeLayer);
         var composite = (this.erasing ? 'destination-out' :
-          (this.currentLayer.opacityLocked ? 'source-atop' : 'source-over')
+          (target.opacityLocked ? 'source-atop' : 'source-over')
         );
         this.strokeLayer.globalCompositeOperation = composite;
       }
+      if (this.selecting)
+        this.topLayer.appendChild(this.selectionLayer);
 
       TiledLayer.printAllocStats('out-frame');
       TiledLayer.resetAllocStats();
@@ -222,13 +225,10 @@ Drawmore.Modules.DrawLoop = {
       Layer.printStats('in-frame');
       Magi.console.spam('--------------------------------------------------------------------');
 
-      if (this.strokeLayer.hasParentNode()) {
-        var p = this.strokeLayer.getParentNode();
-        if (!p)
-          Magi.console.log('Warning: strokeLayer.getParentNode returned null', this.strokeLayer.parentNodeUID, p, this.strokeLayer);
-        else
-          p.removeChild(this.strokeLayer);
-      }
+      if (this.strokeLayer.hasParentNode())
+        this.strokeLayer.getParentNode().removeChild(this.strokeLayer);
+      if (this.selectionLayer.hasParentNode())
+        this.selectionLayer.getParentNode().removeChild(this.selectionLayer);
     ctx.restore();
   },
 

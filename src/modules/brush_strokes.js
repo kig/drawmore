@@ -12,17 +12,18 @@ Drawmore.Modules.BrushStrokes = {
     this.requestRedraw();
   },
 
-  endStroke : function(erasing) {
+  endStroke : function(erasing, selecting) {
     this.executeTimeJump();
     if (!this.strokeInProgress) return;
     this.strokeInProgress = false;
+    var target = selecting ? this.selectionLayer : this.currentLayer;
     var composite = (erasing ? 'destination-out' :
-      (this.currentLayer.opacityLocked ? 'source-atop' : 'source-over')
+      (target.opacityLocked ? 'source-atop' : 'source-over')
     );
-    this.strokeLayer.applyTo(this.currentLayer, composite);
+    this.strokeLayer.applyTo(target, composite);
     this.strokeLayer.hide();
     this.updateChangedBox(this.strokeLayer.getBoundingBox());
-    this.addHistoryState(new HistoryState('endStroke',  [erasing]));
+    this.addHistoryState(new HistoryState('endStroke',  [erasing, selecting]));
     this.requestRedraw();
   },
 
@@ -39,11 +40,16 @@ Drawmore.Modules.BrushStrokes = {
       np.r = Math.max(this.zoom*0.75*0.5, (np.pressure * 0.75 + 0.25)*np.r);
     if (this.pressureControlsOpacity)
       np.opacity *= np.pressure;
-    np.blend = this.brushBlendFactor;
-    if (this.pressureControlsBlend)
-      np.blend = np.r < 2 ? Math.min(1, np.blend * (0.5 + np.pressure)) : np.blend*np.pressure;
-    if (np.blend < 1)
-      np.blendColor = this.colorAt(this.ctx, p.x, p.y, 2);
+    if (this.selecting) {
+      np.blend = 0;
+      np.blendColor = this.selectionColor;
+    } else {
+      np.blend = this.brushBlendFactor;
+      if (this.pressureControlsBlend)
+        np.blend = np.r < 2 ? Math.min(1, np.blend * (0.5 + np.pressure)) : np.blend*np.pressure;
+      if (np.blend < 1)
+        np.blendColor = this.colorAt(this.ctx, p.x, p.y, 2);
+    }
     np.brushTransform = this.getBrushTransform();
     np.absolute = true;
     return np;

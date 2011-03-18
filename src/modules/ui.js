@@ -209,13 +209,17 @@ Drawmore.Modules.UI = {
       draw.stopResizingBrush();
       draw.stopRotatingBrush();
       draw.current = Mouse.getRelativeCoords(draw.canvas, ev);
-      draw.appendTabletData(draw.current,ev);
       draw.absoluteCurrent = draw.getAbsolutePoint(draw.current);
+      draw.appendTabletData(draw.current,ev);
       draw.cursor.moveTo(draw.current.x, draw.current.y);
       if (Mouse.state[Mouse.LEFT] && ev.target == draw.canvas) {
         draw.mousedown = true;
-        if (ev.altKey || draw.isEraser(ev))
+        if (ev.altKey || draw.isEraser(ev)) {
           draw.erasing = true;
+        } else if (ev.ctrlKey) {
+          draw.selecting = true;
+        }
+        draw.absoluteCurrent = draw.getAbsolutePoint(draw.current);
         draw.pushAction('beginStroke', []);
         if (ev.shiftKey && draw.mouseup) {
           if (draw.ruler != null) {
@@ -270,8 +274,9 @@ Drawmore.Modules.UI = {
         draw.stopPanning();
         draw.stopMoving();
       }
-      draw.pushAction('endStroke', [draw.erasing]);
+      draw.pushAction('endStroke', [draw.erasing, draw.selecting]);
       draw.erasing = false;
+      draw.selecting = false;
     };
 
     this.listeners['keydown'] = function(ev) {

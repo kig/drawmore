@@ -34,6 +34,7 @@ Drawmore.App = Klass(
   defaultLineWidth : 0.75,
   defaultColor : ColorUtils.colorVec(0x22/255, 0xC8/255, 0xEE/255,1),
   defaultBackground : ColorUtils.colorVec(1,0.98,0.95,1),
+  selectionColor : ColorUtils.colorVec(1,0,0,1),
   brushIndex : 0,
 
   minimumBrushSize : 0.75,
