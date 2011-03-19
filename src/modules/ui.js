@@ -50,8 +50,13 @@ Drawmore.Modules.UI = {
     toggleCurrentLayer: ['v'],
     indentCurrentLayer: ['g'],
     addCurrentLayerMask: ['b'],
+    mergeDown: ['e'],
 
-    selectAll: ['m'],
+    selectAll: ['a'],
+    deselect: ['d'],
+    cut: ['x'],
+    copy: ['c'],
+    paste: ['v'],
 
     toggleUI: [Key.TAB, '0'],
     toggleHelp: [191] // question mark
@@ -289,7 +294,36 @@ Drawmore.Modules.UI = {
       if (Key.match(ev, [Key.CTRL])) {
         draw.snapping = true;
       }
-      if (ev.altKey) {
+      if (ev.ctrlKey && ev.target.tagName != 'INPUT') {
+        if (Key.match(ev, draw.keyBindings.cut)) {
+          draw.cutSelection();
+          ev.preventDefault();
+        } else if (Key.match(ev, draw.keyBindings.copy)) {
+          draw.copySelection();
+          ev.preventDefault();
+        } else if (Key.match(ev, draw.keyBindings.paste)) {
+          draw.pasteClipboard();
+          ev.preventDefault();
+        } else if (Key.match(ev, draw.keyBindings.selectAll)) {
+          draw.selectAll();
+          ev.preventDefault();
+        } else if (Key.match(ev, draw.keyBindings.deselect)) {
+          draw.deselect();
+          ev.preventDefault();
+        } else if (Key.match(ev, draw.keyBindings.mergeDown)) {
+          if (ev.shiftKey)
+            draw.mergeVisible();
+          else
+            draw.mergeDown();
+          ev.preventDefault();
+        } else if (Key.match(ev,  draw.keyBindings.indentCurrentLayer)) {
+          if (ev.shiftKey)
+            draw.unindentCurrentLayer();
+          else
+            draw.indentCurrentLayer();
+          ev.preventDefault();
+        }
+      } else if (ev.altKey) {
         if (Key.match(ev, draw.keyBindings.undo)) {
           if (ev.shiftKey)
             draw.requestRedo(true);
@@ -392,12 +426,6 @@ Drawmore.Modules.UI = {
           draw.toggleCurrentLayer();
           ev.preventDefault();
 
-        } else if (Key.match(ev, draw.keyBindings.selectAll)) {
-          if (ev.shiftKey)
-            draw.deselect();
-          else
-            draw.selectAll();
-          ev.preventDefault();
         }
       }
       if (!ev.altKey && !ev.ctrlKey) {
@@ -465,10 +493,7 @@ Drawmore.Modules.UI = {
           else
             draw.layerAbove();
         } else if (Key.match(ev, draw.keyBindings.layerBelow)) {
-          if (ev.shiftKey)
-            draw.mergeDown();
-          else
-            draw.layerBelow();
+          draw.layerBelow();
 
         } else if (Key.match(ev, draw.keyBindings.opacity1)) {
           draw.setOpacity(0.125);

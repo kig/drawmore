@@ -748,6 +748,30 @@ TiledLayer = Klass(Layer, {
     }
   },
 
+  startDrawOp : function() {
+    if (this.globalCompositeOperation == 'source-in') {
+      for (var i in this.tiles)
+        delete this.tiles[i].touched;
+    }
+  },
+
+  endDrawOp : function() {
+    if (this.globalCompositeOperation == 'source-in') {
+      var deletes = [];
+      for (var i in this.tiles) {
+        if (this.tiles[i].touched)
+          delete this.tiles[i].touched;
+        else
+          deletes.push(i);
+      }
+      for (var i=0; i<deletes.length; i++) {
+        var t = this.tiles[ deletes[i] ];
+        this.returnCanvas(t.canvas);
+        delete this.tiles[deletes[i]];
+      }
+    }
+  },
+
   drawImage: function(img, x, y, w, h, composite) {
     composite = composite || this.globalCompositeOperation;
     x-=this.x;
@@ -759,7 +783,9 @@ TiledLayer = Klass(Layer, {
     for (var tx=ftx; tx <= ltx; tx++) {
       for (var ty=fty; ty <= lty; ty++) {
         // optimize: skip if img is transparent here
-        var ctx = this.getTileCtx(tx,ty);
+        var tile = this.getTile(tx,ty,true);
+        tile.touched = true;
+        var ctx = tile.context;
         ctx.globalAlpha = this.globalAlpha;
         ctx.globalCompositeOperation = composite;
         if (w && h)
@@ -810,6 +836,7 @@ TiledLayer = Klass(Layer, {
   compositeTo : function(ctx, opacity, composite) {
     ctx.globalAlpha = opacity;
     ctx.globalCompositeOperation = composite || this.globalCompositeOperation;
+    if (ctx.startDrawOp) ctx.startDrawOp();
     for (var f in this.tiles) {
       var t = this.tiles[f];
       ctx.drawImage(t.canvas, this.x+t.x*this.tileSize, this.y+t.y*this.tileSize);
@@ -817,6 +844,7 @@ TiledLayer = Klass(Layer, {
         Layer.compositeDepthCtx.fillRect(this.x+t.x*this.tileSize, this.y+t.y*this.tileSize, this.tileSize, this.tileSize);
       }
     }
+    if (ctx.endDrawOp) ctx.endDrawOp();
   },
 
   beginPath : function() {

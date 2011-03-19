@@ -18,7 +18,10 @@ Drawmore.Modules.Selection = {
 
   copySelection : function(recordHistory) {
     this.executeTimeJump();
+    if (!this.currentLayer) return;
     this.clipboardLayer.clear();
+    this.clipboardLayer.x = this.currentLayer.x;
+    this.clipboardLayer.y = this.currentLayer.y;
     this.selectionLayer.compositeTo(this.clipboardLayer, 1, 'source-over');
     this.currentLayer.compositeTo(this.clipboardLayer, 1, 'source-in');
     if (recordHistory != false)
@@ -27,6 +30,7 @@ Drawmore.Modules.Selection = {
 
   clearSelection : function(recordHistory) {
     this.executeTimeJump();
+    if (!this.currentLayer) return;
     var c = this.currentLayer.globalCompositeOperation;
     this.selectionLayer.compositeTo(this.currentLayer, 1, 'destination-out');
     this.currentLayer.globalCompositeOperation = c;
@@ -37,6 +41,7 @@ Drawmore.Modules.Selection = {
   },
 
   cutSelection : function() {
+    if (!this.currentLayer) return;
     this.copySelection(false);
     this.clearSelection(false);
     this.addHistoryState(new HistoryState('cutSelection', [], true));

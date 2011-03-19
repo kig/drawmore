@@ -517,21 +517,21 @@
         bottom: 4px;
         right: 4px;
         font-size:12px;
+        line-height: 24px;
         position:absolute;
-        vertical-align: bottom;
+        vertical-align: top;
       }
       #buttonBar button {
         font-size:10px;
         padding-left: 2px;
         padding-right: 2px;
         min-width: 14px;
-        margin-bottom: -2px;
-        vertical-align: bottom;
+        vertical-align: top;
       }
       #buttonBar input {
         margin-bottom: 1px;
         margin-left: 0px;
-        vertical-align: bottom;
+        vertical-align: top;
       }
 
       .uploadNotice {
@@ -595,6 +595,11 @@
   <body>
     <canvas id="mainCanvas"></canvas>
     <div id="buttonBar">
+      Zoom
+      <button onclick='draw.zoomIn();this.blur();' title='v'>+</button>
+      <button onclick='draw.zoomOut();this.blur();' title='shift-v'>-</button>
+      <button onclick = 'draw.resetView();this.blur();' title='esc'>Reset</button>
+      History
       <button onclick='draw.undo();this.blur();' title='z'>Undo</button>
       <button onclick='draw.redo();this.blur();' title='shift-z'>Redo</button>
       Brush
@@ -606,17 +611,20 @@
       <button onclick='draw.brushBlendDown();this.blur();' showbrush title='Blend factor down (shift-g)'>B-</button>
       <button onclick='draw.opacityUp();this.blur();' showbrush title='Opacity up (w)'>O+</button>
       <button onclick='draw.opacityDown();this.blur();' showbrush title='Opacity down (s)'>O-</button>
-      St <input type="checkbox" onclick='draw.setBrushStipple(this.checked);this.blur();' showbrush title='Brush Stipple'>
+      <br>
+      Stipple <input type="checkbox" onclick='draw.setBrushStipple(this.checked);this.blur();' showbrush title='Brush Stipple'>
       Wacom
       S <input type="checkbox" onclick='draw.togglePressureControlsSize();this.blur();' title="Pressure controls brush size" checked>
       B <input type="checkbox" onclick='draw.togglePressureControlsBlend();this.blur();' title="Pressure controls blend factor" checked>
       O <input type="checkbox" onclick='draw.togglePressureControlsOpacity();this.blur();' title="Pressure controls opacity">
-      Layer
+      Selection
+      <button onclick='draw.cutSelection();this.blur();' title='Cut Selection'>Cut</button>
+      <button onclick='draw.copySelection();this.blur();' title='Copy Selection'>Copy</button>
+      <button onclick='draw.pasteClipboard();this.blur();' title='Paste Clipboard'>Paste</button>
+      <button onclick='draw.selectAll();this.blur();' title='ctrl-a'>Select All</button>
+      <button onclick='draw.deselect();this.blur();' title='ctrl-d'>Deselect</button>
       <button onclick='draw.clear();this.blur();' title='delete'>Clear</button>
-      Zoom
-      <button onclick='draw.zoomIn();this.blur();' title='v'>+</button>
-      <button onclick='draw.zoomOut();this.blur();' title='shift-v'>-</button>
-      <button onclick = 'draw.resetView();this.blur();' title='esc'>Reset</button>
+      <br>
       Debug
       <button onclick='draw.toggleHistograms();this.blur();'>Stats</button>
       <button onclick='draw.toggleCompositeDepth();this.blur();'>Composite</button>
@@ -712,18 +720,26 @@
       <p><b>alt-z</b> is smooth undo (<b>alt-n</b>)</p>
       <p><b>shift-alt-z</b> is smooth redo (<b>shift-alt-n</b>)</p>
 
+      <h4>Selection</h4>
+      <p><b>ctrl-draw</b> to edit selection</p>
+      <p><b>ctrl-a</b> selects all</p>
+      <p><b>ctrl-d</b> deselects</p>
+      <p><b>delete</b> clears the selected area</p>
+      <p><b>ctrl-x</b> cut selection from layer</p>
+      <p><b>ctrl-c</b> copies selection from layer</p>
+      <p><b>ctrl-v</b> pastes to new layer</p>
+
       <h4>Layers</h4>
       <p><b>shift-space</b> and <b>shift-MMB</b> move the current layer</p>
-      <p><b>delete</b> clears the current layer</p>
       <p><b>shift-delete</b> deletes the current layer</p>
       <p><b>q</b> goes to layer above</p>
       <p><b>a</b> goes to layer below</p>
       <p><b>shift-q</b> toggles opacity lock</p>
-      <p><b>shift-a</b> merges down</p>
+      <p><b>ctrl-e</b> merges down</p>
       <p><b>shift-w</b> current layer opacity up (shift-o)</p>
       <p><b>shift-s</b> current layer opacity down (shift-s)</p>
-      <p><b>alt-g</b> groups current layer with the one below</p>
-      <p><b>shift-alt-g</b> ungroups current layer one level</p>
+      <p><b>alt-g</b> and <b>ctrl-g</b> group current layer with the one below</p>
+      <p><b>shift-alt-g</b> and <b>shift-ctrl-g</b> ungroup current layer one level</p>
       <p><b>alt-q</b> creates new layer above</p>
       <p><b>alt-a</b> creates new layer below</p>
       <p><b>alt-c</b> copies current layer</p>
@@ -740,7 +756,7 @@
       <p>feedback to <a href="http://twitter.com/ilmarihei">twitter</a></p>
       <p>patches and bugs to <a href="http://github.com/kig/scribble">github</a></p>
       <p>ilmari.heikkinen@gmail.com</p>
-      <p>v 2011-03-13.28.3</p>
+      <p>v 2011-03-19.31.2</p>
     </div>
     <embed name="wacom-plugin" id="wacom-plugin" type="application/x-wacom-tablet" HIDDEN="TRUE"
       pluginspage="http://www.wacom.com/productsupport/plugin.php"></embed>

@@ -509,10 +509,14 @@ Drawmore.Modules.Layers = {
   },
 
   clear : function() {
-    this.executeTimeJump();
-    if (!this.currentLayer) return;
-    this.updateChangedBox(this.currentLayer.getBoundingBox());
-    this.currentLayer.clear();
+    if (this.selectionLayer.isEmpty()) {
+      this.executeTimeJump();
+      if (!this.currentLayer) return;
+      this.updateChangedBox(this.currentLayer.getBoundingBox());
+      this.currentLayer.clear();
+    } else {
+      this.clearSelection(false);
+    }
     this.addHistoryState(new HistoryState('clear',  [], true));
     this.requestRedraw();
   }
