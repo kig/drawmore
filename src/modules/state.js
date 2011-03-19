@@ -21,7 +21,8 @@ Drawmore.Modules.State = {
     this.layerManager.addLayer(this.topLayer);
     this.strokeLayer = this.createLayerObject();
     this.selectionLayer = this.createLayerObject();
-    this.selectionLayer.opacity = 0.5;
+    this.selectionLayer.opacity = 0.25;
+    this.clipboardLayer = this.createLayerObject();
     this.layerWidget.requestRedraw();
     this.palette = [];
     this.rulers = [];
@@ -113,7 +114,8 @@ Drawmore.Modules.State = {
       currentLayerUID : this.currentLayer && this.currentLayer.uid,
       topLayerUID : this.topLayer.uid,
       strokeLayerUID : this.strokeLayer.uid,
-      selectionLayerUID : this.selectionLayer.uid
+      selectionLayerUID : this.selectionLayer.uid,
+      clipboardLayerUID : this.clipboardLayer.uid
     };
   },
 
@@ -128,6 +130,7 @@ Drawmore.Modules.State = {
     this.topLayer = this.layerManager.getLayerByUID(state.topLayerUID);
     this.strokeLayer = this.layerManager.getLayerByUID(state.strokeLayerUID);
     this.selectionLayer = this.layerManager.getLayerByUID(state.selectionLayerUID);
+    this.clipboardLayer = this.layerManager.getLayerByUID(state.clipboardLayerUID);
     this.currentLayer = this.layerManager.getLayerByUID(state.currentLayerUID);
     this.layerWidget.requestRedraw();
     for (var i=0; i<state.palette.length; i++)
