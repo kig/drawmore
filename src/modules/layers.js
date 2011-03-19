@@ -166,7 +166,7 @@ Drawmore.Modules.Layers = {
     this.currentLayer.modify('x', dx);
     this.currentLayer.modify('y', dy);
     var self = this;
-    var cc = this.currentLayer.childNodes;
+    var cc = this.currentLayer.childNodes.slice(0);
     for (var i=0; i<cc.length; i++) {
       var cn = cc[i];
       var l = self.layerManager.getLayerByUID(cn);
@@ -174,6 +174,7 @@ Drawmore.Modules.Layers = {
         l.x += dx;
         l.y += dy;
       }
+      cc = cc.concat(l.childNodes);
     }
     this.needFullRedraw = true;
     this.requestRedraw();
