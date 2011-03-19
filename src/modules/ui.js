@@ -51,6 +51,8 @@ Drawmore.Modules.UI = {
     indentCurrentLayer: ['g'],
     addCurrentLayerMask: ['b'],
 
+    selectAll: ['m'],
+
     toggleUI: [Key.TAB, '0'],
     toggleHelp: [191] // question mark
   },
@@ -216,7 +218,8 @@ Drawmore.Modules.UI = {
         draw.mousedown = true;
         if (ev.altKey || draw.isEraser(ev)) {
           draw.erasing = true;
-        } else if (ev.ctrlKey) {
+        }
+        if (ev.ctrlKey) {
           draw.selecting = true;
         }
         draw.absoluteCurrent = draw.getAbsolutePoint(draw.current);
@@ -389,6 +392,12 @@ Drawmore.Modules.UI = {
           draw.toggleCurrentLayer();
           ev.preventDefault();
 
+        } else if (Key.match(ev, draw.keyBindings.selectAll)) {
+          if (ev.shiftKey)
+            draw.deselect();
+          else
+            draw.selectAll();
+          ev.preventDefault();
         }
       }
       if (!ev.altKey && !ev.ctrlKey) {

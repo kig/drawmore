@@ -397,6 +397,12 @@ Layer = Klass({
     this.subPolygon([
       {x:x, y:y}, {x:x, y:y+h}, {x:x+w, y:y+h}, {x:x+w, y:y}
     ]);
+  },
+
+  fillRect : function(x,y,w,h,color) {
+    this.beginPath();
+    this.rect(x,y,w,h);
+    this.fill(color);
   }
 
 });
@@ -640,6 +646,12 @@ TiledLayer = Klass(Layer, {
 
   initializeLayer: function() {
     this.tiles = {};
+  },
+
+  isEmpty : function() {
+    for (var i in this.tiles)
+      return false;
+    return true;
   },
 
   getLayerBoundingBox : function() {

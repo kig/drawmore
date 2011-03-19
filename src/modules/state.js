@@ -112,7 +112,8 @@ Drawmore.Modules.State = {
       layers : this.layerManager.copyLayers(),
       currentLayerUID : this.currentLayer && this.currentLayer.uid,
       topLayerUID : this.topLayer.uid,
-      strokeLayerUID : this.strokeLayer.uid
+      strokeLayerUID : this.strokeLayer.uid,
+      selectionLayerUID : this.selectionLayer.uid
     };
   },
 
@@ -126,6 +127,7 @@ Drawmore.Modules.State = {
     this.layerManager.rebuildCopy(state.layers);
     this.topLayer = this.layerManager.getLayerByUID(state.topLayerUID);
     this.strokeLayer = this.layerManager.getLayerByUID(state.strokeLayerUID);
+    this.selectionLayer = this.layerManager.getLayerByUID(state.selectionLayerUID);
     this.currentLayer = this.layerManager.getLayerByUID(state.currentLayerUID);
     this.layerWidget.requestRedraw();
     for (var i=0; i<state.palette.length; i++)

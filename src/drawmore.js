@@ -8,6 +8,7 @@ Drawmore.App = Klass(
   Drawmore.Modules.Layers,
   Drawmore.Modules.Palette,
   Drawmore.Modules.Rulers,
+  Drawmore.Modules.Selection,
   Drawmore.Modules.State,
   Drawmore.Modules.UI,
 {

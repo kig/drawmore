@@ -213,7 +213,7 @@ Drawmore.Modules.DrawLoop = {
         );
         this.strokeLayer.globalCompositeOperation = composite;
       }
-      if (this.selecting)
+      if (this.selecting || !this.selectionLayer.isEmpty())
         this.topLayer.appendChild(this.selectionLayer);
 
       TiledLayer.printAllocStats('out-frame');
