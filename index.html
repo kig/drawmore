@@ -3,6 +3,8 @@
   <head>
     <meta name="google-site-verification" content="v6eoPzWu-804GtwCJs9mlqyMOJPC7NG85L57Xbxon7w" />
     <meta charset="UTF-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, user-scalable=no" />
+
     <!--<meta name="apple-mobile-web-app-capable" content="yes" />-->
     <title>&#9733; Drawmore &#9733;</title>
     <link rel="stylesheet" href="css/layerwidget.css" type="text/css" />
@@ -23,7 +25,7 @@
     <script type="text/javascript" src="src/layerwidget.js"></script>
     <script type="text/javascript" src="src/upload_util.js"></script>
     <script type="text/javascript" src="src/inspirator.js"></script>
-
+    
     <script type="text/javascript" src="src/modules/background.js"></script>
     <script type="text/javascript" src="src/modules/brush_strokes.js"></script>
     <script type="text/javascript" src="src/modules/color_picking.js"></script>
@@ -56,8 +58,10 @@
         }, 1000);
 
         window.addEventListener('resize', function() {
-          if (draw.width != window.innerWidth || draw.height != window.innerHeight) {
-            draw.resize(window.innerWidth, window.innerHeight);
+          var width = window.innerWidth * (window.devicePixelRatio || 1);
+          var height = window.innerHeight * (window.devicePixelRatio || 1);
+          if (draw.width != width || draw.height != height) {
+            draw.resize(width, height);
           }
         }, false);
 
@@ -78,8 +82,10 @@
 
 
         var c = byId('mainCanvas');
-        c.width = window.innerWidth;
-        c.height = window.innerHeight;
+        c.width = window.innerWidth * (window.devicePixelRatio || 1);
+        c.height = window.innerHeight * (window.devicePixelRatio || 1);
+        c.style.width = window.innerWidth + 'px';
+        c.style.height = window.innerHeight + 'px';
         document.body.appendChild(c);
         draw = null;
 
@@ -489,6 +495,8 @@
         color: #381;
       }
       #TheInspirator {
+        display: none;
+
         position: absolute;
         z-index: 9;
         right: 0px;
@@ -504,6 +512,8 @@
         white-space: nowrap;
       }
       #TheInspiratorToggle {
+        display: none;
+
         position: absolute;
         z-index: 9;
         font-size: 12px;
@@ -527,6 +537,8 @@
       }
 
       #buttonBar {
+        display: block;
+
         text-align: right;
         z-index: 10;
         bottom: 4px;
@@ -771,22 +783,10 @@
       <p>feedback to <a href="http://twitter.com/ilmarihei">twitter</a></p>
       <p>patches and bugs to <a href="http://github.com/kig/scribble">github</a></p>
       <p>ilmari.heikkinen@gmail.com</p>
-      <p>v 2011-03-19.31.2</p>
+      <p>v 2015-12-14.32.1</p>
     </div>
-    <embed name="wacom-plugin" id="wacom-plugin" type="application/x-wacom-tablet" HIDDEN="TRUE"
-      pluginspage="http://www.wacom.com/productsupport/plugin.php"></embed>
-<script type="text/javascript">
-
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-1485935-7']);
-  _gaq.push(['_trackPageview']);
-
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-
-</script>
+    <!-- <embed name="wacom-plugin" id="wacom-plugin" type="application/x-wacom-tablet" HIDDEN="TRUE" 
+      pluginspage="http://www.wacom.com/productsupport/plugin.php"></embed> -->
+    <div id="wacom-plugin"></div>
   </body>
 </html>

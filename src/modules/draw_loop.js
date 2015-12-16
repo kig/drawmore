@@ -3,9 +3,13 @@ Drawmore.Modules.DrawLoop = {
   // Draw loop
 
   drawMainCanvas : function(x,y,w,h, noOptimize) {
-    this.ctx.mozImageSmoothingEnabled = false;
-    this.ctx.webkitImageSmoothingEnabled = false;
-    this.ctx.imageSmoothingEnabled = false;
+    if (this.ctx.imageSmoothingEnabled) {
+      this.ctx.imageSmoothingEnabled = false;
+    } else if (this.ctx.MozImageSmoothingEnabled) {
+      this.ctx.mozImageSmoothingEnabled = false;
+    } else if (this.ctx.webkitImageSmoothingEnabled) {
+      this.ctx.webkitImageSmoothingEnabled = false;
+    }
     if (this.zoom > 1 && !noOptimize) {
       this.applyTo(this.tempCtx,
         x/this.zoom-this.zoom, y/this.zoom-this.zoom,
@@ -237,15 +241,18 @@ Drawmore.Modules.DrawLoop = {
       return;
     this.inputTime = this.lastInputTime;
     this.redrawRequested = true;
-    var self = this;
-    var update = function(){ self.updateDisplay(); };
-    if (window.mozRequestAnimationFrame) {
-      window.mozRequestAnimationFrame(update);
-    } else if (window.webkitRequestAnimationFrame) {
-      window.webkitRequestAnimationFrame(update);
-    } else {
-      setTimeout(update, 0);
+    if (!this.displayUpdater) {
+      this.displayUpdater = this.updateDisplay.bind(this);
     }
+    // if (window.requestAnimationFrame) {
+      window.requestAnimationFrame(this.displayUpdater);
+    // } else if (window.mozRequestAnimationFrame) {
+    //   window.mozRequestAnimationFrame(update);
+    // } else if (window.webkitRequestAnimationFrame) {
+    //   window.webkitRequestAnimationFrame(update);
+    // } else {
+      setTimeout(this.displayUpdater, 0);
+    // }
   }
 
 };

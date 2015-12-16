@@ -66,7 +66,7 @@ Drawmore.Modules.BrushStrokes = {
       point.pointerType  = this.wacomPlugin.pointerType;
       */
     } else {
-      point.pressure = 1;
+      point.pressure = event.force || 1;
     }
   },
 

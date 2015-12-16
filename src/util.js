@@ -1237,6 +1237,7 @@ Object.conditionalExtend = function(dst, src) {
   @addon
   */
 Object.clone = function(src) {
+    // this is full of stupid bugs :(
   if (!src || src == true)
     return src;
   switch (typeof(src)) {
@@ -1247,7 +1248,7 @@ Object.clone = function(src) {
       return src;
       break;
     case 'function':
-      obj = eval(src.toSource());
+      var obj = eval(src.toSource());
       return Object.extend(obj, src);
       break;
     case 'object':
@@ -1354,17 +1355,12 @@ if (!window.Mouse) Mouse = {};
   @return An object of form {x: relative_x, y: relative_y}
   */
 Mouse.getRelativeCoords = function(element, event) {
-  var xy = {x:0, y:0};
-  var osl = 0;
-  var ost = 0;
-  var el = element;
-  while (el) {
-    osl += el.offsetLeft;
-    ost += el.offsetTop;
-    el = el.offsetParent;
-  }
-  xy.x = event.pageX - osl;
-  xy.y = event.pageY - ost;
+  var bbox = element.getBoundingClientRect();
+  var xy = {
+    x: (event.clientX-bbox.left) * window.devicePixelRatio, 
+    y: (event.clientY-bbox.top) * window.devicePixelRatio
+  };
+  console.log(xy);
   return xy;
 }
 
