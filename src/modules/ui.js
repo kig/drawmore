@@ -287,6 +287,137 @@ Drawmore.Modules.UI = {
       draw.selecting = false;
     };
 
+    this.listeners['touchmove'] = function(ev) {
+      draw.updateInputTime();
+      if (ev.touches.length !== 1) {
+        return;
+      }
+      if (ev.target == draw.canvas || ev.target.hasAttribute('showbrush')) {
+        draw.cursor.show();
+      } else {
+        draw.cursor.hide();
+      }
+      draw.current = Mouse.getRelativeCoords(draw.canvas, ev.touches[0]);
+      draw.appendTabletData(draw.current, ev.touches[0]);
+      if (draw.panning)
+        draw.keepPanning();
+      if (draw.moving)
+        draw.keepMoving();
+      if (draw.resizingBrush) {
+        draw.keepResizingBrush();
+      } else if (draw.rotatingBrush) {
+        draw.keepRotatingBrush();
+      } else {
+        draw.cursor.moveTo(draw.current.x, draw.current.y);
+      }
+      draw.absoluteCurrent = draw.getAbsolutePoint(draw.current);
+      if (draw.mousedown) {
+        if (draw.prev != null) {
+          if (!ev.shiftKey && draw.ruler != null) {
+            draw.removeTemporaryRuler(draw.ruler);
+            draw.ruler = null;
+          }
+          if (ev.shiftKey && draw.ruler == null) {
+            var dx = draw.absoluteCurrent.x - draw.absolutePrev.x;
+            var dy = draw.absoluteCurrent.y - draw.absolutePrev.y;
+            if (Math.abs(dx) > Math.abs(dy))
+              draw.ruler = new Rulers.ConstantY(draw.absolutePrev.y);
+            else
+              draw.ruler = new Rulers.ConstantX(draw.absolutePrev.x);
+            draw.addTemporaryRuler(draw.ruler);
+          }
+          draw.applyRulers(draw.absoluteCurrent);
+          draw.pushAction('drawLine', [draw.absolutePrev, draw.absoluteCurrent]);
+        }
+        draw.prev = draw.current;
+        draw.absolutePrevPrev = draw.absolutePrev;
+        draw.absolutePrev = draw.absoluteCurrent;
+        ev.preventDefault();
+      }
+    };
+
+    this.listeners['touchstart'] = function(ev) {
+      draw.updateInputTime();
+      if (ev.touches.length !== 1) {
+        return;
+      }
+      draw.stopResizingBrush();
+      draw.stopRotatingBrush();
+      draw.current = Mouse.getRelativeCoords(draw.canvas, ev.touches[0]);
+      draw.absoluteCurrent = draw.getAbsolutePoint(draw.current);
+      draw.appendTabletData(draw.current, ev.touches[0]);
+      draw.cursor.moveTo(draw.current.x, draw.current.y);
+      if (ev.target == draw.canvas) {
+        draw.mousedown = true;
+        if (ev.altKey || draw.isEraser(ev)) {
+          draw.erasing = true;
+        }
+        if (ev.ctrlKey) {
+          draw.selecting = true;
+        }
+        draw.absoluteCurrent = draw.getAbsolutePoint(draw.current);
+        draw.pushAction('beginStroke', []);
+        if (ev.shiftKey && draw.mouseup) {
+          if (draw.ruler != null) {
+            draw.removeTemporaryRuler(draw.ruler);
+            draw.ruler = null;
+          }
+          var mu = Object.clone(draw.mouseup);
+          mu.pressure = 1;
+          var mc = Object.clone(draw.current);
+          mc.pressure = 1;
+          var unModAbsoluteMouseup = draw.getAbsolutePoint(mu);
+          var unModAbsoluteCurrent = draw.getAbsolutePoint(mc);
+          draw.pushAction('drawLine', [unModAbsoluteMouseup, unModAbsoluteCurrent]);
+          draw.prev = null;
+        } else {
+          draw.pushAction('drawPoint', [draw.absoluteCurrent]);
+          draw.prev = draw.current;
+          draw.absolutePrev = draw.absoluteCurrent;
+        }
+        ev.preventDefault();
+      } else if (Mouse.state[Mouse.MIDDLE] && ev.target == draw.canvas) {
+        if (ev.shiftKey)
+          draw.startMoving();
+        else
+          draw.startPanning();
+        ev.preventDefault();
+      } else if (Mouse.state[Mouse.RIGHT] && ev.target == draw.canvas) {
+        if (ev.shiftKey)
+          draw.startRotatingBrush();
+        else
+          draw.startResizingBrush();
+        ev.preventDefault();
+      }
+    };
+
+    this.listeners['touchend'] = function(ev) {
+      draw.updateInputTime();
+      if (ev.touches.length !== 1) {
+        return;
+      }
+      draw.stopResizingBrush();
+      draw.stopRotatingBrush();
+      if (draw.mousedown)
+        ev.preventDefault();
+      draw.mousedown = false;
+      draw.mouseup = Mouse.getRelativeCoords(draw.canvas, ev.touches[0]);
+      draw.appendTabletData(draw.mouseup, ev.touches[0]);
+      draw.absoluteMouseup = draw.getAbsolutePoint(draw.mouseup);
+      if (!Mouse.state[Mouse.LEFT]) {
+        draw.prev = null;
+        draw.absolutePrev = null;
+        draw.absolutePrevPrev = null;
+      }
+      if (ev.button == Mouse.MIDDLE) {
+        draw.stopPanning();
+        draw.stopMoving();
+      }
+      draw.pushAction('endStroke', [draw.erasing, draw.selecting]);
+      draw.erasing = false;
+      draw.selecting = false;
+    };
+
     this.listeners['keydown'] = function(ev) {
       draw.updateInputTime();
       if (Key.match(ev, [Key.ALT]))
