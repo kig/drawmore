@@ -103,8 +103,9 @@
 					toggleCtx.fillRect(w/2, h/2-5-2, 1, 5);
 				}
 
-				var tw = toggleCtx.measureText(brush.r.toString()).width;
-				toggleCtx.fillText(brush.r.toString(), w/2-tw/2, h-2);
+				var rs = (Math.round(brush.r * 100) / 100).toString().replace(/(\...).+/, '$1');
+				var tw = toggleCtx.measureText(rs).width;
+				toggleCtx.fillText(rs, w/2-tw/2, h-2);
 
 			} else if (targetMode === Mode.OPACITY_CHANGE) {
 				var segs = 8;
@@ -159,7 +160,7 @@
 					var dx = ev.touches[0].clientX - this.startX;
 					var dy = ev.touches[0].clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
-					brush.r = Math.max(1, this.startRadius + dx);
+					brush.r = Math.max(0.25, this.startRadius + dx);
 					break;
 				}
 				case Mode.OPACITY_CHANGE: {
