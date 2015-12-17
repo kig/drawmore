@@ -90,19 +90,35 @@
 
 			} else if (targetMode === Mode.BRUSH_RESIZE) {
 
-				toggleCtx.beginPath();
-				toggleCtx.arc(w/2, h/2, brush.r, 0, Math.PI*2, true);
-				toggleCtx.strokeStyle = 'white';
-				toggleCtx.stroke();
+				var r = Math.min(brush.r, h/2 - 15)
 
 				toggleCtx.beginPath();
-				toggleCtx.arc(w/2, h/2, brush.r+1, 0, Math.PI*2, true);
-				toggleCtx.strokeStyle = 'black';
-				toggleCtx.stroke();
+				toggleCtx.arc(w/2, h/2-5, r, 0, Math.PI*2, true);
+				toggleCtx.fillStyle = 'white';
+				toggleCtx.fill();
+
+				toggleCtx.fillStyle = 'black';
+				if (r < brush.r) {
+					toggleCtx.fillRect(w/2-2, h/2-5, 5, 1);
+					toggleCtx.fillRect(w/2, h/2-5-2, 1, 5);
+				}
+
+				var tw = toggleCtx.measureText(brush.r.toString()).width;
+				toggleCtx.fillText(brush.r.toString(), w/2-tw/2, h-2);
 
 			} else if (targetMode === Mode.OPACITY_CHANGE) {
-				var v = (1 - brush.opacity) * 255;
-				toggleCtx.fillStyle = toColor([v,v,v]);
+				var segs = 8;
+				var pw = w/segs;
+				var ph = h/segs;
+				toggleCtx.globalAlpha = 1;
+				for (var x=0; x<segs; x++) {
+					for (var y=0; y<segs; y++) {
+						toggleCtx.fillStyle = ((x+y) % 2) ? '#AAA' : '#CCC';
+						toggleCtx.fillRect(x * pw, y * ph, pw, ph);
+					}
+				}
+				toggleCtx.fillStyle = 'black';
+				toggleCtx.globalAlpha = brush.opacity;
 				toggleCtx.fillRect(0, 0, w, h);
 			}
 		};
@@ -121,7 +137,7 @@
 
 			mode = targetMode;
 		}, false);
-		
+
 		toggle.addEventListener('touchend', function(ev) {
 			ev.preventDefault();
 			mode = Mode.DRAW;
