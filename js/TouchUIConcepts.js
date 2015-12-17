@@ -103,7 +103,11 @@
 					toggleCtx.fillRect(w/2, h/2-5-2, 1, 5);
 				}
 
-				var rs = (Math.round(brush.r * 100) / 100).toString().replace(/(\...).+/, '$1');
+				if (brush.r < 1) {
+					var rs = (Math.round(brush.r * 100) / 100).toString().replace(/(\...).+/, '$1');
+				} else {
+					var rs = Math.round(brush.r).toString();
+				}
 				var tw = toggleCtx.measureText(rs).width;
 				toggleCtx.fillText(rs, w/2-tw/2, h-2);
 
@@ -270,26 +274,7 @@
 
 		touchmove: function(ev) {
 			brush.pressure = ev.touches[0].force;
-			if (mode === Mode.BRUSH_RESIZE) {
-				var dx = ev.touches[0].clientX - this.startX;
-				var dy = ev.touches[0].clientY - this.startY;
-				var d = Math.sqrt(dx*dx + dy*dy);
-				this.log(Math.floor(dx));
-				brush.r = Math.max(1, this.startRadius + dx);
-			} else if (mode === Mode.OPACITY_CHANGE) {
-				var dx = ev.touches[0].clientX - this.startX;
-				var dy = ev.touches[0].clientY - this.startY;
-				var d = Math.sqrt(dx*dx + dy*dy);
-				brush.opacity = Math.max(0, Math.min(1, this.startOpacity + dx/100));
-			} else if (mode === Mode.COLOR_PICKER) {
-				brush.x = ev.touches[0].clientX;
-				brush.y = ev.touches[0].clientY; 
-				var x = Math.floor(brush.x * pixelRatio);
-				var y = Math.floor(brush.y * pixelRatio);
-				var c = drawCtx.getImageData(x, y, 1, 1);
-				brush.color = toColor(c.data);
-				brush.colorArray = c.data;
-			} else if (mode === Mode.DRAW) {
+			if (mode === Mode.DRAW) {
 				brush.x = ev.touches[0].clientX;
 				brush.y = ev.touches[0].clientY;
 				brush.blend = 1-ev.touches[0].force;
@@ -324,18 +309,20 @@
 				} else {
 					var dx = brush.x - brush.lastX;
 					var dy = brush.y - brush.lastY;
+					var dp = brush.pressure - brush.lastPressure;
 					var d = Math.sqrt(dx*dx + dy*dy);
 					var rdx = dx / d;
 					var rdy = dy / d;
+					var rdp = dp / d;
 					while (d > 0) {
 						var x = Math.floor((brush.lastX + d*rdx) * pixelRatio);
 						var y = Math.floor((brush.lastY + d*rdy) * pixelRatio);
-						var c = drawCtx.getImageData(x, y, 1, 1);
-						ctx.fillStyle = toColor(blend(brush.colorArray, c.data, brush.blend));
+						// var c = drawCtx.getImageData(x, y, 1, 1);
+						// ctx.fillStyle = toColor(blend(brush.colorArray, c.data, brush.blend));
 						ctx.beginPath();
-						ctx.arc(brush.lastX + d*rdx, brush.lastY + d*rdy, brush.r, 0, Math.PI*2, true);
+						ctx.arc(brush.lastX + d*rdx, brush.lastY + d*rdy, (brush.lastPressure + d*rdp) * brush.r, 0, Math.PI*2, true);
+						d -= Math.max(0.25, 0.5 * (brush.lastPressure + d*rdp) * brush.r);
 						ctx.fill();
-						d -= 0.5 * brush.r;
 					}
 				}
 			} ctx.restore();
@@ -344,6 +331,7 @@
 
 		brush.lastX = brush.x;
 		brush.lastY = brush.y;
+		brush.lastPressure = brush.pressure;
 	};
 
 	var endDrawBrush = function() {
