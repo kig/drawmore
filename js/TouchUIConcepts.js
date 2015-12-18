@@ -159,7 +159,7 @@
 	};
 
 	App.prototype.opacityPressureCurve = function(v) {
-		return window.opacityPressure.checked ? Math.clamp(v*2, 0, 1) : 1;
+		return window.opacityPressure.checked ? Math.clamp(v*1.5, 0, 1) : 1;
 	};
 
 	App.prototype.drawBrush = function() {
