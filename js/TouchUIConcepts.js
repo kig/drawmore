@@ -17,7 +17,7 @@
 			opacity: 1,
 			blend: 0.5,
 			color: '#000000',
-			colorArray: [0,0,0,255]
+			colorArray: new Uint8Array([0,0,0,255])
 		};
 
 		App.modeToggle(this, window.brushResize, App.Mode.BRUSH_RESIZE);
@@ -207,6 +207,10 @@
 			this.needUpdate = false;
 		}
 
+		if (this.colorMixer) {
+			this.colorMixer.redraw();
+		}
+
 		window.requestAnimationFrame(this.ticker);
 	};
 
@@ -286,9 +290,57 @@
 				toggleCtx.fillStyle = 'black';
 				toggleCtx.globalAlpha = app.brush.opacity;
 				toggleCtx.fillRect(0, 0, w, h);
+
+				toggleCtx.globalAlpha = 1;
+				toggleCtx.fillStyle = 'white';
+				var rs = Math.round(app.brush.opacity * 100).toString() + '%';
+				var tw = toggleCtx.measureText(rs).width;
+				toggleCtx.fillText(rs, w/2-tw/2, h-2);
+
 			}
 		};
 		update();
+
+		var touchInsideElement = function(el, ev) {
+			var bbox = el.getBoundingClientRect();
+			var cx = ev.changedTouches[0].clientX;
+			var cy = ev.changedTouches[0].clientY;
+			return (cx < bbox.right && cx > bbox.left && cy < bbox.bottom && cy > bbox.top);
+		};
+
+		toggle.revertBrush = function() {
+			app.brush.r = this.startRadius;
+			app.brush.opacity = this.startOpacity;
+			app.brush.color = this.startColor;
+			app.brush.colorArray = this.startColorArray;
+		};
+
+		var colorMixer;
+		if (targetMode === App.Mode.COLOR_PICKER) {
+			colorMixer = new ColorMixer(document.body, 100, 100, function(c) {
+				app.brush.colorArray[0] = c[0]*255;
+				app.brush.colorArray[1] = c[1]*255;
+				app.brush.colorArray[2] = c[2]*255;
+				app.brush.color = App.toColor(app.brush.colorArray);
+				update();
+			});
+			colorMixer.widget.style.position = 'absolute';
+			colorMixer.widget.style.left = '80px';
+			colorMixer.widget.style.bottom = '80px';
+			colorMixer.widget.style.zIndex = 10;
+			colorMixer.redraw();
+			app.colorMixer = colorMixer;
+
+			var toggleColorMixer = function() {
+				if (colorMixer.widget.style.display === 'none') {
+					colorMixer.widget.style.display = 'block';
+				} else {
+					colorMixer.widget.style.display = 'none';
+				}
+			};
+			toggleColorMixer();
+
+		}
 
 		toggle.addEventListener('touchstart', function(ev) {
 			ev.preventDefault();
@@ -306,15 +358,18 @@
 
 		toggle.addEventListener('touchend', function(ev) {
 			ev.preventDefault();
+			if (targetMode === App.Mode.COLOR_PICKER) {
+				if (touchInsideElement(this, ev)) {
+					toggleColorMixer();
+					this.revertBrush();
+				}
+			}
 			app.mode = App.Mode.DRAW;
 		}, false);
 
 		toggle.addEventListener('touchcancel', function(ev) {
 			ev.preventDefault();
-			app.brush.r = this.startRadius;
-			app.brush.opacity = this.startOpacity;
-			app.brush.color = this.startColor;
-			app.brush.colorArray = this.startColorArray;
+			this.revertBrush();
 			app.mode = App.Mode.DRAW;
 		}, false);
 
@@ -326,25 +381,31 @@
 					var dx = ev.touches[0].clientX - this.startX;
 					var dy = ev.touches[0].clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
-					app.brush.r = Math.max(0.25, this.startRadius + dx);
+					app.brush.r = Math.max(0.25, this.startRadius + dx/3);
 					break;
 				}
 				case App.Mode.OPACITY_CHANGE: {
 					var dx = ev.touches[0].clientX - this.startX;
 					var dy = ev.touches[0].clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
-					app.brush.opacity = Math.max(0, Math.min(1, this.startOpacity - dy/50));
+					app.brush.opacity = Math.max(0, Math.min(1, this.startOpacity - dy/100));
 					break;
 				}
 				case App.Mode.COLOR_PICKER: {
-					var x = Math.floor(ev.touches[0].clientX * app.pixelRatio);
-					var y = Math.floor(ev.touches[0].clientY * app.pixelRatio);
-					var pixels = new Uint8Array(4);
-					var gl = app.renderer.context;
-					app.renderer.setRenderTarget(app.drawRenderTarget);
-					gl.readPixels(x, app.renderer.domElement.height-y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-					app.brush.color = App.toColor(pixels);
-					app.brush.colorArray = pixels;
+					if ( touchInsideElement(this, ev) ) {
+						// Touch is still inside element area.
+						// Do nothing, maybe the user wants to bring up the color mixer.
+
+					} else { // dragged to outside element area
+						var x = Math.floor(ev.touches[0].clientX * app.pixelRatio);
+						var y = Math.floor(ev.touches[0].clientY * app.pixelRatio);
+						var pixels = new Uint8Array(4);
+						var gl = app.renderer.context;
+						app.renderer.setRenderTarget(app.drawRenderTarget);
+						gl.readPixels(x, app.renderer.domElement.height-y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+						app.brush.color = App.toColor(pixels);
+						app.brush.colorArray = pixels;
+					}
 					break;
 				}
 			}

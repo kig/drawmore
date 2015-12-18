@@ -14,24 +14,11 @@
 				overflow: hidden;
 			}
 			
-			canvas {
+			#draw-canvas {
 				position: absolute;
 				top: 0;
 				left: 0;
-				width: 100%;
-				height: 100%;
-			}
-
-			#draw-canvas {
 				z-index: 0;
-			}
-
-			#stroke-canvas {
-				z-index: 1;
-			}
-
-			#brush-canvas {
-				z-index: 2;
 			}
 
 			.mode-toggle {
@@ -63,6 +50,8 @@
 		<div class="mode-toggle" id="colorPicker"></div>
 
 		<script src="js/three.js"></script>
+		<script src="js/ColorUtils.js"></script>
+		<script src="js/ColorMixer.js"></script>
 		<script src="js/TouchUIConcepts.js"></script>
 	</body>
 </html>
