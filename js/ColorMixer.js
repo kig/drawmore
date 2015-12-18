@@ -14,6 +14,9 @@ ColorMixer.prototype = {
     var self = this;
     this.callback = callback;
 
+    var pixelRatio = window.devicePixelRatio;
+    this.pixelRatio = pixelRatio;
+
     var widget = document.createElement('div');
     widget.style.position = 'relative';
     widget.style.padding = '0px';
@@ -21,33 +24,36 @@ ColorMixer.prototype = {
     container.appendChild(this.widget);
 
     this.canvas = document.createElement('canvas');
-    this.canvas.width = width-8;
-    this.canvas.height = height-8;
+    this.canvas.width = (width-8) * pixelRatio;
+    this.canvas.height = (height-8) * pixelRatio;
+    this.canvas.style.width = (width-8) + 'px';
+    this.canvas.style.height = (height-8) + 'px';
     this.ctx = this.canvas.getContext('2d');
+    this.ctx.scale(pixelRatio, pixelRatio);
 
     var hueSize = Math.ceil((34+width) * Math.sqrt(2));
 
     this.hueCanvas = document.createElement('canvas');
-    this.hueCanvas.width = this.hueCanvas.height = hueSize;
+    this.hueCanvas.width = this.hueCanvas.height = hueSize * pixelRatio;
+    this.hueCanvas.style.width = this.hueCanvas.style.height = hueSize + 'px';
     this.hueCanvas.style.position = 'relative';
     this.hueCanvas.style.top = this.hueCanvas.style.left = '0px';
     widget.appendChild(this.hueCanvas);
 
     this.svWidget = document.createElement('div');
     this.svWidget.style.position = 'absolute';
-    this.svWidget.style.left = Math.floor((hueSize-this.canvas.width)/2) + 'px';
-    this.svWidget.style.top = Math.floor((hueSize-this.canvas.width)/2) + 'px';
+    this.svWidget.style.left = Math.floor((hueSize-(width-8))/2) + 'px';
+    this.svWidget.style.top = Math.floor((hueSize-(height-8))/2) + 'px';
 
     this.canvas.style.position = 'absolute';
-    this.canvas.style.boxShadow =
-    this.canvas.style.mozBoxShadow =
-    this.canvas.style.webkitBoxShadow = '0px 0px 4px rgba(0,0,0,0.3)';
+    this.canvas.style.boxShadow = '0px 0px 4px rgba(0,0,0,0.3)';
     this.canvas.style.top = this.canvas.style.left = '0px';
     this.svWidget.appendChild(this.canvas);
 
     widget.appendChild(this.svWidget);
 
     this.hueCtx = this.hueCanvas.getContext('2d');
+    this.hueCtx.scale(pixelRatio, pixelRatio);
 
     this.hueCanvas.update = function(ev) {
       if (this.down) {
@@ -63,10 +69,10 @@ ColorMixer.prototype = {
       if (this.down) {
         var bbox = this.getBoundingClientRect();
         var xy = {x: ev.touches[0].clientX-bbox.left, y: ev.touches[0].clientY-bbox.top};
-        var x = Math.clamp(xy.x, 0, self.canvas.width-1);
-        var y = Math.clamp(xy.y, 0, self.canvas.height-1);
-        self.saturation = x/(self.canvas.width-1);
-        self.value = 1-(y/(self.canvas.width-1));
+        var x = Math.clamp(xy.x, 0, width-9);
+        var y = Math.clamp(xy.y, 0, height-9);
+        self.saturation = x/(width-9);
+        self.value = 1-(y/(height-9));
 
         self.signalChange();
         self.requestRedraw();
@@ -87,7 +93,7 @@ ColorMixer.prototype = {
     addEventListeners(this.canvas);
     addEventListeners(this.hueCanvas);
 
-    var w = this.ctx.createLinearGradient(0,0,0,self.canvas.height-1);
+    var w = this.ctx.createLinearGradient(0,0,0,height-9);
     w.addColorStop(0, 'rgba(0,0,0,0)');
     w.addColorStop(1, 'rgba(0,0,0,1)');
     this.valueGradient = w;
@@ -120,7 +126,7 @@ ColorMixer.prototype = {
   },
 
   setSaturation : function(s, signal) {
-    this.cursor.moveTo(s*this.canvas.width, this.cursor.y);
+    this.cursor.moveTo(s*this.canvas.width/this.pixelRatio, this.cursor.y);
     this.saturation = s;
     if (signal == true) {
       this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
@@ -129,7 +135,7 @@ ColorMixer.prototype = {
   },
 
   setValue : function(s, signal) {
-    this.cursor.moveTo(this.cursor.x, (1-s)*this.canvas.height);
+    this.cursor.moveTo(this.cursor.x, (1-s)*this.canvas.height/this.pixelRatio);
     this.value = s;
     if (signal == true) {
       this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
@@ -148,8 +154,8 @@ ColorMixer.prototype = {
   },
 
   hueAtMouseCoords : function(xy) {
-    var w2 = this.hueCanvas.width/2;
-    var h2 = this.hueCanvas.height/2;
+    var w2 = this.hueCanvas.width/2/this.pixelRatio;
+    var h2 = this.hueCanvas.height/2/this.pixelRatio;
     var dx = xy.x - w2;
     var dy = xy.y - h2;
     var a = Math.PI/2 + Math.atan2(dy,dx);
@@ -178,11 +184,11 @@ ColorMixer.prototype = {
   redrawHueCanvas : function() {
     var hc = this.hueCtx;
     var deg2rad = Math.PI/180;
-    var r = this.canvas.width*0.5 * Math.sqrt(2) + 11.5;
-    var w2 = this.hueCanvas.width/2;
-    var h2 = this.hueCanvas.height/2;
+    var r = this.canvas.width/this.pixelRatio*0.5 * Math.sqrt(2) + 11.5;
+    var w2 = this.hueCanvas.width/2/this.pixelRatio;
+    var h2 = this.hueCanvas.height/2/this.pixelRatio;
     hc.save();
-    hc.clearRect(0,0,this.hueCanvas.width,this.hueCanvas.height);
+    hc.clearRect(0,0,this.hueCanvas.width/this.pixelRatio,this.hueCanvas.height/this.pixelRatio);
     hc.translate(w2,h2);
     hc.lineWidth = 15;
 
@@ -221,8 +227,8 @@ ColorMixer.prototype = {
   },
 
   redrawSVCanvas : function() {
-    var w = this.canvas.width;
-    var h = this.canvas.height;
+    var w = this.canvas.width/this.pixelRatio;
+    var h = this.canvas.height/this.pixelRatio;
     var rgb = this.hsva2rgba(this.hue, 1, 1, 1);
     var g = this.ctx.createLinearGradient(0, 0, w-1, 0);
     g.addColorStop(0, 'white');
@@ -233,12 +239,12 @@ ColorMixer.prototype = {
     this.ctx.fillRect(0,0,w,h);
 
     this.ctx.beginPath();
-    this.ctx.arc( this.saturation * (this.canvas.width-1), (1-this.value)*(this.canvas.height-1), 8, 0, Math.PI*2, true);
+    this.ctx.arc( this.saturation * (this.canvas.width/this.pixelRatio-1), (1-this.value)*(this.canvas.height/this.pixelRatio-1), 8, 0, Math.PI*2, true);
     this.ctx.strokeStyle = 'white';
     this.ctx.stroke();
 
     this.ctx.beginPath();
-    this.ctx.arc( this.saturation * (this.canvas.width-1), (1-this.value)*(this.canvas.height-1), 7, 0, Math.PI*2, true);
+    this.ctx.arc( this.saturation * (this.canvas.width/this.pixelRatio-1), (1-this.value)*(this.canvas.height/this.pixelRatio-1), 7, 0, Math.PI*2, true);
     this.ctx.strokeStyle = 'black';
     this.ctx.stroke();
   }
