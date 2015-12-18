@@ -16,8 +16,8 @@
 			r: 3,
 			opacity: 1,
 			blend: 0.5,
-			color: '#ff0000',
-			colorArray: [255,0,0,255]
+			color: '#000000',
+			colorArray: [0,0,0,255]
 		};
 
 		App.modeToggle(this, window.brushResize, App.Mode.BRUSH_RESIZE);
@@ -120,7 +120,7 @@
 				].join("\n"),
 				uniforms: {
 					resolution: { type: 'v2', value: new THREE.Vector2(renderer.domElement.width, renderer.domElement.height) },
-					color: { type: 'v3', value: new THREE.Vector3(1, 0, 0) },
+					color: { type: 'v3', value: new THREE.Vector3(0, 0, 0) },
 					opacity: { type: 'f', value: 0.5 }
 				},
 				transparent: true,
@@ -150,7 +150,7 @@
 		this.brushQuad.position.set(x, y, 0);
 		this.brushQuad.scale.set(r,r,r);
 		this.brushQuad.material.uniforms.opacity.value = opacity;
-		this.brushQuad.material.uniforms.color.value.set(colorArray[0], colorArray[1], colorArray[2]);
+		this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
 		this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
 	};
 
