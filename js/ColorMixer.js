@@ -49,50 +49,43 @@ ColorMixer.prototype = {
 
     this.hueCtx = this.hueCanvas.getContext('2d');
 
-    this.hueCanvas.addEventListener('mousedown', function(ev) {
-      this.down = true;
-      var xy = {x: ev.layerX, y: ev.layerY};
-      var h = self.hueAtMouseCoords(xy);
-      self.setHue(h, true);
-      ev.preventDefault();
-    }, false);
-
-    this.canvas.addEventListener('mousedown', function(ev) {
-      this.down = true;
-      var xy = {x: ev.layerX, y: ev.layerY};
-      var x = Math.clamp(xy.x, 0, self.canvas.width-1);
-      var y = Math.clamp(xy.y, 0, self.canvas.height-1);
-      self.saturation = x/(self.canvas.width-1);
-      self.value = 1-(y/(self.canvas.width-1));
-
-      self.signalChange();
-      ev.preventDefault();
-      self.requestRedraw();
-    }, false);
-
-    window.addEventListener('mousemove', function(ev) {
-      if (self.hueCanvas.down) {
-        var xy = {x: ev.layerX, y: ev.layerY};
+    this.hueCanvas.update = function(ev) {
+      if (this.down) {
+        var bbox = this.getBoundingClientRect();
+        var xy = {x: ev.touches[0].clientX-bbox.left, y: ev.touches[0].clientY-bbox.top};
         var h = self.hueAtMouseCoords(xy);
         self.setHue(h, true);
         ev.preventDefault();
-      } else if (self.canvas.down) {
-        var xy = {x: ev.layerX, y: ev.layerY};
+      }
+    };
+
+    this.canvas.update = function(ev) {
+      if (this.down) {
+        var bbox = this.getBoundingClientRect();
+        var xy = {x: ev.touches[0].clientX-bbox.left, y: ev.touches[0].clientY-bbox.top};
         var x = Math.clamp(xy.x, 0, self.canvas.width-1);
         var y = Math.clamp(xy.y, 0, self.canvas.height-1);
         self.saturation = x/(self.canvas.width-1);
         self.value = 1-(y/(self.canvas.width-1));
 
         self.signalChange();
-        ev.preventDefault();
         self.requestRedraw();
+        ev.preventDefault();
       }
-    }, false);
+    };
 
-    window.addEventListener('mouseup', function(ev) {
-      self.hueCanvas.down = false;
-      self.canvas.down = false;
-    }, false);
+    var addEventListeners = function(el) {
+      el.addEventListener('touchstart', function(ev) {
+        this.down = true;
+        this.update(ev);
+      }, false);
+      el.addEventListener('touchmove', el.update, false);
+      el.addEventListener('touchend', function(ev) { this.down = false; }, false);
+      el.addEventListener('touchcancel', function(ev) { this.down = false; }, false);
+    };
+
+    addEventListeners(this.canvas);
+    addEventListeners(this.hueCanvas);
 
     var w = this.ctx.createLinearGradient(0,0,0,self.canvas.height-1);
     w.addColorStop(0, 'rgba(0,0,0,0)');

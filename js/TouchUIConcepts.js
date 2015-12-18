@@ -353,6 +353,8 @@
 			this.startX = ev.touches[0].clientX;
 			this.startY = ev.touches[0].clientY;
 
+			app.colorMixer.widget.style.display = 'none';
+
 			app.mode = targetMode;
 		}, false);
 
@@ -494,6 +496,8 @@
 
 				this.app.drawBrush();
 			}
+
+			this.app.colorMixer.widget.style.display = 'none';
 		},
 
 		touchend: function(ev) {
