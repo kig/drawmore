@@ -31,138 +31,180 @@
 
 
 	App.prototype.setupCanvas = function() {
-		var canvas = document.createElement('canvas');
-		canvas.width = window.innerWidth * this.pixelRatio;
-		canvas.height = window.innerHeight * this.pixelRatio;
-		canvas.id = 'brush-canvas';
 
-		document.body.appendChild(canvas);
+		var width = window.innerWidth;
+		var height = window.innerHeight;
+		var near = 0.1;
+		var far = 100;
 
-		var ctx = canvas.getContext('2d');
+		var renderer = new THREE.WebGLRenderer();
+		renderer.setClearColor(0xffffff, 1.0);
+		renderer.setPixelRatio( this.pixelRatio );
+		renderer.setSize(width, height);
+		renderer.domElement.id = 'draw-canvas';
+		document.body.appendChild(renderer.domElement);
 
-		var drawCanvas = document.createElement('canvas');
-		drawCanvas.width = window.innerWidth * this.pixelRatio;
-		drawCanvas.height = window.innerHeight * this.pixelRatio;
-		drawCanvas.id = 'draw-canvas';
+		var strokeRenderTarget = new THREE.WebGLRenderTarget(renderer.domElement.width, renderer.domElement.height);
+		var drawRenderTarget = new THREE.WebGLRenderTarget(renderer.domElement.width, renderer.domElement.height);
 
-		document.body.appendChild(drawCanvas);
+		this.strokeRenderTarget = strokeRenderTarget;
+		this.drawRenderTarget = drawRenderTarget;
 
-		var drawCtx = drawCanvas.getContext('2d');
-		drawCtx.fillStyle = '#fff';
-		drawCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
-		
-		var strokeCanvas = document.createElement('canvas');
-		strokeCanvas.width = window.innerWidth * this.pixelRatio;
-		strokeCanvas.height = window.innerHeight * this.pixelRatio;
-		strokeCanvas.id = 'stroke-canvas';
+		renderer.clear();
+		renderer.autoClear = false;
 
-		document.body.appendChild(strokeCanvas);
+		this.renderer = renderer;
 
-		var strokeCtx = strokeCanvas.getContext('2d');
-		strokeCtx.fillStyle = '#fff';
-		strokeCtx.fillRect(0, 0, strokeCanvas.width, strokeCanvas.height);
+		this.drawScene = new THREE.Scene();
+		this.drawCamera = new THREE.Camera();
+		this.drawScene.add(this.drawCamera);
 
-		this.drawCtx = drawCtx;
-		this.ctx = ctx;
-		this.strokeCtx = strokeCtx;
-		this.canvas = canvas;
-		this.strokeCanvas = strokeCanvas;
-		this.drawCanvas = drawCanvas;
+		this.drawQuad = new THREE.Mesh(
+			new THREE.PlaneBufferGeometry(2, 2),
+			new THREE.MeshBasicMaterial({
+				map: this.drawRenderTarget,
+				transparent: true,
+				depthWrite: false,
+				depthTest: false,
+				side: THREE.DoubleSide
+			})
+		);
+		this.drawScene.add(this.drawQuad);
+		this.renderer.clearTarget(this.drawRenderTarget);
+
+		this.strokeScene = new THREE.Scene();
+		this.strokeCamera = new THREE.Camera();
+		this.strokeScene.add(this.strokeCamera);
+
+		this.strokeQuad = new THREE.Mesh(
+			new THREE.PlaneBufferGeometry(2, 2),
+			new THREE.MeshBasicMaterial({
+				map: this.strokeRenderTarget,
+				transparent: true,
+				depthWrite: false,
+				depthTest: false,
+				side: THREE.DoubleSide
+			})
+		);
+		this.strokeScene.add(this.strokeQuad);
+		this.renderer.clearTarget(this.strokeRenderTarget);
+
+		this.scene = new THREE.Scene();
+		var camera = new THREE.OrthographicCamera( 0, width, 0, height, near, far );
+		camera.position.z = 90;
+		this.camera = camera;
+		this.scene.add(this.camera);
+
+		this.brushQuad = new THREE.Mesh(
+			new THREE.PlaneBufferGeometry(2, 2),
+			new THREE.ShaderMaterial({
+				vertexShader: [
+					"varying vec2 vUv;",
+
+					"void main() {",
+					"	vUv = uv;",
+					"	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
+					"}"
+				].join("\n"),
+				fragmentShader: [
+					"varying vec2 vUv;",
+
+					"uniform vec2 resolution;",
+					"uniform vec3 color;",
+					"uniform float opacity;",
+
+					"void main(void) {",
+					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
+					"	gl_FragColor = vec4(color, opacity * smoothstep(1.0, 0.9, length(unitUv)) );",
+					"}"
+				].join("\n"),
+				uniforms: {
+					resolution: { type: 'v2', value: new THREE.Vector2(renderer.domElement.width, renderer.domElement.height) },
+					color: { type: 'v3', value: new THREE.Vector3(1, 0, 0) },
+					opacity: { type: 'f', value: 0.5 }
+				},
+				transparent: true,
+				depthWrite: false,
+				depthTest: false,
+				blending: THREE.CustomBlending,
+				blendEquation: THREE.AddEquation,
+				blendSrc: THREE.OneFactor,
+				blendDst: THREE.ZeroFactor,
+				blendEquationAlpha: THREE.MaxEquation,
+				blendSrcAlpha: THREE.OneFactor,
+				blendDstAlpha: THREE.OneFactor
+			})
+		);
+		this.brushQuad.material.side = THREE.DoubleSide;
+		this.scene.add(this.brushQuad);
+
+		this.endDrawBrush();
 	};
 	
 	App.prototype.addEventListeners = function() {
-		this.eventHandler = new App.EventHandler(this, this.canvas);
+		this.eventHandler = new App.EventHandler(this, this.renderer.domElement);
 	};
 
-	App.prototype.drawBrush = function(newStroke) {
-		var ctx = this.strokeCtx;
+	App.prototype.drawBrushSprite = function(x, y, r, colorArray, opacity) {
+
+		this.brushQuad.position.set(x, y, 0);
+		this.brushQuad.scale.set(r,r,r);
+		this.brushQuad.material.uniforms.opacity.value = opacity;
+		this.brushQuad.material.uniforms.color.value.set(colorArray[0], colorArray[1], colorArray[2]);
+		this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+	};
+
+	App.prototype.drawBrush = function() {
+
 		var brush = this.brush;
 
-		ctx.save(); {
+		var dx = brush.x - brush.lastX;
+		var dy = brush.y - brush.lastY;
+		var dp = brush.pressure - brush.lastPressure;
+		var d = Math.sqrt(dx*dx + dy*dy);
+		var rdx = dx / d;
+		var rdy = dy / d;
+		var rdp = dp / d;
+		while (d > 0) {
+			var x = (brush.lastX + d*rdx);
+			var y = (brush.lastY + d*rdy);
+			var p = (brush.lastPressure + d*rdp);
 
-			ctx.scale(this.pixelRatio, this.pixelRatio);
-
-			ctx.save(); {
-				ctx.fillStyle = brush.color;
-				ctx.globalAlpha = brush.opacity;
-				if (newStroke) {
-					// var x = Math.floor(brush.x * app.pixelRatio);
-					// var y = Math.floor(brush.y * app.pixelRatio);
-					// var c = drawCtx.getImageData(x, y, 1, 1);
-					// ctx.beginPath();
-					// ctx.fillStyle = toColor
-					// ctx.arc(brush.x, brush.y, brush.r, 0, Math.PI*2, true);
-					// ctx.fill();
-				} else {
-					var dx = brush.x - brush.lastX;
-					var dy = brush.y - brush.lastY;
-					var dp = brush.pressure - brush.lastPressure;
-					var d = Math.sqrt(dx*dx + dy*dy);
-					var rdx = dx / d;
-					var rdy = dy / d;
-					var rdp = dp / d;
-					while (d > 0) {
-						var x = Math.floor((brush.lastX + d*rdx) * this.pixelRatio);
-						var y = Math.floor((brush.lastY + d*rdy) * this.pixelRatio);
-						// var c = drawCtx.getImageData(x, y, 1, 1);
-						// ctx.fillStyle = toColor(blend(brush.colorArray, c.data, brush.blend));
-						ctx.beginPath();
-						ctx.arc(brush.lastX + d*rdx, brush.lastY + d*rdy, (brush.lastPressure + d*rdp) * brush.r, 0, Math.PI*2, true);
-						d -= Math.max(0.25, 0.5 * (brush.lastPressure + d*rdp) * brush.r);
-						ctx.fill();
-					}
-				}
-			} ctx.restore();
-
-		} ctx.restore();
+			this.drawBrushSprite(
+				brush.lastX + d*rdx,
+				brush.lastY + d*rdy,
+				p * brush.r, 
+				brush.colorArray,
+				p * brush.opacity
+			);
+			d -= Math.max(0.25, 0.25 * p * brush.r);
+		}
 
 		brush.lastX = brush.x;
 		brush.lastY = brush.y;
 		brush.lastPressure = brush.pressure;
+		this.needUpdate = true;
 	};
 
 	App.prototype.endDrawBrush = function() {
-		var ctx = this.strokeCtx;
-		this.drawCtx.drawImage(ctx.canvas, 0, 0);
-		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);			
+		this.renderer.render(this.strokeScene, this.strokeCamera, this.drawRenderTarget);
+		this.renderer.setClearColor(0xffffff, 0.0);
+		this.renderer.clearTarget(this.strokeRenderTarget);
+		this.renderer.setClearColor(0xffffff, 1.0);
+		this.needUpdate = true;
 	};
 
 	App.prototype.tick = function() {
-		var ctx = this.ctx;
 		var brush = this.brush;
 		var mode = this.mode;
 		var pixelRatio = this.pixelRatio;
 
-		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-		if (mode !== App.Mode.DRAW && this.eventHandler.touchActive) {
-			ctx.save(); {
-
-				ctx.scale(pixelRatio, pixelRatio);
-
-				ctx.save(); {
-					if (mode === App.Mode.COLOR_PICKER) {
-						ctx.beginPath();
-						ctx.fillStyle = brush.color;
-						ctx.fillRect(brush.x-60, brush.y-60, 20, 20);
-						ctx.fill();
-					} else {
-						ctx.beginPath();
-						ctx.arc(brush.x, brush.y, brush.r+1, 0, Math.PI*2, true);
-						ctx.strokeStyle = '#000';
-						ctx.stroke();
-						ctx.beginPath();
-						ctx.arc(brush.x, brush.y, brush.r, 0, Math.PI*2, true);
-						ctx.strokeStyle = '#fff';
-						ctx.stroke();
-						if (mode === App.Mode.OPACITY_CHANGE) {
-							ctx.globalAlpha = brush.opacity;
-							ctx.fillStyle = brush.color;
-							ctx.fill();
-						}
-					}
-				} ctx.restore();
-
-			} ctx.restore();
+		if (this.needUpdate) {
+			this.renderer.setRenderTarget(null);
+			this.renderer.clear();
+			this.renderer.render(this.drawScene, this.drawCamera);
+			this.renderer.render(this.strokeScene, this.strokeCamera);
+			this.needUpdate = false;
 		}
 
 		window.requestAnimationFrame(this.ticker);
@@ -297,9 +339,12 @@
 				case App.Mode.COLOR_PICKER: {
 					var x = Math.floor(ev.touches[0].clientX * app.pixelRatio);
 					var y = Math.floor(ev.touches[0].clientY * app.pixelRatio);
-					var c = app.drawCtx.getImageData(x, y, 1, 1);
-					app.brush.color = App.toColor(c.data);
-					app.brush.colorArray = c.data;
+					var pixels = new Uint8Array(4);
+					var gl = app.renderer.context;
+					app.renderer.setRenderTarget(app.drawRenderTarget);
+					gl.readPixels(x, app.renderer.domElement.height-y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+					app.brush.color = App.toColor(pixels);
+					app.brush.colorArray = pixels;
 					break;
 				}
 			}
@@ -379,15 +424,14 @@
 			this.app.brush.y = ev.touches[0].clientY;
 			this.app.brush.pressure = ev.touches[0].force;
 
-			if (this.app.mode === App.Mode.COLOR_PICKER) {
-				var x = Math.floor(this.app.brush.x * this.app.pixelRatio);
-				var y = Math.floor(this.app.brush.y * this.app.pixelRatio);
-				var c = this.app.drawCtx.getImageData(x, y, 1, 1);
-				this.app.brush.color = App.toColor(c.data);
-				this.app.brush.colorArray = c.data;
-			} else if (this.app.mode === App.Mode.DRAW) {
+			if (this.app.mode === App.Mode.DRAW) {
 				this.app.brush.blend = 1-ev.touches[0].force;
-				this.app.drawBrush(true);
+
+				this.app.brush.lastX = this.app.brush.x;
+				this.app.brush.lastY = this.app.brush.y;
+				this.app.brush.lastPressure = this.app.brush.pressure;
+
+				this.app.drawBrush();
 			}
 		},
 
@@ -412,7 +456,7 @@
 				this.app.brush.x = ev.touches[0].clientX;
 				this.app.brush.y = ev.touches[0].clientY;
 				this.app.brush.blend = 1-ev.touches[0].force;
-				this.app.drawBrush(false);
+				this.app.drawBrush();
 			}
 		}
 	};
