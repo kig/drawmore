@@ -154,6 +154,14 @@
 		this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
 	};
 
+	App.prototype.radiusPressureCurve = function(v) {
+		return window.radiusPressure.checked ? v : 1;
+	};
+
+	App.prototype.opacityPressureCurve = function(v) {
+		return window.opacityPressure.checked ? Math.clamp(v*2, 0, 1) : 1;
+	};
+
 	App.prototype.drawBrush = function() {
 
 		var brush = this.brush;
@@ -173,9 +181,9 @@
 			this.drawBrushSprite(
 				brush.lastX + d*rdx,
 				brush.lastY + d*rdy,
-				p * brush.r, 
+				this.radiusPressureCurve(p) * brush.r, 
 				brush.colorArray,
-				p * brush.opacity
+				this.opacityPressureCurve(p) * brush.opacity
 			);
 			d -= Math.max(0.25, 0.25 * p * brush.r);
 		}

@@ -42,12 +42,28 @@
 			#opacityChange {
 				bottom: 80px;
 			}
+
+			.pressure-controls {
+				position: absolute;
+				z-index: 3;
+				top: 5px;
+				left: 10px;
+				font-family: sans-serif;
+				text-transform: uppercase;
+				font-size: 9px;
+			}
+
 		</style>
 	</head>
 	<body>
 		<div class="mode-toggle" id="brushResize"></div>
 		<div class="mode-toggle" id="opacityChange"></div>
 		<div class="mode-toggle" id="colorPicker"></div>
+		<div class="pressure-controls">
+			Pressure &rarr; 
+			Opacity <input id="opacityPressure" type="checkbox" checked />
+			Radius <input id="radiusPressure" type="checkbox" checked />
+		</div>
 
 		<script src="js/three.js"></script>
 		<script src="js/ColorUtils.js"></script>
