@@ -4,6 +4,13 @@
 		this.init();
 	};
 
+	App.Mode = {
+		DRAW: 0,
+		BRUSH_RESIZE: 1,
+		OPACITY_CHANGE: 2,
+		COLOR_PICKER: 3
+	};
+
 	App.prototype.init = function() {
 		this.pixelRatio = window.devicePixelRatio;
 		this.mode = App.Mode.DRAW;
@@ -52,6 +59,9 @@
 		this.strokeRenderTarget = strokeRenderTarget;
 		this.drawRenderTarget = drawRenderTarget;
 
+		this.strokeRenderTarget.texture.generateMipmaps = false;
+		this.drawRenderTarget.texture.generateMipmaps = false;
+
 		renderer.clear();
 		renderer.autoClear = false;
 
@@ -98,18 +108,24 @@
 		this.scene.add(this.camera);
 
 		this.brushRenderTarget = new THREE.WebGLRenderTarget(64, 64);
+		this.brushRenderTarget.texture.generateMipmaps = false;
+
+		this.brushCamera = new THREE.Camera();
+		this.brushCamera.matrixAutoUpdate = false;
 
 		this.brushQuad = new THREE.Mesh(
 			new THREE.PlaneBufferGeometry(2, 2),
 			new THREE.ShaderMaterial({
+
 				vertexShader: [
 					"varying vec2 vUv;",
 
 					"void main() {",
-					"	vUv = uv;",
+					"	vUv = vec2(uv.x, 1.0-uv.y);",
 					"	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
 					"}"
 				].join("\n"),
+
 				fragmentShader: [
 					"varying vec2 vUv;",
 
@@ -117,21 +133,27 @@
 					"uniform vec3 color;",
 					"uniform float opacity;",
 					"uniform float blend;",
+					"uniform float squareBrush;",
 					"uniform sampler2D paint;",
 
 					"void main(void) {",
 					"	vec4 paintContent = texture2D(paint, vUv);",
 					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
-					"	gl_FragColor = mix(paintContent, vec4(color, opacity * smoothstep(1.0, 0.9, length(unitUv)) ), blend);",
+					"	float brushOpacity = max(squareBrush, smoothstep(1.0, 0.9, length(unitUv)));",
+					"	paintContent.a *= brushOpacity;",
+					"	gl_FragColor = mix(paintContent, vec4(color, opacity * brushOpacity), blend);",
 					"}"
 				].join("\n"),
+
 				uniforms: {
 					resolution: { type: 'v2', value: new THREE.Vector2(renderer.domElement.width, renderer.domElement.height) },
 					color: { type: 'v3', value: new THREE.Vector3(0, 0, 0) },
 					opacity: { type: 'f', value: 0.5 },
 					paint: { type: 't', value: this.brushRenderTarget },
-					blend: { type: 'f', value: 1 }
+					blend: { type: 'f', value: 1 },
+					squareBrush: { type: 'f', value: 0 },
 				},
+
 				transparent: true,
 				depthWrite: false,
 				depthTest: false,
@@ -156,22 +178,6 @@
 
 	App.prototype.drawBrushSprite = function(x, y, r, colorArray, opacity) {
 		this.drawArray.push([x, y, r, colorArray, opacity]);
-	};
-
-	App.prototype.renderDrawArray = function() {
-		for (var i=0; i<this.drawArray.length; i++) {
-			var a = this.drawArray[i];
-			if (a === 'end') {
-				this.endDrawBrush();				
-			} else {
-				var x = a[0], y = a[1], r = a[2], colorArray = a[3], opacity = a[4];
-				this.brushQuad.position.set(x, y, 0);
-				this.brushQuad.scale.set(r,r,r);
-				this.brushQuad.material.uniforms.opacity.value = opacity;
-				this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
-				this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
-			}
-		}
 	};
 
 	App.prototype.radiusPressureCurve = function(v) {
@@ -222,6 +228,44 @@
 		this.needUpdate = true;
 	};
 
+	App.prototype.renderDrawArray = function() {
+		var screenWidth = this.renderer.domElement.width;
+		var screenHeight = this.renderer.domElement.height;
+		for (var i=0; i<this.drawArray.length; i++) {
+			var a = this.drawArray[i];
+			if (a === 'end') {
+				this.endDrawBrush();				
+			} else {
+				var x = a[0], y = a[1], r = a[2], colorArray = a[3], opacity = a[4];
+				this.brushQuad.position.set(x, y, 0);
+				this.brushQuad.scale.set(r,r,r);
+				this.brushQuad.material.uniforms.opacity.value = opacity;
+				this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
+				this.brushQuad.material.uniforms.blend.value = 0.1;
+				this.brushQuad.material.uniforms.squareBrush.value = 0;
+				this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+
+				// For smudge, render the current composite under then brush quad to the brushRenderTarget.
+				var m = this.brushCamera.projectionMatrix.elements;
+				// Set up the brush camera to capture only the area of the brush quad.
+				m[0] = 0.25*screenWidth / r;
+				m[5] = 0.25*screenHeight / r;
+				m[12] = 8*m[0] * -(x - screenWidth/4) / (screenWidth*2);
+				m[13] = 8*m[5] * (y - screenHeight/4) / (screenHeight*2);
+				this.renderer.setClearColor(0x000000, 0.0);
+				this.renderer.clearTarget(this.brushRenderTarget);
+				this.renderer.render(this.drawScene, this.brushCamera, this.brushRenderTarget);
+				this.renderer.render(this.strokeScene, this.brushCamera, this.brushRenderTarget);
+			}
+		}
+		this.brushQuad.position.set(50, 50, 0);
+		this.brushQuad.scale.set(32, 32, 32);
+		this.brushQuad.material.uniforms.opacity.value = 1;
+		this.brushQuad.material.uniforms.blend.value = 0;
+		this.brushQuad.material.uniforms.squareBrush.value = 1;
+		this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+	};
+
 	App.prototype.tick = function() {
 		var brush = this.brush;
 		var mode = this.mode;
@@ -249,7 +293,119 @@
 
 
 
+	// App drawing event handlers.
+	//
+	//
 
+	App.EventHandler = function(app, el) {
+		this.app = app;
+
+		this.startX = 0;
+		this.startY = 0;
+		this.startRadius = 0;
+		this.startOpacity = 1;
+		this.startColor = '#ff0000';
+		this.touchActive = false;
+
+		el.addEventListener("touchstart", this, false);
+		el.addEventListener("touchend", this, false);
+		el.addEventListener("touchcancel", this, false);
+		el.addEventListener("touchmove", this, false);
+	};
+
+	App.EventHandler.prototype = {
+		handleEvent: function(ev) {
+			ev.preventDefault();
+			if (this[ev.type]) {
+				this[ev.type](ev);
+			}
+		},
+
+		resetMode: function() {
+			this.touchActive = false;
+			if (this.app.mode !== App.Mode.DRAW) {
+				this.app.mode = App.Mode.DRAW;
+				var toggles = document.querySelectorAll('.mode-toggle');
+				for (var i = 0; i < toggles.length; i++) {
+					toggles[i].classList.remove('active');
+				}
+			}
+		},
+
+		log: function(txt) {
+			window.debug.textContent = txt;
+		},
+
+		parsePressure: function(touch) {
+			var force = touch.force;
+			if (!force && touch.radiusX !== 0) {
+				force = 1;
+			}
+			return force;
+		},
+
+		touchstart: function(ev) {
+			this.touchActive = true;
+			this.startRadius = this.app.brush.r;
+			this.startOpacity = this.app.brush.opacity;
+			this.startColor = this.app.brush.color;
+			this.startColorArray = this.app.brush.colorArray;
+
+			this.startX = ev.touches[0].clientX;
+			this.startY = ev.touches[0].clientY;
+			this.app.brush.x = ev.touches[0].clientX;
+			this.app.brush.y = ev.touches[0].clientY;
+			this.app.brush.pressure = this.parsePressure(ev.touches[0]);
+
+
+			if (this.app.mode === App.Mode.DRAW) {
+
+				this.app.brush.lastX = this.app.brush.x;
+				this.app.brush.lastY = this.app.brush.y;
+				this.app.brush.lastPressure = this.app.brush.pressure;
+
+				this.app.drawBrush();
+			}
+
+			this.app.colorMixer.widget.style.display = 'none';
+		},
+
+		touchend: function(ev) {
+			if (this.app.mode === App.Mode.DRAW) {
+				this.app.drawArray.push('end');
+				this.app.needUpdate = true;
+			}
+			this.resetMode();
+		},
+
+		touchcancel: function(ev) {
+			if (this.app.mode === App.Mode.DRAW) {
+				this.app.drawArray.push('end');
+				this.app.needUpdate = true;
+			}
+			this.resetMode();
+			this.app.brush.r = this.startRadius;
+			this.app.brush.opacity = this.startOpacity;
+			this.app.brush.color = this.startColor;
+			this.app.brush.colorArray = this.startColorArray;
+		},
+
+		touchmove: function(ev) {
+			this.app.brush.pressure = this.parsePressure(ev.touches[0]);
+			if (this.app.mode === App.Mode.DRAW) {
+				this.app.brush.x = ev.touches[0].clientX;
+				this.app.brush.y = ev.touches[0].clientY;
+				this.app.drawBrush();
+			}
+		}
+	};
+
+
+
+
+	// Utils for colors.
+	//
+	//
 
 	App.toColor = function(c) {
 		return 'rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';
@@ -262,6 +418,12 @@
 			(1-f)*a[2] + f*b[2]
 		];
 	};
+
+
+
+	// Event handlers for the UI controls.
+	//
+	//
 
 	App.modeToggle = function(app, toggle, targetMode) {
 		var toggleCanvas = document.createElement('canvas');
@@ -449,114 +611,6 @@
 
 
 
-
-	App.Mode = {
-		DRAW: 0,
-		BRUSH_RESIZE: 1,
-		OPACITY_CHANGE: 2,
-		COLOR_PICKER: 3
-	};
-
-
-
-
-	App.EventHandler = function(app, el) {
-		this.app = app;
-
-		this.startX = 0;
-		this.startY = 0;
-		this.startRadius = 0;
-		this.startOpacity = 1;
-		this.startColor = '#ff0000';
-		this.touchActive = false;
-
-		el.addEventListener("touchstart", this, false);
-		el.addEventListener("touchend", this, false);
-		el.addEventListener("touchcancel", this, false);
-		el.addEventListener("touchmove", this, false);
-	};
-
-	App.EventHandler.prototype = {
-		handleEvent: function(ev) {
-			ev.preventDefault();
-			if (this[ev.type]) {
-				this[ev.type](ev);
-			}
-		},
-
-		resetMode: function() {
-			this.touchActive = false;
-			if (this.app.mode !== App.Mode.DRAW) {
-				this.app.mode = App.Mode.DRAW;
-				var toggles = document.querySelectorAll('.mode-toggle');
-				for (var i = 0; i < toggles.length; i++) {
-					toggles[i].classList.remove('active');
-				}
-			}
-		},
-
-		log: function(txt) {
-			window.debug.textContent = txt;
-		},
-
-		parsePressure: function(touch) {
-			var force = touch.force;
-			if (!force && touch.radiusX !== 0) {
-				force = 1;
-			}
-			return force;
-		},
-
-		touchstart: function(ev) {
-			this.touchActive = true;
-			this.startRadius = this.app.brush.r;
-			this.startOpacity = this.app.brush.opacity;
-			this.startColor = this.app.brush.color;
-			this.startColorArray = this.app.brush.colorArray;
-
-			this.startX = ev.touches[0].clientX;
-			this.startY = ev.touches[0].clientY;
-			this.app.brush.x = ev.touches[0].clientX;
-			this.app.brush.y = ev.touches[0].clientY;
-			this.app.brush.pressure = this.parsePressure(ev.touches[0]);
-
-
-			if (this.app.mode === App.Mode.DRAW) {
-
-				this.app.brush.lastX = this.app.brush.x;
-				this.app.brush.lastY = this.app.brush.y;
-				this.app.brush.lastPressure = this.app.brush.pressure;
-
-				this.app.drawBrush();
-			}
-
-			this.app.colorMixer.widget.style.display = 'none';
-		},
-
-		touchend: function(ev) {
-			if (this.app.mode === App.Mode.DRAW) {
-				this.app.drawArray.push('end');
-			}
-			this.resetMode();
-		},
-
-		touchcancel: function(ev) {
-			this.resetMode();
-			this.app.brush.r = this.startRadius;
-			this.app.brush.opacity = this.startOpacity;
-			this.app.brush.color = this.startColor;
-			this.app.brush.colorArray = this.startColorArray;
-		},
-
-		touchmove: function(ev) {
-			this.app.brush.pressure = this.parsePressure(ev.touches[0]);
-			if (this.app.mode === App.Mode.DRAW) {
-				this.app.brush.x = ev.touches[0].clientX;
-				this.app.brush.y = ev.touches[0].clientY;
-				this.app.drawBrush();
-			}
-		}
-	};
 
 
 
