@@ -37,6 +37,8 @@
 		var near = 0.1;
 		var far = 100;
 
+		this.drawArray = [];
+
 		var renderer = new THREE.WebGLRenderer();
 		renderer.setClearColor(0xffffff, 1.0);
 		renderer.setPixelRatio( this.pixelRatio );
@@ -146,12 +148,19 @@
 	};
 
 	App.prototype.drawBrushSprite = function(x, y, r, colorArray, opacity) {
+		this.drawArray.push([x, y, r, colorArray, opacity]);
+	};
 
-		this.brushQuad.position.set(x, y, 0);
-		this.brushQuad.scale.set(r,r,r);
-		this.brushQuad.material.uniforms.opacity.value = opacity;
-		this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
-		this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+	App.prototype.renderDrawArray = function() {
+		for (var i=0; i<this.drawArray.length; i++) {
+			var a = this.drawArray[i];
+			var x = a[0], y = a[1], r = a[2], colorArray = a[3], opacity = a[4];
+			this.brushQuad.position.set(x, y, 0);
+			this.brushQuad.scale.set(r,r,r);
+			this.brushQuad.material.uniforms.opacity.value = opacity;
+			this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
+			this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+		}
 	};
 
 	App.prototype.radiusPressureCurve = function(v) {
@@ -185,7 +194,7 @@
 				brush.colorArray,
 				this.opacityPressureCurve(p) * brush.opacity
 			);
-			d -= Math.max(0.25, 0.25 * p * brush.r);
+			d -= Math.clamp(0.25 * p * brush.r, 0.125, 1);
 		}
 
 		brush.lastX = brush.x;
@@ -208,6 +217,8 @@
 		var pixelRatio = this.pixelRatio;
 
 		if (this.needUpdate) {
+			this.renderDrawArray();
+			this.drawArray.splice(0);
 			this.renderer.setRenderTarget(null);
 			this.renderer.clear();
 			this.renderer.render(this.drawScene, this.drawCamera);
@@ -326,9 +337,7 @@
 		var colorMixer;
 		if (targetMode === App.Mode.COLOR_PICKER) {
 			colorMixer = new ColorMixer(document.body, 100, 100, function(c) {
-				app.brush.colorArray[0] = c[0]*255;
-				app.brush.colorArray[1] = c[1]*255;
-				app.brush.colorArray[2] = c[2]*255;
+				app.brush.colorArray = [c[0]*255, c[1]*255, c[2]*255, 255];
 				app.brush.color = App.toColor(app.brush.colorArray);
 				update();
 			});
@@ -391,7 +400,7 @@
 					var dx = ev.touches[0].clientX - this.startX;
 					var dy = ev.touches[0].clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
-					app.brush.r = Math.max(0.25, this.startRadius + dx/3);
+					app.brush.r = Math.max(0.5, this.startRadius + dx/3);
 					break;
 				}
 				case App.Mode.OPACITY_CHANGE: {
