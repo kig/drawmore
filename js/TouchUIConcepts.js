@@ -97,6 +97,8 @@
 		this.camera = camera;
 		this.scene.add(this.camera);
 
+		this.brushRenderTarget = new THREE.WebGLRenderTarget(64, 64);
+
 		this.brushQuad = new THREE.Mesh(
 			new THREE.PlaneBufferGeometry(2, 2),
 			new THREE.ShaderMaterial({
@@ -114,16 +116,21 @@
 					"uniform vec2 resolution;",
 					"uniform vec3 color;",
 					"uniform float opacity;",
+					"uniform float blend;",
+					"uniform sampler2D paint;",
 
 					"void main(void) {",
+					"	vec4 paintContent = texture2D(paint, vUv);",
 					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
-					"	gl_FragColor = vec4(color, opacity * smoothstep(1.0, 0.9, length(unitUv)) );",
+					"	gl_FragColor = mix(paintContent, vec4(color, opacity * smoothstep(1.0, 0.9, length(unitUv)) ), blend);",
 					"}"
 				].join("\n"),
 				uniforms: {
 					resolution: { type: 'v2', value: new THREE.Vector2(renderer.domElement.width, renderer.domElement.height) },
 					color: { type: 'v3', value: new THREE.Vector3(0, 0, 0) },
-					opacity: { type: 'f', value: 0.5 }
+					opacity: { type: 'f', value: 0.5 },
+					paint: { type: 't', value: this.brushRenderTarget },
+					blend: { type: 'f', value: 1 }
 				},
 				transparent: true,
 				depthWrite: false,
@@ -274,7 +281,7 @@
 
 			} else if (targetMode === App.Mode.BRUSH_RESIZE) {
 
-				var r = Math.min(app.brush.r, h/2 - 15)
+				var r = Math.min(app.brush.r, h/2 - 8)
 
 				toggleCtx.beginPath();
 				toggleCtx.arc(w/2, h/2-5, r, 0, Math.PI*2, true);
@@ -400,7 +407,7 @@
 					var dx = ev.touches[0].clientX - this.startX;
 					var dy = ev.touches[0].clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
-					app.brush.r = Math.max(0.5, this.startRadius + dx/3);
+					app.brush.r = Math.max(0.5, this.startRadius - dy/3);
 					break;
 				}
 				case App.Mode.OPACITY_CHANGE: {
@@ -483,12 +490,15 @@
 		},
 
 		log: function(txt) {
-			var drawCtx = this.app.drawCtx;
-			drawCtx.fillStyle = '#fff';
-			drawCtx.fillRect(0,0, drawCtx.canvas.width, 50);
-			drawCtx.fillStyle = '#000';
-			drawCtx.font = '40px sans-serif';
-			drawCtx.fillText(txt, 5, 40);
+			window.debug.textContent = txt;
+		},
+
+		parsePressure: function(touch) {
+			var force = touch.force;
+			if (!force && touch.radiusX !== 0) {
+				force = 1;
+			}
+			return force;
 		},
 
 		touchstart: function(ev) {
@@ -502,10 +512,10 @@
 			this.startY = ev.touches[0].clientY;
 			this.app.brush.x = ev.touches[0].clientX;
 			this.app.brush.y = ev.touches[0].clientY;
-			this.app.brush.pressure = ev.touches[0].force;
+			this.app.brush.pressure = this.parsePressure(ev.touches[0]);
+
 
 			if (this.app.mode === App.Mode.DRAW) {
-				this.app.brush.blend = 1-ev.touches[0].force;
 
 				this.app.brush.lastX = this.app.brush.x;
 				this.app.brush.lastY = this.app.brush.y;
@@ -533,11 +543,10 @@
 		},
 
 		touchmove: function(ev) {
-			this.app.brush.pressure = ev.touches[0].force;
+			this.app.brush.pressure = this.parsePressure(ev.touches[0]);
 			if (this.app.mode === App.Mode.DRAW) {
 				this.app.brush.x = ev.touches[0].clientX;
 				this.app.brush.y = ev.touches[0].clientY;
-				this.app.brush.blend = 1-ev.touches[0].force;
 				this.app.drawBrush();
 			}
 		}

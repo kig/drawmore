@@ -22,25 +22,26 @@
 			}
 
 			.mode-toggle {
-				width: 80px;
-				height: 80px;
+				width: 60px;
+				height: 60px;
 				background: #888888;
 				color: black;
 				position: absolute;
 				left: 0px;
-				bottom: 0px;
+				top: 50%;
 				z-index: 3;
 			}
 			.mode-toggle.active {
 				background: #444444;
 			}
 			#colorPicker {
+				margin-top: 30px;
 			}
 			#brushResize {
-				left: 80px;
+				margin-top: -30px;
 			}
 			#opacityChange {
-				bottom: 80px;
+				margin-top: -90px;
 			}
 
 			.pressure-controls {
@@ -59,9 +60,18 @@
 				margin-right: 6px;
 			}
 
+			#debug {
+				position: absolute;
+				top: 30px;
+				left: 10px;
+				width: 300px;
+				z-index: 3;
+			}
+
 		</style>
 	</head>
 	<body>
+		<pre id="debug"></pre>
 		<div class="mode-toggle" id="brushResize"></div>
 		<div class="mode-toggle" id="opacityChange"></div>
 		<div class="mode-toggle" id="colorPicker"></div>
