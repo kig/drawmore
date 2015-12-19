@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+
+	<head>
+		<title>Pointer events test</title>
+	    <meta name="viewport" content="initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, user-scalable=no" />
+	</head>
+
+	<body>
+		<pre id="debug"></pre>
+
+		<script>
+			var events = "pointerdown pointerup pointermove pointerover pointerout pointerenter pointerleave".split(" ");
+
+			for (var i=0; i<events.length; i++) {
+				var eventType = events[i];
+				window.addEventListener(eventType, function(ev) {
+					window.debug.innerHTML = "pressure: " + ev.pressure + "\ntiltX: " + ev.tiltX + "\ntiltY: " + ev.tiltY;
+					console.log(ev.type, ev.pressure, ev.tiltX, ev.tiltY, ev);
+				}, false);
+			}
+		</script>
+	</body>
+
+</html>
