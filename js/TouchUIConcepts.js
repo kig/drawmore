@@ -140,8 +140,8 @@
 					"	vec4 paintContent = texture2D(paint, vUv);",
 					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
 					"	float brushOpacity = max(squareBrush, smoothstep(1.0, 0.9, length(unitUv)));",
-					"	paintContent.a *= brushOpacity;",
 					"	gl_FragColor = mix(paintContent, vec4(color, opacity * brushOpacity), blend);",
+					"	gl_FragColor.a *= brushOpacity;",
 					"}"
 				].join("\n"),
 
@@ -231,19 +231,13 @@
 	App.prototype.renderDrawArray = function() {
 		var screenWidth = this.renderer.domElement.width;
 		var screenHeight = this.renderer.domElement.height;
+		var blend = window.blending.value;
 		for (var i=0; i<this.drawArray.length; i++) {
 			var a = this.drawArray[i];
 			if (a === 'end') {
 				this.endDrawBrush();				
 			} else {
 				var x = a[0], y = a[1], r = a[2], colorArray = a[3], opacity = a[4];
-				this.brushQuad.position.set(x, y, 0);
-				this.brushQuad.scale.set(r,r,r);
-				this.brushQuad.material.uniforms.opacity.value = opacity;
-				this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
-				this.brushQuad.material.uniforms.blend.value = 0.1;
-				this.brushQuad.material.uniforms.squareBrush.value = 0;
-				this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
 
 				// For smudge, render the current composite under then brush quad to the brushRenderTarget.
 				var m = this.brushCamera.projectionMatrix.elements;
@@ -256,6 +250,15 @@
 				this.renderer.clearTarget(this.brushRenderTarget);
 				this.renderer.render(this.drawScene, this.brushCamera, this.brushRenderTarget);
 				this.renderer.render(this.strokeScene, this.brushCamera, this.brushRenderTarget);
+
+				this.brushQuad.position.set(x, y, 0);
+				this.brushQuad.scale.set(r,r,r);
+				this.brushQuad.material.uniforms.opacity.value = opacity;
+				this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
+				this.brushQuad.material.uniforms.blend.value = blend;
+				this.brushQuad.material.uniforms.squareBrush.value = 0;
+				this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+
 			}
 		}
 		this.brushQuad.position.set(50, 50, 0);
