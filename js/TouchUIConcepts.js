@@ -161,12 +161,16 @@
 	App.prototype.renderDrawArray = function() {
 		for (var i=0; i<this.drawArray.length; i++) {
 			var a = this.drawArray[i];
-			var x = a[0], y = a[1], r = a[2], colorArray = a[3], opacity = a[4];
-			this.brushQuad.position.set(x, y, 0);
-			this.brushQuad.scale.set(r,r,r);
-			this.brushQuad.material.uniforms.opacity.value = opacity;
-			this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
-			this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+			if (a === 'end') {
+				this.endDrawBrush();				
+			} else {
+				var x = a[0], y = a[1], r = a[2], colorArray = a[3], opacity = a[4];
+				this.brushQuad.position.set(x, y, 0);
+				this.brushQuad.scale.set(r,r,r);
+				this.brushQuad.material.uniforms.opacity.value = opacity;
+				this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
+				this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+			}
 		}
 	};
 
@@ -224,6 +228,7 @@
 		var pixelRatio = this.pixelRatio;
 
 		if (this.needUpdate) {
+
 			this.renderDrawArray();
 			this.drawArray.splice(0);
 			this.renderer.setRenderTarget(null);
@@ -231,6 +236,7 @@
 			this.renderer.render(this.drawScene, this.drawCamera);
 			this.renderer.render(this.strokeScene, this.strokeCamera);
 			this.needUpdate = false;
+
 		}
 
 		if (this.colorMixer) {
@@ -529,7 +535,7 @@
 
 		touchend: function(ev) {
 			if (this.app.mode === App.Mode.DRAW) {
-				this.app.endDrawBrush();
+				this.app.drawArray.push('end');
 			}
 			this.resetMode();
 		},
