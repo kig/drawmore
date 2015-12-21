@@ -140,7 +140,7 @@
 					"	vec4 paintContent = texture2D(paint, vUv);",
 					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
 					"	float brushOpacity = max(squareBrush, smoothstep(1.0, 0.9, length(unitUv)));",
-					"	gl_FragColor = mix(paintContent, vec4(color, opacity * brushOpacity), blend);",
+					"	gl_FragColor = mix(paintContent, vec4(color, opacity), blend);",
 					"	gl_FragColor.a *= brushOpacity;",
 					"}"
 				].join("\n"),
@@ -159,8 +159,8 @@
 				depthTest: false,
 				blending: THREE.CustomBlending,
 				blendEquation: THREE.AddEquation,
-				blendSrc: THREE.OneFactor,
-				blendDst: THREE.ZeroFactor,
+				blendSrc: THREE.SrcAlphaFactor,
+				blendDst: THREE.OneMinusSrcAlphaFactor,
 				blendEquationAlpha: THREE.MaxEquation,
 				blendSrcAlpha: THREE.OneFactor,
 				blendDstAlpha: THREE.OneFactor
@@ -176,8 +176,15 @@
 		this.eventHandler = new App.EventHandler(this, this.renderer.domElement);
 	};
 
-	App.prototype.drawBrushSprite = function(x, y, r, colorArray, opacity) {
-		this.drawArray.push([x, y, r, colorArray, opacity]);
+	App.prototype.drawBrushSprite = function(x, y, r, colorArray, opacity, isStart) {
+		this.drawArray.push({
+			x: x,
+			y: y,
+			r: r,
+			color: colorArray,
+			opacity: opacity,
+			isStart: isStart
+		});
 	};
 
 	App.prototype.radiusPressureCurve = function(v) {
@@ -188,7 +195,7 @@
 		return window.opacityPressure.checked ? Math.clamp(v*1.5, 0, 1) : 1;
 	};
 
-	App.prototype.drawBrush = function() {
+	App.prototype.drawBrush = function(isStart) {
 
 		var brush = this.brush;
 
@@ -199,7 +206,9 @@
 		var rdx = dx / d;
 		var rdy = dy / d;
 		var rdp = dp / d;
-		while (d > 0) {
+		var od = d;
+		d = 0;
+		while (d < od || isStart) {
 			var x = (brush.lastX + d*rdx);
 			var y = (brush.lastY + d*rdy);
 			var p = (brush.lastPressure + d*rdp);
@@ -209,9 +218,11 @@
 				brush.lastY + d*rdy,
 				this.radiusPressureCurve(p) * brush.r, 
 				brush.colorArray,
-				this.opacityPressureCurve(p) * brush.opacity
+				this.opacityPressureCurve(p) * brush.opacity,
+				isStart
 			);
-			d -= Math.clamp(0.25 * p * brush.r, 0.125, 1);
+			d += Math.clamp(0.25 * p * brush.r, 0.125, 1);
+			isStart = false;
 		}
 
 		brush.lastX = brush.x;
@@ -228,37 +239,51 @@
 		this.needUpdate = true;
 	};
 
+	App.prototype.copyDrawingToBrush = function(x, y, r, screenWidth, screenHeight) {
+		// For smudge, render the current composite under the brush quad to the brushRenderTarget.
+		// Set up the brush camera to capture only the area of the brush quad.
+		var m = this.brushCamera.projectionMatrix.elements;
+		m[0] = 0.5*screenWidth / r;
+		m[5] = 0.5*screenHeight / r;
+		m[12] = 4*m[0] * -(x - screenWidth/2) / (screenWidth*2);
+		m[13] = 4*m[5] * (y - screenHeight/2) / (screenHeight*2);
+		this.renderer.setClearColor(0x000000, 0.0);
+		this.renderer.clearTarget(this.brushRenderTarget);
+		this.renderer.render(this.drawScene, this.brushCamera, this.brushRenderTarget);
+		this.renderer.render(this.strokeScene, this.brushCamera, this.brushRenderTarget);
+	};
+
 	App.prototype.renderDrawArray = function() {
-		var screenWidth = this.renderer.domElement.width;
-		var screenHeight = this.renderer.domElement.height;
-		var blend = window.blending.value;
+		var screenWidth = this.renderer.domElement.width / this.pixelRatio;
+		var screenHeight = this.renderer.domElement.height / this.pixelRatio;
+		var blend = window.blending.checked ? 0 : 1;
 		for (var i=0; i<this.drawArray.length; i++) {
 			var a = this.drawArray[i];
 			if (a === 'end') {
-				this.endDrawBrush();				
+				this.endDrawBrush();
 			} else {
-				var x = a[0], y = a[1], r = a[2], colorArray = a[3], opacity = a[4];
+				var x = a.x, y = a.y, r = a.r, colorArray = a.color, opacity = a.opacity;
 
-				// For smudge, render the current composite under then brush quad to the brushRenderTarget.
-				var m = this.brushCamera.projectionMatrix.elements;
-				// Set up the brush camera to capture only the area of the brush quad.
-				m[0] = 0.25*screenWidth / r;
-				m[5] = 0.25*screenHeight / r;
-				m[12] = 8*m[0] * -(x - screenWidth/4) / (screenWidth*2);
-				m[13] = 8*m[5] * (y - screenHeight/4) / (screenHeight*2);
-				this.renderer.setClearColor(0x000000, 0.0);
-				this.renderer.clearTarget(this.brushRenderTarget);
-				this.renderer.render(this.drawScene, this.brushCamera, this.brushRenderTarget);
-				this.renderer.render(this.strokeScene, this.brushCamera, this.brushRenderTarget);
+				if (a.isStart && blend < 1) {
+				} else {
+					this.brushQuad.position.set(x, y, 0);
+					this.brushQuad.scale.set(r,r,r);
+					this.brushQuad.material.uniforms.opacity.value = opacity;
+					this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
+					this.brushQuad.material.uniforms.blend.value = blend;
+					if (blend < 0) {
+						this.brushQuad.material.blending = THREE.NormalBlending;
+					} else {
+						this.brushQuad.material.blending = THREE.CustomBlending;
+					}
+					this.brushQuad.material.uniforms.squareBrush.value = 0;
+					this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+				}
 
-				this.brushQuad.position.set(x, y, 0);
-				this.brushQuad.scale.set(r,r,r);
-				this.brushQuad.material.uniforms.opacity.value = opacity;
-				this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
-				this.brushQuad.material.uniforms.blend.value = blend;
-				this.brushQuad.material.uniforms.squareBrush.value = 0;
-				this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
 
+				if (blend < 1) {
+					this.copyDrawingToBrush(x, y, r, screenWidth, screenHeight);
+				}
 			}
 		}
 		this.brushQuad.position.set(50, 50, 0);
@@ -293,6 +318,11 @@
 		window.requestAnimationFrame(this.ticker);
 	};
 
+	App.prototype.log = function(txt) {
+		window.debug.textContent = txt;
+	};
+
+
 
 
 
@@ -308,7 +338,6 @@
 		this.startRadius = 0;
 		this.startOpacity = 1;
 		this.startColor = '#ff0000';
-		this.touchActive = false;
 
 		el.addEventListener("touchstart", this, false);
 		el.addEventListener("touchend", this, false);
@@ -325,18 +354,9 @@
 		},
 
 		resetMode: function() {
-			this.touchActive = false;
 			if (this.app.mode !== App.Mode.DRAW) {
 				this.app.mode = App.Mode.DRAW;
-				var toggles = document.querySelectorAll('.mode-toggle');
-				for (var i = 0; i < toggles.length; i++) {
-					toggles[i].classList.remove('active');
-				}
 			}
-		},
-
-		log: function(txt) {
-			window.debug.textContent = txt;
 		},
 
 		parsePressure: function(touch) {
@@ -348,18 +368,11 @@
 		},
 
 		touchstart: function(ev) {
-			this.touchActive = true;
-			this.startRadius = this.app.brush.r;
-			this.startOpacity = this.app.brush.opacity;
-			this.startColor = this.app.brush.color;
-			this.startColorArray = this.app.brush.colorArray;
-
 			this.startX = ev.touches[0].clientX;
 			this.startY = ev.touches[0].clientY;
 			this.app.brush.x = ev.touches[0].clientX;
 			this.app.brush.y = ev.touches[0].clientY;
 			this.app.brush.pressure = this.parsePressure(ev.touches[0]);
-
 
 			if (this.app.mode === App.Mode.DRAW) {
 
@@ -367,7 +380,7 @@
 				this.app.brush.lastY = this.app.brush.y;
 				this.app.brush.lastPressure = this.app.brush.pressure;
 
-				this.app.drawBrush();
+				this.app.drawBrush(true);
 			}
 
 			this.app.colorMixer.widget.style.display = 'none';
@@ -387,10 +400,6 @@
 				this.app.needUpdate = true;
 			}
 			this.resetMode();
-			this.app.brush.r = this.startRadius;
-			this.app.brush.opacity = this.startOpacity;
-			this.app.brush.color = this.startColor;
-			this.app.brush.colorArray = this.startColorArray;
 		},
 
 		touchmove: function(ev) {
@@ -398,7 +407,7 @@
 			if (this.app.mode === App.Mode.DRAW) {
 				this.app.brush.x = ev.touches[0].clientX;
 				this.app.brush.y = ev.touches[0].clientY;
-				this.app.drawBrush();
+				this.app.drawBrush(false);
 			}
 		}
 	};
