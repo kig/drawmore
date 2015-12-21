@@ -140,8 +140,8 @@
 					"	vec4 paintContent = texture2D(paint, vUv);",
 					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
 					"	float brushOpacity = max(squareBrush, smoothstep(1.0, 0.9, length(unitUv)));",
-					"	gl_FragColor = mix(paintContent, vec4(color, opacity), blend);",
-					"	gl_FragColor.a *= brushOpacity;",
+					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend);",
+					"	gl_FragColor.a = opacity * brushOpacity;",
 					"}"
 				].join("\n"),
 
@@ -159,8 +159,8 @@
 				depthTest: false,
 				blending: THREE.CustomBlending,
 				blendEquation: THREE.AddEquation,
-				blendSrc: THREE.SrcAlphaFactor,
-				blendDst: THREE.OneMinusSrcAlphaFactor,
+				blendSrc: THREE.OneFactor,
+				blendDst: THREE.ZeroFactor,
 				blendEquationAlpha: THREE.MaxEquation,
 				blendSrcAlpha: THREE.OneFactor,
 				blendDstAlpha: THREE.OneFactor
@@ -203,26 +203,37 @@
 		var dy = brush.y - brush.lastY;
 		var dp = brush.pressure - brush.lastPressure;
 		var d = Math.sqrt(dx*dx + dy*dy);
-		var rdx = dx / d;
-		var rdy = dy / d;
-		var rdp = dp / d;
-		var od = d;
-		d = 0;
-		while (d < od || isStart) {
-			var x = (brush.lastX + d*rdx);
-			var y = (brush.lastY + d*rdy);
-			var p = (brush.lastPressure + d*rdp);
-
+		if (d === 0) {
 			this.drawBrushSprite(
-				brush.lastX + d*rdx,
-				brush.lastY + d*rdy,
-				this.radiusPressureCurve(p) * brush.r, 
+				brush.x,
+				brush.y,
+				this.radiusPressureCurve(brush.pressure) * brush.r, 
 				brush.colorArray,
-				this.opacityPressureCurve(p) * brush.opacity,
+				this.opacityPressureCurve(brush.pressure) * brush.opacity,
 				isStart
 			);
-			d += Math.clamp(0.25 * p * brush.r, 0.125, 1);
-			isStart = false;
+		} else {
+			var rdx = dx / d;
+			var rdy = dy / d;
+			var rdp = dp / d;
+			var od = d;
+			d = 0;
+			while (d < od) {
+				var x = (brush.lastX + d*rdx);
+				var y = (brush.lastY + d*rdy);
+				var p = (brush.lastPressure + d*rdp);
+
+				this.drawBrushSprite(
+					brush.lastX + d*rdx,
+					brush.lastY + d*rdy,
+					this.radiusPressureCurve(p) * brush.r, 
+					brush.colorArray,
+					this.opacityPressureCurve(p) * brush.opacity,
+					isStart
+				);
+				d += Math.clamp(0.25 * p * brush.r, 0.125, 1);
+				isStart = false;
+			}
 		}
 
 		brush.lastX = brush.x;
@@ -233,8 +244,26 @@
 
 	App.prototype.endDrawBrush = function() {
 		this.renderer.render(this.strokeScene, this.strokeCamera, this.drawRenderTarget);
-		this.renderer.setClearColor(0xffffff, 0.0);
-		this.renderer.clearTarget(this.strokeRenderTarget);
+
+		var m = this.drawQuad.material;
+
+		m.blending = THREE.CustomBlending;
+		m.blendEquation = THREE.AddEquation;
+		m.blendSrc = THREE.OneFactor;
+		m.blendDst = THREE.ZeroFactor;
+		m.blendEquationAlpha = THREE.AddEquation;
+		m.blendSrcAlpha = THREE.ZeroFactor;
+		m.blendDstAlpha = THREE.ZeroFactor;
+
+		this.renderer.render(this.drawScene, this.drawCamera, this.strokeRenderTarget);
+
+		m.blendEquation = THREE.AddEquation;
+		m.blendSrc = THREE.OneFactor;
+		m.blendDst = THREE.ZeroFactor;
+		m.blendEquationAlpha = THREE.AddEquation;
+		m.blendSrcAlpha = THREE.OneFactor;
+		m.blendDstAlpha = THREE.ZeroFactor;
+
 		this.renderer.setClearColor(0xffffff, 1.0);
 		this.needUpdate = true;
 	};
@@ -271,15 +300,28 @@
 					this.brushQuad.material.uniforms.opacity.value = opacity;
 					this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
 					this.brushQuad.material.uniforms.blend.value = blend;
-					if (blend < 0) {
-						this.brushQuad.material.blending = THREE.NormalBlending;
+					if (blend < 1) {
+						var m = this.brushQuad.material;
+						m.blending = THREE.CustomBlending;
+						m.blendEquation = THREE.AddEquation;
+						m.blendSrc = THREE.SrcAlphaFactor;
+						m.blendDst = THREE.OneMinusSrcAlphaFactor;
+						m.blendEquationAlpha = THREE.MaxEquation;
+						m.blendSrcAlpha = THREE.OneFactor;
+						m.blendDstAlpha = THREE.OneFactor;
 					} else {
-						this.brushQuad.material.blending = THREE.CustomBlending;
+						var m = this.brushQuad.material;
+						m.blending = THREE.CustomBlending;
+						m.blendEquation = THREE.AddEquation;
+						m.blendSrc = THREE.SrcAlphaFactor;
+						m.blendDst = THREE.OneMinusSrcAlphaFactor;
+						m.blendEquationAlpha = THREE.MaxEquation;
+						m.blendSrcAlpha = THREE.OneFactor;
+						m.blendDstAlpha = THREE.OneFactor;
 					}
 					this.brushQuad.material.uniforms.squareBrush.value = 0;
 					this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
 				}
-
 
 				if (blend < 1) {
 					this.copyDrawingToBrush(x, y, r, screenWidth, screenHeight);
