@@ -27,6 +27,11 @@
 			colorArray: new Uint8Array([0,0,0,255])
 		};
 
+		this.snapshots = [{ index: 0, state: {} }];
+		this.drawArray = [];
+		this.drawStartIndex = 0;
+		this.drawEndIndex = 0;
+
 		App.modeToggle(this, window.brushResize, App.Mode.BRUSH_RESIZE);
 		App.modeToggle(this, window.opacityChange, App.Mode.OPACITY_CHANGE);
 		App.modeToggle(this, window.colorPicker, App.Mode.COLOR_PICKER);
@@ -35,7 +40,59 @@
 		this.addEventListeners();
 	};
 
+	App.prototype.undo = function() {
+		if (this.drawEndIndex > 0) {
+			var idx = this.drawEndIndex - 1;
+			while (idx > 0) {
+				if (this.drawArray[idx].isStart) {
+					break;
+				}
+				idx--;
+			}
+			this.timeTravel(idx);
+		}
+	};
 
+	App.prototype.redo = function() {
+		if (this.drawEndIndex < this.drawArray.length) {
+			var idx = this.drawEndIndex + 1;
+			while (idx < this.drawArray.length) {
+				if (this.drawArray[idx].isStart) {
+					break;
+				}
+				idx++;
+			}
+			this.timeTravel(idx);
+		}
+	};
+
+	App.prototype.timeTravel = function(drawArrayIndex) {
+		var snapshot = this.getSnapshot(drawArrayIndex);
+		this.drawStartIndex = snapshot.index;
+		this.drawEndIndex = drawArrayIndex;
+		this.applySnapshot(snapshot);
+		this.needUpdate = true;
+	};
+
+	App.prototype.getSnapshot = function(drawArrayIndex) {
+		for (var i = this.snapshots.length-1; i >= 0; i--) {
+			var snapshot = this.snapshots[i];
+			if (snapshot.index <= drawArrayIndex) {
+				return snapshot;
+			}
+		}
+		throw("No snapshot found for drawArrayIndex " + drawArrayIndex);
+	};
+
+	App.prototype.applySnapshot = function(snapshot) {
+		this.renderer.setClearColor(0xffffff, 0.0);
+		this.renderer.clearTarget(this.strokeRenderTarget);
+		this.renderer.setClearColor(0xffffff, 1.0);
+		this.renderer.clearTarget(this.drawRenderTarget);
+		if (snapshot.state.texture) {
+			this.renderer.copyTextureToRenderTarget(snapshot.state.texture, this.drawRenderTarget);
+		}
+	};
 
 	App.prototype.setupCanvas = function() {
 
@@ -43,8 +100,6 @@
 		var height = window.innerHeight;
 		var near = 0.1;
 		var far = 100;
-
-		this.drawArray = [];
 
 		var renderer = new THREE.WebGLRenderer();
 		renderer.setClearColor(0xffffff, 1.0);
@@ -181,17 +236,9 @@
 	
 	App.prototype.addEventListeners = function() {
 		this.eventHandler = new App.EventHandler(this, this.renderer.domElement);
-	};
 
-	App.prototype.drawBrushSprite = function(x, y, r, colorArray, opacity, isStart) {
-		this.drawArray.push({
-			x: x,
-			y: y,
-			r: r,
-			color: colorArray,
-			opacity: opacity,
-			isStart: isStart
-		});
+		window.undo.onclick = this.undo.bind(this);
+		window.redo.onclick = this.redo.bind(this);
 	};
 
 	App.prototype.radiusPressureCurve = function(v) {
@@ -202,23 +249,34 @@
 		return window.opacityPressure.checked ? Math.clamp(v*1.5, 0, 1) : 1;
 	};
 
+	App.prototype.drawArrayPush = function(state) {
+		if (this.drawArray.length > this.drawEndIndex) {
+			this.drawArray.splice(this.drawEndIndex);
+		}
+		this.drawArray[this.drawEndIndex++] = state;
+	};
+
 	App.prototype.drawBrush = function(isStart) {
 
 		var brush = this.brush;
+		var blend = window.blending.checked ? 0 : 1;
+		var textured = window.texturedBrush.checked ? 1 : 0;
 
 		var dx = brush.x - brush.lastX;
 		var dy = brush.y - brush.lastY;
 		var dp = brush.pressure - brush.lastPressure;
 		var d = Math.sqrt(dx*dx + dy*dy);
 		if (d === 0) {
-			this.drawBrushSprite(
-				brush.x,
-				brush.y,
-				this.radiusPressureCurve(brush.pressure) * brush.r, 
-				brush.colorArray,
-				this.opacityPressureCurve(brush.pressure) * brush.opacity,
-				isStart
-			);
+			this.drawArrayPush({
+				x: brush.x,
+				y: brush.y,
+				r: this.radiusPressureCurve(brush.pressure) * brush.r, 
+				color: brush.colorArray,
+				opacity: this.opacityPressureCurve(brush.pressure) * brush.opacity,
+				isStart: isStart,
+				blend: blend,
+				textured: textured
+			});
 		} else {
 			var rdx = dx / d;
 			var rdy = dy / d;
@@ -230,14 +288,16 @@
 				var y = (brush.lastY + d*rdy);
 				var p = (brush.lastPressure + d*rdp);
 
-				this.drawBrushSprite(
-					brush.lastX + d*rdx,
-					brush.lastY + d*rdy,
-					this.radiusPressureCurve(p) * brush.r, 
-					brush.colorArray,
-					this.opacityPressureCurve(p) * brush.opacity,
-					isStart
-				);
+				this.drawArrayPush({
+					x: brush.lastX + d*rdx,
+					y: brush.lastY + d*rdy,
+					r: this.radiusPressureCurve(p) * brush.r, 
+					color: brush.colorArray,
+					opacity: this.opacityPressureCurve(p) * brush.opacity,
+					isStart: isStart,
+					blend: blend,
+					textured: textured
+				});
 				d += Math.clamp(0.25 * p * brush.r, 0.125, 1);
 				isStart = false;
 			}
@@ -246,6 +306,11 @@
 		brush.lastX = brush.x;
 		brush.lastY = brush.y;
 		brush.lastPressure = brush.pressure;
+		this.needUpdate = true;
+	};
+
+	App.prototype.endBrush = function() {
+		this.drawArrayPush('end');
 		this.needUpdate = true;
 	};
 
@@ -292,26 +357,25 @@
 	App.prototype.renderDrawArray = function() {
 		var screenWidth = this.renderer.domElement.width / this.pixelRatio;
 		var screenHeight = this.renderer.domElement.height / this.pixelRatio;
-		var blend = window.blending.checked ? 0 : 1;
-		var textured = window.texturedBrush.checked ? 1 : 0;
-		for (var i=0; i<this.drawArray.length; i++) {
+		for (var i=this.drawStartIndex; i<this.drawEndIndex; i++) {
 			var a = this.drawArray[i];
 			if (a === 'end') {
 				this.endDrawBrush();
 			} else {
 				var x = a.x, y = a.y, r = a.r, colorArray = a.color, opacity = a.opacity;
 
-				if (a.isStart && blend < 1) {
+				if (a.isStart && a.blend < 1) {
+
 				} else {
 					this.brushQuad.position.set(x, y, 0);
 					this.brushQuad.scale.set(r,r,r);
 					var m = this.brushQuad.material;
 					m.uniforms.opacity.value = opacity;
 					m.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
-					m.uniforms.blend.value = blend;
-					m.uniforms.textured.value = textured;
+					m.uniforms.blend.value = a.blend;
+					m.uniforms.textured.value = a.textured;
 					m.uniforms.squareBrush.value = 0;
-					if (blend < 1) {
+					if (a.blend < 1) {
 						m.blending = THREE.CustomBlending;
 						m.blendEquation = THREE.AddEquation;
 						m.blendSrc = THREE.SrcAlphaFactor;
@@ -331,7 +395,7 @@
 					this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
 				}
 
-				if (blend < 1) {
+				if (a.blend < 1) {
 					this.copyDrawingToBrush(x, y, r, screenWidth, screenHeight);
 				}
 			}
@@ -352,7 +416,7 @@
 		if (this.needUpdate) {
 
 			this.renderDrawArray();
-			this.drawArray.splice(0);
+			this.drawStartIndex = this.drawEndIndex;
 			this.renderer.setRenderTarget(null);
 			this.renderer.clear();
 			this.renderer.render(this.drawScene, this.drawCamera);
@@ -438,16 +502,14 @@
 
 		touchend: function(ev) {
 			if (this.app.mode === App.Mode.DRAW) {
-				this.app.drawArray.push('end');
-				this.app.needUpdate = true;
+				this.app.endBrush();
 			}
 			this.resetMode();
 		},
 
 		touchcancel: function(ev) {
 			if (this.app.mode === App.Mode.DRAW) {
-				this.app.drawArray.push('end');
-				this.app.needUpdate = true;
+				this.app.endBrush();
 			}
 			this.resetMode();
 		},
