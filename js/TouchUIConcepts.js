@@ -336,12 +336,12 @@
 				}
 			}
 		}
-		this.brushQuad.position.set(50, 50, 0);
-		this.brushQuad.scale.set(32, 32, 32);
-		this.brushQuad.material.uniforms.opacity.value = 1;
-		this.brushQuad.material.uniforms.blend.value = 0;
-		this.brushQuad.material.uniforms.squareBrush.value = 1;
-		this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+		// this.brushQuad.position.set(50, 50, 0);
+		// this.brushQuad.scale.set(32, 32, 32);
+		// this.brushQuad.material.uniforms.opacity.value = 1;
+		// this.brushQuad.material.uniforms.blend.value = 0;
+		// this.brushQuad.material.uniforms.squareBrush.value = 1;
+		// this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
 	};
 
 	App.prototype.tick = function() {
