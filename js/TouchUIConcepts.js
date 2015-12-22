@@ -113,6 +113,8 @@
 		this.brushCamera = new THREE.Camera();
 		this.brushCamera.matrixAutoUpdate = false;
 
+		this.maskTexture = new THREE.TextureLoader().load('texture.png');
+
 		this.brushQuad = new THREE.Mesh(
 			new THREE.PlaneBufferGeometry(2, 2),
 			new THREE.ShaderMaterial({
@@ -133,13 +135,16 @@
 					"uniform vec3 color;",
 					"uniform float opacity;",
 					"uniform float blend;",
+					"uniform float textured;",
 					"uniform float squareBrush;",
 					"uniform sampler2D paint;",
+					"uniform sampler2D mask;",
 
 					"void main(void) {",
 					"	vec4 paintContent = texture2D(paint, vUv);",
 					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
-					"	float brushOpacity = max(squareBrush, smoothstep(1.0, 0.9, length(unitUv)));",
+					"	float maskV = 1.0-texture2D(mask, vUv).r;",
+					"	float brushOpacity = max(squareBrush, mix(smoothstep(1.0, 0.9, length(unitUv)), maskV, textured));",
 					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend);",
 					"	gl_FragColor.a = opacity * brushOpacity;",
 					"}"
@@ -150,8 +155,10 @@
 					color: { type: 'v3', value: new THREE.Vector3(0, 0, 0) },
 					opacity: { type: 'f', value: 0.5 },
 					paint: { type: 't', value: this.brushRenderTarget },
+					mask: { type: 't', value: this.maskTexture },
 					blend: { type: 'f', value: 1 },
 					squareBrush: { type: 'f', value: 0 },
+					textured: { type: 'f', value: 0 }
 				},
 
 				transparent: true,
@@ -286,6 +293,7 @@
 		var screenWidth = this.renderer.domElement.width / this.pixelRatio;
 		var screenHeight = this.renderer.domElement.height / this.pixelRatio;
 		var blend = window.blending.checked ? 0 : 1;
+		var textured = window.texturedBrush.checked ? 1 : 0;
 		for (var i=0; i<this.drawArray.length; i++) {
 			var a = this.drawArray[i];
 			if (a === 'end') {
@@ -297,11 +305,13 @@
 				} else {
 					this.brushQuad.position.set(x, y, 0);
 					this.brushQuad.scale.set(r,r,r);
-					this.brushQuad.material.uniforms.opacity.value = opacity;
-					this.brushQuad.material.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
-					this.brushQuad.material.uniforms.blend.value = blend;
+					var m = this.brushQuad.material;
+					m.uniforms.opacity.value = opacity;
+					m.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
+					m.uniforms.blend.value = blend;
+					m.uniforms.textured.value = textured;
+					m.uniforms.squareBrush.value = 0;
 					if (blend < 1) {
-						var m = this.brushQuad.material;
 						m.blending = THREE.CustomBlending;
 						m.blendEquation = THREE.AddEquation;
 						m.blendSrc = THREE.SrcAlphaFactor;
@@ -310,7 +320,6 @@
 						m.blendSrcAlpha = THREE.OneFactor;
 						m.blendDstAlpha = THREE.OneFactor;
 					} else {
-						var m = this.brushQuad.material;
 						m.blending = THREE.CustomBlending;
 						m.blendEquation = THREE.AddEquation;
 						m.blendSrc = THREE.SrcAlphaFactor;
@@ -319,7 +328,6 @@
 						m.blendSrcAlpha = THREE.OneFactor;
 						m.blendDstAlpha = THREE.OneFactor;
 					}
-					this.brushQuad.material.uniforms.squareBrush.value = 0;
 					this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
 				}
 
