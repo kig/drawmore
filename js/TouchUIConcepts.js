@@ -11,6 +11,9 @@
 		COLOR_PICKER: 3
 	};
 
+	App.prototype.snapshotSeparation = 3000;
+	App.prototype.maxSnapshotCount = 6;
+
 	App.prototype.init = function() {
 		this.pixelRatio = window.devicePixelRatio;
 		this.mode = App.Mode.DRAW;
@@ -74,6 +77,57 @@
 		this.needUpdate = true;
 	};
 
+	App.prototype.recordSnapshotIfNeeded = function() {
+		if (this.snapshots[this.snapshots.length-1].index < this.drawEndIndex-this.snapshotSeparation && this.drawEndIndex === this.drawArray.length) {
+			this.snapshots.push( this.createSnapshot() );
+			if (this.snapshots.length > this.maxSnapshotCount) {
+				this.snapshots.splice(1, 1);
+				/*
+					Snapshots should be spaced with exponential separations so that
+					undo is fast and doesn't eat too much memory.
+
+					  |
+					  ||
+					  |||
+					  ||||
+					  |||||
+					  ||||||
+					1 |x|||||
+					2 |x|x||||
+					3 |x|x|x|||
+
+					4 |x|x|x|x||
+					1 |xxx|x|x|||
+
+					4 |xxx|x|x|x||
+					2 |xxx|xxx|x|||
+
+					4 |xxx|xxx|x|x||
+					3 |xxx|xxx|xxx|||
+
+					4 |xxx|xxx|xxx|x||
+					4 |xxx|xxx|xxx|xx||
+					4 |xxx|xxx|xxx|xxx||
+					1 |xxxxxxx|xxx|xxx|||
+
+					4 |xxxxxxx|xxx|xxx|x||
+					4 |xxxxxxx|xxx|xxx|xx||
+					4 |xxxxxxx|xxx|xxx|xxx||
+					2 |xxxxxxx|xxxxxxx|xxx|||
+
+					4 |xxxxxxx|xxx|xxx|xxx|x||
+					4 |xxxxxxx|xxx|xxx|xxx|xx||
+					4 |xxxxxxx|xxx|xxx|xxx|xxx||
+					3 |xxxxxxx|xxxxxxx|xxxxxxx|||
+
+					FIXME Rebuild snapshots while undoing so that there's always a 
+					      snapshot within snapshotSeparation of current undo state.
+				*/
+
+			}
+		}
+	};
+
 	App.prototype.getSnapshot = function(drawArrayIndex) {
 		for (var i = this.snapshots.length-1; i >= 0; i--) {
 			var snapshot = this.snapshots[i];
@@ -90,8 +144,37 @@
 		this.renderer.setClearColor(0xffffff, 1.0);
 		this.renderer.clearTarget(this.drawRenderTarget);
 		if (snapshot.state.texture) {
-			this.renderer.copyTextureToRenderTarget(snapshot.state.texture, this.drawRenderTarget);
+			this.copyTextureToRenderTarget(snapshot.state.texture, this.drawRenderTarget);
 		}
+	};
+
+	App.prototype.copyTextureToRenderTarget = function(texture, renderTarget) {
+		this.copyQuadTexture.image = texture;
+		this.copyQuadTexture.needsUpdate = true;
+		this.renderer.render(this.copyScene, this.copyCamera, renderTarget);
+	};
+
+	App.prototype.createSnapshot = function() {
+		var gl = this.renderer.context;
+
+		console.log('createSnapshot');
+
+		this.renderer.clearTarget(this.copyRenderTarget);
+		this.renderer.render(this.drawScene, this.drawCamera, this.copyRenderTarget);
+		this.renderer.render(this.strokeScene, this.strokeCamera, this.copyRenderTarget);
+
+		var image = { width: this.renderer.domElement.width, height: this.renderer.domElement.height };
+		image.data = new Uint8Array( image.width * image.height * 4 );
+		gl.readPixels(
+			0, 0, image.width, image.height,
+			gl.RGBA, gl.UNSIGNED_BYTE, image.data
+		);
+		return {
+			index: this.drawEndIndex,
+			state: {
+				texture: image
+			}
+		};
 	};
 
 	App.prototype.setupCanvas = function() {
@@ -110,12 +193,15 @@
 
 		var strokeRenderTarget = new THREE.WebGLRenderTarget(renderer.domElement.width, renderer.domElement.height);
 		var drawRenderTarget = new THREE.WebGLRenderTarget(renderer.domElement.width, renderer.domElement.height);
+		var copyRenderTarget = new THREE.WebGLRenderTarget(renderer.domElement.width, renderer.domElement.height);
 
 		this.strokeRenderTarget = strokeRenderTarget;
 		this.drawRenderTarget = drawRenderTarget;
+		this.copyRenderTarget = copyRenderTarget;
 
 		this.strokeRenderTarget.texture.generateMipmaps = false;
 		this.drawRenderTarget.texture.generateMipmaps = false;
+		this.copyRenderTarget.texture.generateMipmaps = false;
 
 		renderer.clear();
 		renderer.autoClear = false;
@@ -125,12 +211,11 @@
 		this.drawScene = new THREE.Scene();
 		this.drawCamera = new THREE.Camera();
 		this.drawScene.add(this.drawCamera);
-
 		this.drawQuad = new THREE.Mesh(
 			new THREE.PlaneBufferGeometry(2, 2),
 			new THREE.MeshBasicMaterial({
 				map: this.drawRenderTarget,
-				transparent: true,
+				transparent: false,
 				depthWrite: false,
 				depthTest: false,
 				side: THREE.DoubleSide
@@ -138,6 +223,23 @@
 		);
 		this.drawScene.add(this.drawQuad);
 		this.renderer.clearTarget(this.drawRenderTarget);
+
+
+		this.copyScene = new THREE.Scene();
+		this.copyCamera = new THREE.Camera();
+		this.copyScene.add(this.copyCamera);
+		this.copyQuadTexture = new THREE.DataTexture(null, renderer.domElement.width, renderer.domElement.height);
+		this.copyQuad = new THREE.Mesh(
+			new THREE.PlaneBufferGeometry(2, 2),
+			new THREE.MeshBasicMaterial({
+				map: this.copyQuadTexture,
+				transparent: false,
+				depthWrite: false,
+				depthTest: false,
+				side: THREE.DoubleSide
+			})
+		);
+		this.copyScene.add(this.copyQuad);
 
 		this.strokeScene = new THREE.Scene();
 		this.strokeCamera = new THREE.Camera();
@@ -236,9 +338,16 @@
 	
 	App.prototype.addEventListeners = function() {
 		this.eventHandler = new App.EventHandler(this, this.renderer.domElement);
+		var f = function(){};
+		window.undo.addEventListener('touchstart', f, false);
+		window.undo.addEventListener('touchcancel', f, false);
+		window.undo.addEventListener('touchmove', f, false);
+		window.undo.addEventListener('touchend', this.undo.bind(this), false);
 
-		window.undo.onclick = this.undo.bind(this);
-		window.redo.onclick = this.redo.bind(this);
+		window.redo.addEventListener('touchstart', f, false);
+		window.redo.addEventListener('touchcancel', f, false);
+		window.redo.addEventListener('touchmove', f, false);
+		window.redo.addEventListener('touchend', this.redo.bind(this), false);
 	};
 
 	App.prototype.radiusPressureCurve = function(v) {
@@ -252,6 +361,10 @@
 	App.prototype.drawArrayPush = function(state) {
 		if (this.drawArray.length > this.drawEndIndex) {
 			this.drawArray.splice(this.drawEndIndex);
+		}
+		while (this.snapshots.length > 0 && this.snapshots[this.snapshots.length-1].index > this.drawEndIndex) {
+			this.snapshots.pop();
+			console.log('deleted obsolete snapshot');
 		}
 		this.drawArray[this.drawEndIndex++] = state;
 	};
@@ -338,6 +451,8 @@
 
 		this.renderer.setClearColor(0xffffff, 1.0);
 		this.needUpdate = true;
+
+		this.recordSnapshotIfNeeded();
 	};
 
 	App.prototype.copyDrawingToBrush = function(x, y, r, screenWidth, screenHeight) {
