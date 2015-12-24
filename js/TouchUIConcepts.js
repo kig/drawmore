@@ -146,32 +146,39 @@
 		if (snapshot.state.texture) {
 			this.copyTextureToRenderTarget(snapshot.state.texture, this.drawRenderTarget);
 		}
+		this.endDrawBrush(true);
 	};
 
 	App.prototype.copyTextureToRenderTarget = function(texture, renderTarget) {
-		this.copyQuadTexture.image = texture;
+		this.copyQuadTexture.image.width = texture.width;
+		this.copyQuadTexture.image.height = texture.height;
+		this.copyQuadTexture.image.data = texture.dataU8;
 		this.copyQuadTexture.needsUpdate = true;
 		this.renderer.render(this.copyScene, this.copyCamera, renderTarget);
 	};
 
-	App.prototype.createSnapshot = function() {
+	App.prototype.createSnapshot = function(flipY) {
 		var gl = this.renderer.context;
 
 		console.log('createSnapshot');
 
 		this.renderer.setClearColor(0xffffff, 0.0);
 		this.renderer.clearTarget(this.copyRenderTarget);
-		this.drawQuad.material.transparent = false;
-		this.renderer.render(this.drawScene, this.drawCamera, this.copyRenderTarget);
-		this.drawQuad.material.transparent = true;
-		this.renderer.render(this.strokeScene, this.strokeCamera, this.copyRenderTarget);
-		this.renderer.setClearColor(0xffffff, 1.0);
 
-		var image = { width: this.renderer.domElement.width, height: this.renderer.domElement.height };
-		image.data = new Uint8Array( image.width * image.height * 4 );
+		this.drawQuad.scale.y = flipY ? -1 : 1;
+		this.renderer.render(this.drawScene, this.drawCamera, this.copyRenderTarget);
+		this.drawQuad.scale.y = 1;
+
+		this.strokeQuad.scale.y = flipY ? -1 : 1;
+		this.renderer.render(this.strokeScene, this.strokeCamera, this.copyRenderTarget);
+		this.strokeQuad.scale.y = 1;
+
+		var image = new ImageData(this.renderer.domElement.width, this.renderer.domElement.height);
+		var u8 = new Uint8Array(image.data.buffer);
+		image.dataU8 = u8;
 		gl.readPixels(
 			0, 0, image.width, image.height,
-			gl.RGBA, gl.UNSIGNED_BYTE, image.data
+			gl.RGBA, gl.UNSIGNED_BYTE, u8
 		);
 		return {
 			index: this.drawEndIndex,
@@ -237,7 +244,7 @@
 			new THREE.PlaneBufferGeometry(2, 2),
 			new THREE.MeshBasicMaterial({
 				map: this.copyQuadTexture,
-				transparent: false,
+				transparent: true,
 				depthWrite: false,
 				depthTest: false,
 				side: THREE.DoubleSide
@@ -363,37 +370,38 @@
 	};
 
 	App.prototype.save = function() {
-		var snap = this.createSnapshot();
-		var imageData = new ImageData(this.renderer.domElement.width, this.renderer.domElement.height);
-		imageData.data.set(snap.state.texture.data);
-		var data = imageData.data;
-		// Flip image data Y.
-		for (var y=0, y2=imageData.height-1; y<y2; y++, y2--) {
-			var off1 = y * imageData.width * 4;
-			var off2 = y2 * imageData.width * 4;
-			for (var x=0; x<imageData.width*4; x++, off1++, off2++) {
-				var tmp = data[off1];
-				data[off1] = data[off2];
-				data[off2] = tmp;
-			}
-		}
+		var snap = this.createSnapshot(true);
+		var imageData = snap.state.texture;
 		var canvas = document.createElement('canvas');
 		canvas.width = imageData.width;
 		canvas.height = imageData.height;
 		var ctx = canvas.getContext('2d');
 		ctx.putImageData(imageData, 0, 0);
-		var data = canvas.toDataURL();
-		// var binary = atob(data.slice(data.indexOf(',') + 1));
-		// var blob = new Blob([binary]);
-		// var dlURL = window.URL.createObjectURL(blob);
+		var blob;
+		// if (canvas.toBlob) {
+			// blob = canvas.toBlob();
+		// } else {
+			var data = canvas.toDataURL();
+			var binary = atob(data.slice(data.indexOf(',') + 1));
+			var arr = new Uint8Array(binary.length);
+			for (var i=0; i<binary.length; i++) {
+				arr[i] = binary.charCodeAt(i);
+			}
+			blob = new Blob([arr]);
+		// }
+		var dlURL = window.URL.createObjectURL(blob);
 		var a = document.createElement('a');
-		a.href = data; 
-		// a.href = dlURL;
+		a.href = dlURL;
 		a.download = 'Drawmore '+(new Date().toString().replace(/:/g, '.'))+ '.png';
 		document.body.appendChild(a);
-		a.click();
+		var clickEvent = new MouseEvent('click', {
+			'view': window,
+			'bubbles': true,
+			'cancelable': false,
+		});
+		a.dispatchEvent(clickEvent);
 		document.body.removeChild(a);
-		// window.URL.revokeObjectURL(dlURL);
+		window.URL.revokeObjectURL(dlURL);
 	};
 
 	App.prototype.radiusPressureCurve = function(v) {
@@ -473,7 +481,7 @@
 		this.needUpdate = true;
 	};
 
-	App.prototype.endDrawBrush = function() {
+	App.prototype.endDrawBrush = function(noSnapshot) {
 		this.renderer.render(this.strokeScene, this.strokeCamera, this.drawRenderTarget);
 
 		var m = this.drawQuad.material;
@@ -492,13 +500,14 @@
 		m.blendSrc = THREE.OneFactor;
 		m.blendDst = THREE.ZeroFactor;
 		m.blendEquationAlpha = THREE.AddEquation;
-		m.blendSrcAlpha = THREE.OneFactor;
-		m.blendDstAlpha = THREE.ZeroFactor;
+		m.blendSrcAlpha = THREE.OneFactor; // OneMinusDstAlpha
+		m.blendDstAlpha = THREE.ZeroFactor; // One
 
-		this.renderer.setClearColor(0xffffff, 1.0);
 		this.needUpdate = true;
 
-		this.recordSnapshotIfNeeded();
+		if (!noSnapshot)
+			this.recordSnapshotIfNeeded();
+		this.renderer.setClearColor(0xffffff, 1.0);
 	};
 
 	App.prototype.copyDrawingToBrush = function(x, y, r, screenWidth, screenHeight) {
