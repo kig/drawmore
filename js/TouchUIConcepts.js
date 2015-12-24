@@ -215,7 +215,7 @@
 			new THREE.PlaneBufferGeometry(2, 2),
 			new THREE.MeshBasicMaterial({
 				map: this.drawRenderTarget,
-				transparent: false,
+				transparent: true,
 				depthWrite: false,
 				depthTest: false,
 				side: THREE.DoubleSide
@@ -335,19 +335,50 @@
 
 		this.endDrawBrush();
 	};
-	
+
+
 	App.prototype.addEventListeners = function() {
 		this.eventHandler = new App.EventHandler(this, this.renderer.domElement);
 		var f = function(){};
-		window.undo.addEventListener('touchstart', f, false);
-		window.undo.addEventListener('touchcancel', f, false);
-		window.undo.addEventListener('touchmove', f, false);
-		window.undo.addEventListener('touchend', this.undo.bind(this), false);
+		var click = function(el, g) {
+			el.addEventListener('touchstart', f, false);
+			el.addEventListener('touchcancel', f, false);
+			el.addEventListener('touchmove', f, false);
+			el.addEventListener('touchend', g, false);
+		};
 
-		window.redo.addEventListener('touchstart', f, false);
-		window.redo.addEventListener('touchcancel', f, false);
-		window.redo.addEventListener('touchmove', f, false);
-		window.redo.addEventListener('touchend', this.redo.bind(this), false);
+		click(window.undo, this.undo.bind(this));
+		click(window.redo, this.redo.bind(this));
+		click(window.hideUI, function() {
+			document.body.classList.add('hide-ui');
+		});
+		click(window.showUI, function() {
+			document.body.classList.remove('hide-ui');
+		});
+		click(window.save, this.save.bind(this));
+	};
+
+	App.prototype.save = function() {
+		var snap = this.createSnapshot();
+		var imageData = new ImageData(this.renderer.domElement.width, this.renderer.domElement.height);
+		imageData.data.set(snap.state.texture.data);
+		var canvas = document.createElement('canvas');
+		canvas.width = imageData.width;
+		canvas.height = imageData.height;
+		var ctx = canvas.getContext('2d');
+		ctx.putImageData(imageData, 0, 0);
+		var data = canvas.toDataURL();
+		// var binary = atob(data.slice(data.indexOf(',') + 1));
+		// var blob = new Blob([binary]);
+		// var dlURL = window.URL.createObjectURL(blob);
+		var a = document.createElement('a');
+		a.href = data; 
+		// a.href = dlURL;
+		a.download = 'Drawmore '+(new Date().toString().replace(/:/g, '.'))+ '.png';
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		// window.URL.revokeObjectURL(dlURL);
 	};
 
 	App.prototype.radiusPressureCurve = function(v) {

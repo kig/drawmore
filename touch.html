@@ -68,6 +68,29 @@
 				z-index: 3;
 			}
 
+			.hide-ui .mode-toggle {
+				display: none;
+			}
+
+			.hide-ui .pressure-controls {
+				display: none;
+			}
+
+			body.hide-ui #showUI {
+				display: block;
+			}
+
+			body:not(.hide-ui) #showUI {
+				display: none;
+			}
+
+			#showUI {
+				position: absolute;
+				top: 0;
+				left: 0;
+				z-index: 3;
+			}
+
 		</style>
 	</head>
 	<body>
@@ -83,7 +106,10 @@
 			&mdash; Textured brush <input id="texturedBrush" type="checkbox" />
 			<button id="undo">Undo</button>
 			<button id="redo">Redo</button>
+			<button id="hideUI">Hide UI</button>
+			<button id="save">Save PNG</button>
 		</div>
+		<button id="showUI">UI</button>
 
 		<script src="js/three.js"></script>
 		<script src="js/ColorUtils.js"></script>
