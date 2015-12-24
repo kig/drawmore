@@ -347,6 +347,26 @@
 		this.endDrawBrush();
 	};
 
+	App.prototype.mirrorDrawRenderTarget = function() {
+		this.renderer.setClearColor(0xffffff, 0.0);
+		this.renderer.clearTarget(this.strokeRenderTarget);
+
+		this.renderer.render(this.drawScene, this.drawCamera, this.strokeRenderTarget);
+
+		this.renderer.setClearColor(0xffffff, 0.0);
+		this.renderer.clearTarget(this.drawRenderTarget);
+
+		this.strokeQuad.scale.x = -1;
+		this.renderer.render(this.strokeScene, this.strokeCamera, this.drawRenderTarget);
+
+		this.renderer.clearTarget(this.strokeRenderTarget);
+		this.strokeQuad.scale.x = 1;
+	};
+
+	App.prototype.mirror = function() {
+		this.drawArrayPush({type: 'mirror', isStart: true});
+		this.endBrush();
+	};
 
 	App.prototype.addEventListeners = function() {
 		this.eventHandler = new App.EventHandler(this, this.renderer.domElement);
@@ -367,6 +387,8 @@
 			document.body.classList.remove('hide-ui');
 		});
 		click(window.save, this.save.bind(this));
+
+		click(window.mirror, this.mirror.bind(this));
 	};
 
 	App.prototype.save = function() {
@@ -477,7 +499,7 @@
 	};
 
 	App.prototype.endBrush = function() {
-		this.drawArrayPush('end');
+		this.drawArrayPush({type: 'end'});
 		this.needUpdate = true;
 	};
 
@@ -529,8 +551,10 @@
 		var screenHeight = this.renderer.domElement.height / this.pixelRatio;
 		for (var i=this.drawStartIndex; i<this.drawEndIndex; i++) {
 			var a = this.drawArray[i];
-			if (a === 'end') {
+			if (a.type === 'end') {
 				this.endDrawBrush();
+			} else if (a.type === 'mirror') {
+				this.mirrorDrawRenderTarget();
 			} else {
 				var x = a.x, y = a.y, r = a.r, colorArray = a.color, opacity = a.opacity;
 
