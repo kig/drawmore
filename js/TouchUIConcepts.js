@@ -159,9 +159,13 @@
 
 		console.log('createSnapshot');
 
+		this.renderer.setClearColor(0xffffff, 0.0);
 		this.renderer.clearTarget(this.copyRenderTarget);
+		this.drawQuad.material.transparent = false;
 		this.renderer.render(this.drawScene, this.drawCamera, this.copyRenderTarget);
+		this.drawQuad.material.transparent = true;
 		this.renderer.render(this.strokeScene, this.strokeCamera, this.copyRenderTarget);
+		this.renderer.setClearColor(0xffffff, 1.0);
 
 		var image = { width: this.renderer.domElement.width, height: this.renderer.domElement.height };
 		image.data = new Uint8Array( image.width * image.height * 4 );
