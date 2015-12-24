@@ -362,6 +362,17 @@
 		var snap = this.createSnapshot();
 		var imageData = new ImageData(this.renderer.domElement.width, this.renderer.domElement.height);
 		imageData.data.set(snap.state.texture.data);
+		var data = imageData.data;
+		// Flip image data Y.
+		for (var y=0, y2=imageData.height-1; y<y2; y++, y2--) {
+			var off1 = y * imageData.width * 4;
+			var off2 = y2 * imageData.width * 4;
+			for (var x=0; x<imageData.width*4; x++, off1++, off2++) {
+				var tmp = data[off1];
+				data[off1] = data[off2];
+				data[off2] = tmp;
+			}
+		}
 		var canvas = document.createElement('canvas');
 		canvas.width = imageData.width;
 		canvas.height = imageData.height;
