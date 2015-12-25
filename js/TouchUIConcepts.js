@@ -391,6 +391,10 @@
 		click(window.save, this.save.bind(this));
 
 		click(window.mirror, this.mirror.bind(this));
+
+		window.onbeforeunload = function() {
+			return "Leaving this page will erase your drawing.";
+		};
 	};
 
 	App.prototype.save = function() {
