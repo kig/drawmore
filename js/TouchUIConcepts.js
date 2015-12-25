@@ -840,6 +840,12 @@
 
 			} else if (targetMode === App.Mode.BRUSH_RESIZE) {
 
+				if (app.brushCircle) {
+					app.brushCircle.style.borderRadius = app.brush.r + 'px';
+					app.brushCircle.style.marginTop = -app.brush.r + 'px';
+					app.brushCircle.style.width = app.brushCircle.style.height = 2 * app.brush.r + 'px';
+				}
+
 				var r = Math.min(app.brush.r, h/2 - 8)
 
 				toggleCtx.beginPath();
@@ -901,6 +907,7 @@
 		};
 
 		var colorMixer;
+		var brushCircle;
 		if (targetMode === App.Mode.COLOR_PICKER) {
 			colorMixer = new ColorMixer(document.body, 100, 100, function(c) {
 				app.brush.colorArray = [c[0]*255, c[1]*255, c[2]*255, 255];
@@ -920,6 +927,11 @@
 			};
 			toggleColorMixer();
 
+		} else if (targetMode === App.Mode.BRUSH_RESIZE) {
+			brushCircle = document.createElement('div');
+			brushCircle.id = 'brushCircle'
+			app.brushCircle = brushCircle;
+			document.body.appendChild(brushCircle);
 		}
 
 		var wasVisible = false;
@@ -936,6 +948,8 @@
 			wasVisible = app.colorMixer.widget.style.display !== 'none';
 			app.colorMixer.widget.style.display = 'none';
 
+			app.brushCircle.style.opacity = (targetMode === App.Mode.BRUSH_RESIZE) ? 1 : 0;
+
 			app.mode = targetMode;
 		};
 
@@ -948,11 +962,13 @@
 					this.revertBrush();
 				}
 			}
+			app.brushCircle.style.opacity = 0;
 			app.mode = App.Mode.DRAW;
 		};
 
 		toggle.cancel = function() {
 			this.revertBrush();
+			app.brushCircle.style.opacity = 0;
 			app.mode = App.Mode.DRAW;
 		};
 
