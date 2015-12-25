@@ -370,8 +370,10 @@
 
 	App.prototype.addEventListeners = function() {
 		this.eventHandler = new App.EventHandler(this, this.renderer.domElement);
-		var f = function(){};
+		var f = function(ev){ ev.preventDefault(); };
 		var click = function(el, g) {
+			el.addEventListener('click', g, false);
+
 			el.addEventListener('touchstart', f, false);
 			el.addEventListener('touchcancel', f, false);
 			el.addEventListener('touchmove', f, false);
@@ -647,10 +649,20 @@
 		this.startOpacity = 1;
 		this.startColor = '#ff0000';
 
+		this.down = false;
+
 		el.addEventListener("touchstart", this, false);
 		el.addEventListener("touchend", this, false);
 		el.addEventListener("touchcancel", this, false);
 		el.addEventListener("touchmove", this, false);
+
+		el.addEventListener("mousedown", this, false);
+		el.addEventListener("mousemove", this, false);
+		window.addEventListener("mouseup", this, false);
+
+		el.addEventListener("pointerdown", this, false);
+		el.addEventListener("pointermove", this, false);
+		window.addEventListener("pointerup", this, false);
 	};
 
 	App.EventHandler.prototype = {
@@ -675,12 +687,12 @@
 			return force;
 		},
 
-		touchstart: function(ev) {
-			this.startX = ev.touches[0].clientX;
-			this.startY = ev.touches[0].clientY;
-			this.app.brush.x = ev.touches[0].clientX;
-			this.app.brush.y = ev.touches[0].clientY;
-			this.app.brush.pressure = this.parsePressure(ev.touches[0]);
+		startBrushStroke: function(x, y, pressure) {
+			this.startX = x;
+			this.startY = y;
+			this.app.brush.x = x;
+			this.app.brush.y = y;
+			this.app.brush.pressure = pressure;
 
 			if (this.app.mode === App.Mode.DRAW) {
 
@@ -694,27 +706,73 @@
 			this.app.colorMixer.widget.style.display = 'none';
 		},
 
-		touchend: function(ev) {
+		endBrushStroke: function() {
 			if (this.app.mode === App.Mode.DRAW) {
 				this.app.endBrush();
 			}
 			this.resetMode();
+		},
+
+		moveBrushStroke: function(x, y, pressure) {
+			this.app.brush.pressure = pressure;
+			if (this.app.mode === App.Mode.DRAW) {
+				this.app.brush.x = x;
+				this.app.brush.y = y;
+				this.app.drawBrush(false);
+			}
+		},
+
+
+		mousedown: function(ev) {
+			this.down = true;
+			this.startBrushStroke(ev.clientX, ev.clientY, ev.pressure === undefined ? 1 : ev.pressure);
+		},
+
+		mouseup: function(ev) {
+			if (this.down) {
+				this.down = false;
+				this.endBrushStroke();
+			}
+		},
+
+		mousemove: function(ev) {
+			if (this.down) {
+				this.moveBrushStroke(ev.clientX, ev.clientY, ev.pressure === undefined ? 1 : ev.pressure);
+			}
+		},
+
+
+		pointerdown: function(ev) {
+			this.mousedown(ev);
+		},
+
+		pointerup: function(ev) {
+			this.mouseup(ev);
+		},
+
+		pointermove: function(ev) {
+			this.mousemove(ev);
+		},
+
+
+		touchstart: function(ev) {
+			this.startBrushStroke(
+				ev.touches[0].clientX,
+				ev.touches[0].clientY,
+				this.parsePressure(ev.touches[0])
+			);
+		},
+
+		touchend: function(ev) {
+			this.endBrushStroke();
 		},
 
 		touchcancel: function(ev) {
-			if (this.app.mode === App.Mode.DRAW) {
-				this.app.endBrush();
-			}
-			this.resetMode();
+			this.touchend(ev);
 		},
 
 		touchmove: function(ev) {
-			this.app.brush.pressure = this.parsePressure(ev.touches[0]);
-			if (this.app.mode === App.Mode.DRAW) {
-				this.app.brush.x = ev.touches[0].clientX;
-				this.app.brush.y = ev.touches[0].clientY;
-				this.app.drawBrush(false);
-			}
+			this.moveBrushStroke(ev.touches[0].clientX, ev.touches[0].clientY, this.parsePressure(ev.touches[0]));
 		}
 	};
 
