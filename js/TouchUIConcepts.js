@@ -71,6 +71,16 @@
 
 	App.prototype.timeTravel = function(drawArrayIndex) {
 		var snapshot = this.getSnapshot(drawArrayIndex);
+		if (drawArrayIndex - snapshot.index > 5 * this.snapshotSeparation) {
+			if (!this.undoOk) {
+				this.undoOk = confirm("Continuing undo operations are going to be very slow, proceed?");
+				if (!this.undoOk) {
+					return;
+				}
+			}
+		} else {
+			this.undoOk = false;
+		}
 		this.drawStartIndex = snapshot.index;
 		this.drawEndIndex = drawArrayIndex;
 		this.applySnapshot(snapshot);
