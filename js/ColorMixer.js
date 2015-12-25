@@ -58,17 +58,16 @@ ColorMixer.prototype = {
     this.hueCanvas.update = function(ev) {
       if (this.down) {
         var bbox = this.getBoundingClientRect();
-        var xy = {x: ev.touches[0].clientX-bbox.left, y: ev.touches[0].clientY-bbox.top};
+        var xy = {x: ev.clientX-bbox.left, y: ev.clientY-bbox.top};
         var h = self.hueAtMouseCoords(xy);
         self.setHue(h, true);
-        ev.preventDefault();
       }
     };
 
     this.canvas.update = function(ev) {
       if (this.down) {
         var bbox = this.getBoundingClientRect();
-        var xy = {x: ev.touches[0].clientX-bbox.left, y: ev.touches[0].clientY-bbox.top};
+        var xy = {x: ev.clientX-bbox.left, y: ev.clientY-bbox.top};
         var x = Math.clamp(xy.x, 0, width-9);
         var y = Math.clamp(xy.y, 0, height-9);
         self.saturation = x/(width-9);
@@ -76,18 +75,26 @@ ColorMixer.prototype = {
 
         self.signalChange();
         self.requestRedraw();
-        ev.preventDefault();
       }
     };
 
     var addEventListeners = function(el) {
       el.addEventListener('touchstart', function(ev) {
         this.down = true;
-        this.update(ev);
+        ev.preventDefault();
+        this.update(ev.touches[0]);
       }, false);
-      el.addEventListener('touchmove', el.update, false);
+      el.addEventListener('touchmove', function(ev) { el.update(ev.touches[0]); ev.preventDefault(); }, false);
       el.addEventListener('touchend', function(ev) { this.down = false; }, false);
       el.addEventListener('touchcancel', function(ev) { this.down = false; }, false);
+
+      el.addEventListener('mousedown', function(ev) {
+        this.down = true;
+        ev.preventDefault();
+        this.update(ev);
+      }, false);
+      window.addEventListener('mousemove', function(ev) { el.update(ev); if (el.down) { ev.preventDefault(); } }, false);
+      window.addEventListener('mouseup', function(ev) { el.down = false; }, false);
     };
 
     addEventListeners(this.canvas);

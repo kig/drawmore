@@ -924,6 +924,8 @@
 			toggleColorMixer();
 
 		}
+
+		var wasVisible = false;
 		
 		toggle.start = function(ev) {
 			this.startRadius = app.brush.r;
@@ -934,6 +936,7 @@
 			this.startX = ev.clientX;
 			this.startY = ev.clientY;
 
+			wasVisible = app.colorMixer.widget.style.display !== 'none';
 			app.colorMixer.widget.style.display = 'none';
 
 			app.mode = targetMode;
@@ -942,7 +945,9 @@
 		toggle.end = function(ev) {
 			if (targetMode === App.Mode.COLOR_PICKER) {
 				if (touchInsideElement(this, ev)) {
-					toggleColorMixer();
+					if (!wasVisible) {
+						toggleColorMixer();
+					}
 					this.revertBrush();
 				}
 			}
@@ -1024,6 +1029,7 @@
 			if (toggle.down) {
 				ev.preventDefault();
 				toggle.end(ev);
+				toggle.down = false;
 			}
 		}, false);
 
