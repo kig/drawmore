@@ -841,7 +841,7 @@
 			} else if (targetMode === App.Mode.BRUSH_RESIZE) {
 
 				if (app.brushCircle) {
-					app.brushCircle.style.borderRadius = app.brush.r + 'px';
+					app.brushCircle.style.borderRadius = app.brush.r+1 + 'px';
 					app.brushCircle.style.marginTop = -app.brush.r + 'px';
 					app.brushCircle.style.width = app.brushCircle.style.height = 2 * app.brush.r + 'px';
 				}
