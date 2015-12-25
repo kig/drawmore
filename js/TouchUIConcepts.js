@@ -650,6 +650,7 @@
 		this.startColor = '#ff0000';
 
 		this.down = false;
+		this.pointerDown = false;
 
 		el.addEventListener("touchstart", this, false);
 		el.addEventListener("touchend", this, false);
@@ -657,11 +658,11 @@
 		el.addEventListener("touchmove", this, false);
 
 		el.addEventListener("mousedown", this, false);
-		el.addEventListener("mousemove", this, false);
+		window.addEventListener("mousemove", this, false);
 		window.addEventListener("mouseup", this, false);
 
 		el.addEventListener("pointerdown", this, false);
-		el.addEventListener("pointermove", this, false);
+		window.addEventListener("pointermove", this, false);
 		window.addEventListener("pointerup", this, false);
 	};
 
@@ -724,8 +725,10 @@
 
 
 		mousedown: function(ev) {
-			this.down = true;
-			this.startBrushStroke(ev.clientX, ev.clientY, ev.pressure === undefined ? 1 : ev.pressure);
+			if (!this.pointerDown) {
+				this.down = true;
+				this.startBrushStroke(ev.clientX, ev.clientY, ev.pressure === undefined ? 1 : ev.pressure);
+			}
 		},
 
 		mouseup: function(ev) {
@@ -743,15 +746,27 @@
 
 
 		pointerdown: function(ev) {
-			this.mousedown(ev);
+			if (!this.down) {
+				this.mousedown(ev);
+			}
+			this.down = false;
+			this.pointerDown = true;
 		},
 
 		pointerup: function(ev) {
-			this.mouseup(ev);
+			if (this.pointerDown) {
+				this.down = true;
+				this.mouseup(ev);
+				this.pointerDown = false;
+			}
 		},
 
 		pointermove: function(ev) {
-			this.mousemove(ev);
+			if (this.pointerDown) {
+				this.down = true;
+				this.mousemove(ev);
+				this.down = false;
+			}
 		},
 
 
@@ -873,8 +888,8 @@
 
 		var touchInsideElement = function(el, ev) {
 			var bbox = el.getBoundingClientRect();
-			var cx = ev.changedTouches[0].clientX;
-			var cy = ev.changedTouches[0].clientY;
+			var cx = ev.clientX;
+			var cy = ev.clientY;
 			return (cx < bbox.right && cx > bbox.left && cy < bbox.bottom && cy > bbox.top);
 		};
 
@@ -909,25 +924,22 @@
 			toggleColorMixer();
 
 		}
-
-		toggle.addEventListener('touchstart', function(ev) {
-			ev.preventDefault();
-
+		
+		toggle.start = function(ev) {
 			this.startRadius = app.brush.r;
 			this.startOpacity = app.brush.opacity;
 			this.startColor = app.brush.color;
 			this.startColorArray = app.brush.colorArray;
 
-			this.startX = ev.touches[0].clientX;
-			this.startY = ev.touches[0].clientY;
+			this.startX = ev.clientX;
+			this.startY = ev.clientY;
 
 			app.colorMixer.widget.style.display = 'none';
 
 			app.mode = targetMode;
-		}, false);
+		};
 
-		toggle.addEventListener('touchend', function(ev) {
-			ev.preventDefault();
+		toggle.end = function(ev) {
 			if (targetMode === App.Mode.COLOR_PICKER) {
 				if (touchInsideElement(this, ev)) {
 					toggleColorMixer();
@@ -935,28 +947,26 @@
 				}
 			}
 			app.mode = App.Mode.DRAW;
-		}, false);
+		};
 
-		toggle.addEventListener('touchcancel', function(ev) {
-			ev.preventDefault();
+		toggle.cancel = function() {
 			this.revertBrush();
 			app.mode = App.Mode.DRAW;
-		}, false);
+		};
 
-		toggle.addEventListener('touchmove', function(ev) {
-			ev.preventDefault();
+		toggle.move = function(ev) {
 			var mode = app.mode;
 			switch (mode) {
 				case App.Mode.BRUSH_RESIZE: {
-					var dx = ev.touches[0].clientX - this.startX;
-					var dy = ev.touches[0].clientY - this.startY;
+					var dx = ev.clientX - this.startX;
+					var dy = ev.clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
 					app.brush.r = Math.max(0.5, this.startRadius - dy/3);
 					break;
 				}
 				case App.Mode.OPACITY_CHANGE: {
-					var dx = ev.touches[0].clientX - this.startX;
-					var dy = ev.touches[0].clientY - this.startY;
+					var dx = ev.clientX - this.startX;
+					var dy = ev.clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
 					app.brush.opacity = Math.max(0, Math.min(1, this.startOpacity - dy/100));
 					break;
@@ -967,8 +977,8 @@
 						// Do nothing, maybe the user wants to bring up the color mixer.
 
 					} else { // dragged to outside element area
-						var x = Math.floor(ev.touches[0].clientX * app.pixelRatio);
-						var y = Math.floor(ev.touches[0].clientY * app.pixelRatio);
+						var x = Math.floor(ev.clientX * app.pixelRatio);
+						var y = Math.floor(ev.clientY * app.pixelRatio);
 						var pixels = new Uint8Array(4);
 						var gl = app.renderer.context;
 						app.renderer.setRenderTarget(app.drawRenderTarget);
@@ -981,6 +991,47 @@
 			}
 
 			update();
+		};
+
+		toggle.addEventListener('touchstart', function(ev) {
+			ev.preventDefault();
+			this.start(ev.touches[0]);
+		}, false);
+
+		toggle.addEventListener('touchend', function(ev) {
+			ev.preventDefault();
+			this.end(ev.changedTouches[0]);
+		}, false);
+
+		toggle.addEventListener('touchcancel', function(ev) {
+			ev.preventDefault();
+			this.cancel();
+		}, false);
+
+		toggle.addEventListener('touchmove', function(ev) {
+			ev.preventDefault();
+			this.move(ev.touches[0]);
+		}, false);
+
+
+		toggle.addEventListener('mousedown', function(ev) {
+			ev.preventDefault();
+			this.down = true;
+			this.start(ev);
+		}, false);
+
+		window.addEventListener('mouseup', function(ev) {
+			if (toggle.down) {
+				ev.preventDefault();
+				toggle.end(ev);
+			}
+		}, false);
+
+		window.addEventListener('mousemove', function(ev) {
+			if (toggle.down) {
+				ev.preventDefault();
+				toggle.move(ev);
+			}
 		}, false);
 	};
 
