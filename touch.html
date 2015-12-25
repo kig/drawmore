@@ -22,9 +22,8 @@
 			}
 
 			.mode-toggle {
-				width: 60px;
-				height: 60px;
-				background: #888888;
+				width: 30px;
+				height: 30px;
 				color: black;
 				position: absolute;
 				left: 0px;
@@ -32,23 +31,37 @@
 				z-index: 3;
 			}
 			.mode-toggle.active {
-				background: #444444;
 			}
 			#colorPicker {
-				margin-top: 30px;
+				margin-top: 15px;
+			}
+			#colorPicker canvas {
+				border-bottom-right-radius: 5px;
 			}
 			#brushResize {
-				margin-top: -30px;
+				margin-top: -15px;
+				background: #AAA;
 			}
 			#opacityChange {
-				margin-top: -90px;
+				margin-top: -45px;
+			}
+			#opacityChange canvas {
+				border-top-right-radius: 5px;
+			}
+
+			#colorMixer {
+				position: absolute !important;
+				left: 40px;
+				top: 50%;
+				margin-top: -65px;
+				z-index: 3;
 			}
 
 			.pressure-controls {
 				position: absolute;
 				z-index: 3;
 				top: 5px;
-				left: 10px;
+				left: 40px;
 				font-family: sans-serif;
 				text-transform: uppercase;
 				font-size: 11px;
@@ -76,19 +89,26 @@
 				display: none;
 			}
 
-			body.hide-ui #showUI {
+			body.hide-ui #showUI,
+			body:not(.hide-ui) #hideUI,
+			{
 				display: block;
 			}
 
-			body:not(.hide-ui) #showUI {
+			body:not(.hide-ui) #showUI,
+			body.hide-ui #hideUI
+			{
 				display: none;
 			}
 
-			#showUI {
+			#showUI,
+			#hideUI
+			{
 				position: absolute;
-				top: 0;
-				left: 0;
+				top: 5px;
+				left: 5px;
 				z-index: 3;
+				width: 25px;
 			}
 
 		</style>
@@ -99,7 +119,7 @@
 		<div class="mode-toggle" id="opacityChange"></div>
 		<div class="mode-toggle" id="colorPicker"></div>
 		<div class="pressure-controls">
-			Pressure &mdash; 
+			Pressure: 
 			Opacity <input id="opacityPressure" type="checkbox" checked /> 
 			Radius <input id="radiusPressure" type="checkbox" checked />
 			&mdash; Smudge <input id="blending" type="checkbox" />
@@ -107,10 +127,10 @@
 			<button id="mirror">Mirror</button> |
 			<button id="undo">Undo</button>
 			<button id="redo">Redo</button> | 
-			<button id="hideUI">Hide UI</button>
 			<button id="save">Save PNG</button>
 		</div>
-		<button id="showUI">UI</button>
+		<button id="hideUI">&ndash;</button>
+		<button id="showUI">+</button>
 
 		<script src="js/three.js"></script>
 		<script src="js/ColorUtils.js"></script>

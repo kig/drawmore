@@ -907,10 +907,7 @@
 				app.brush.color = App.toColor(app.brush.colorArray);
 				update();
 			});
-			colorMixer.widget.style.position = 'absolute';
-			colorMixer.widget.style.left = '80px';
-			colorMixer.widget.style.bottom = '80px';
-			colorMixer.widget.style.zIndex = 10;
+			colorMixer.widget.id = 'colorMixer';
 			colorMixer.redraw();
 			app.colorMixer = colorMixer;
 
