@@ -162,7 +162,7 @@
 	App.prototype.copyTextureToRenderTarget = function(texture, renderTarget) {
 		this.copyQuadTexture.image.width = texture.width;
 		this.copyQuadTexture.image.height = texture.height;
-		this.copyQuadTexture.image.data = texture.dataU8;
+		this.copyQuadTexture.image.data = texture.data;
 		this.copyQuadTexture.needsUpdate = true;
 		this.renderer.render(this.copyScene, this.copyCamera, renderTarget);
 	};
@@ -183,12 +183,10 @@
 		this.renderer.render(this.strokeScene, this.strokeCamera, this.copyRenderTarget);
 		this.strokeQuad.scale.y = 1;
 
-		var image = new ImageData(this.width, this.height);
-		var u8 = new Uint8Array(image.data.buffer);
-		image.dataU8 = u8;
+		var image = { width: this.width, height: this.height, data: new Uint8Array(this.width*this.height*4) };
 		gl.readPixels(
 			0, 0, image.width, image.height,
-			gl.RGBA, gl.UNSIGNED_BYTE, u8
+			gl.RGBA, gl.UNSIGNED_BYTE, image.data
 		);
 		return {
 			index: this.drawEndIndex,
@@ -422,7 +420,14 @@
 		canvas.width = imageData.width;
 		canvas.height = imageData.height;
 		var ctx = canvas.getContext('2d');
-		ctx.putImageData(imageData, 0, 0);
+
+		// IE workaround (it doesn't have new ImageData(w, h))
+		var id = ctx.getImageData(0, 0, imageData.width, imageData.height);
+		for (var i=0; i<id.data.length; i++) {
+			id.data[i] = imageData.data[i];
+		}
+		ctx.putImageData(id, 0, 0);
+
 		var blob;
 		// if (canvas.toBlob) {
 			// blob = canvas.toBlob();
