@@ -131,7 +131,7 @@
 					3 |xxxxxxx|xxxxxxx|xxxxxxx|||
 
 					FIXME Rebuild snapshots while undoing so that there's always a 
-					      snapshot within snapshotSeparation of current undo state.
+						  snapshot within snapshotSeparation of current undo state.
 				*/
 
 			}
@@ -447,12 +447,8 @@
 		window.URL.revokeObjectURL(dlURL);
 	};
 
-	App.prototype.radiusPressureCurve = function(v) {
-		return window.radiusPressure.checked ? v : 1;
-	};
-
-	App.prototype.opacityPressureCurve = function(v) {
-		return window.opacityPressure.checked ? Math.clamp(v*1.5, 0, 1) : 1;
+	App.prototype.pressureCurve = function(v, x0, y0, x1, y1) {
+		return Math.clamp(Math.pow(v, f), 0, 1);
 	};
 
 	App.prototype.drawArrayPush = function(state) {
@@ -466,56 +462,132 @@
 		this.drawArray[this.drawEndIndex++] = state;
 	};
 
+	App.prototype.oneCurve = [0, 1, 0, 1, 1, 1, 1, 1];
+
+	App.prototype.linearCurve = [0, 0, 0, 0, 1, 1, 1, 1];
+	App.prototype.linear15Curve = [0, 0, 0, 0, 0.75, 1, 0.75, 1];
+
+	App.prototype.curvePoint = (function() {
+		var xy = {x:0, y:0};
+
+		var bezier = function(x0, y0, x1, y1, x2, y2, x3, y3, t, xy) {
+			var t1 = 1-t;
+			var t_2 = t*t;
+			var t1_2 = t1*t1;
+			var t_3 = t_2*t;
+			var t1_3 = t1_2*t1;
+			var t1_2t = t1_2*t*3;
+			var t1t_2 = t1*t_2*3;
+			xy.x = t1_3 * x0 + t1_2t * x1 + t1t_2 * x2 + t_3 * x3;
+			xy.y = t1_3 * y0 + t1_2t * y1 + t1t_2 * y2 + t_3 * y3;
+		};
+
+		var yFromX = function(xTarget, x0, y0, x1, y1, x2, y2, x3, y3) {
+			var xTolerance = 0.0001; //adjust as you please
+
+			//establish bounds
+			var lower = 0;
+			var upper = 1;
+			var t = (upper + lower) / 2;
+
+			bezier(x0, y0, x1, y1, x2, y2, x3, y3, t, xy);
+
+			var i = 0;
+
+			//loop until completion
+			while (Math.abs(xTarget - xy.x) > xTolerance && i < 10) {
+				if(xTarget > xy.x) {
+					lower = t;
+				} else {
+					upper = t;
+				}
+
+				t = (upper + lower) / 2;
+				bezier(x0, y0, x1, y1, x2, y2, x3, y3, t, xy);
+
+				i++;
+			}
+
+			//we're within tolerance of the desired x value.
+			//return the y value.
+			return xy.y;
+		};
+
+		return function(x, points) {
+			var x0 = points[0];
+			var y0 = points[1];
+			var x1 = points[2];
+			var y1 = points[3];
+			var x2 = points[4];
+			var y2 = points[5];
+			var x3 = points[6];
+			var y3 = points[7];
+
+			if (x < x0) {
+				return y0;
+			}
+			if (x > x3) {
+				return y3;
+			}
+
+			return yFromX(x, x0, y0, x1, y1, x2, y2, x3, y3);
+		};
+	})();
+
+	App.prototype.byteCount = 0;
+
 	App.prototype.drawBrush = function(isStart) {
 
 		var brush = this.brush;
 		var blend = window.blending.checked ? 0 : 1;
 		var textured = window.texturedBrush.checked ? 1 : 0;
+		var radiusCurve = window.radiusPressure.checked ? this.linearCurve : this.oneCurve;
+		var opacityCurve = window.opacityPressure.checked ? this.linear15Curve : this.oneCurve;
 
-		var dx = brush.x - brush.lastX;
-		var dy = brush.y - brush.lastY;
-		var dp = brush.pressure - brush.lastPressure;
-		var d = Math.sqrt(dx*dx + dy*dy);
-		if (d === 0) {
-			this.drawArrayPush({
-				x: brush.x,
-				y: brush.y,
-				r: this.radiusPressureCurve(brush.pressure) * brush.r, 
-				color: brush.colorArray,
-				opacity: this.opacityPressureCurve(brush.pressure) * brush.opacity,
-				isStart: isStart,
-				blend: blend,
-				textured: textured
-			});
-		} else {
-			var rdx = dx / d;
-			var rdy = dy / d;
-			var rdp = dp / d;
-			var od = d;
-			d = 0;
-			while (d < od) {
-				var x = (brush.lastX + d*rdx);
-				var y = (brush.lastY + d*rdy);
-				var p = (brush.lastPressure + d*rdp);
-
-				this.drawArrayPush({
-					x: brush.lastX + d*rdx,
-					y: brush.lastY + d*rdy,
-					r: this.radiusPressureCurve(p) * brush.r, 
-					color: brush.colorArray,
-					opacity: this.opacityPressureCurve(p) * brush.opacity,
-					isStart: isStart,
-					blend: blend,
-					textured: textured
-				});
-				d += Math.clamp(0.25 * p * brush.r, 0.125, 1);
-				isStart = false;
+		this.byteCount += isStart ? 15 : 2;
+		if (!isStart) {
+			var last = this.drawArray[this.drawEndIndex-1];
+			var dx = brush.x - last.x;
+			var dy = brush.y - last.y;
+			var dp = brush.pressure - last.pressure;
+			var add = 2 * Math.floor(Math.max(
+				Math.abs(dx) / 32, Math.abs(dy) / 32, Math.abs(dp * 2048) / 32
+			));
+			if (add > 0) {
+				console.log('adding', add);
 			}
+			this.byteCount += add;
 		}
 
-		brush.lastX = brush.x;
-		brush.lastY = brush.y;
-		brush.lastPressure = brush.pressure;
+		this.drawArrayPush({
+			x: brush.x, // 14 bits
+			y: brush.y, // 14 bits
+			pressure: brush.pressure, // 11 bits
+
+			isStart: isStart, // 1 bit
+
+			// 5 bytes
+
+			// Delta-compress x, y, pressure with 5-bit deltas => 15+1 = 16 bits per event, repeat if needed.
+
+			// (Each non-isStart stroke event is 2 bytes)
+
+			// The following are constant over a stroke, only defined for isStart == 1.
+
+			// 10 bytes
+
+			color: brush.colorArray, // 24 bits
+
+			r: brush.r, // 16 bits
+			opacity: brush.opacity, // 8 bits
+
+			radiusCurve: radiusCurve, // 8 bits -- index to curve array
+			opacityCurve: opacityCurve, // 8 bits
+
+			blend: blend, // 8 bits
+			textured: textured // 8 bits -- index to brush array
+		});
+
 		this.needUpdate = true;
 	};
 
@@ -577,41 +649,53 @@
 			} else if (a.type === 'mirror') {
 				this.mirrorDrawRenderTarget();
 			} else {
-				var x = a.x, y = a.y, r = a.r, colorArray = a.color, opacity = a.opacity;
 
-				if (a.isStart && a.blend < 1) {
+				var last = a.isStart ? a : this.drawArray[i-1];
+
+				var dx = a.x - last.x;
+				var dy = a.y - last.y;
+				var dp = a.pressure - last.pressure;
+				var d = Math.sqrt(dx*dx + dy*dy);
+
+				if (d === 0) {
+					this.renderBrush(
+						a.x,
+						a.y,
+						this.curvePoint(a.pressure, a.radiusCurve) * a.r,
+						a.color,
+						this.curvePoint(a.pressure, a.opacityCurve) * a.opacity,
+						a.isStart,
+						a.blend,
+						a.textured
+					);
 
 				} else {
-					this.brushQuad.position.set(x, y, 0);
-					this.brushQuad.scale.set(r,r,r);
-					var m = this.brushQuad.material;
-					m.uniforms.opacity.value = opacity;
-					m.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
-					m.uniforms.blend.value = a.blend;
-					m.uniforms.textured.value = a.textured;
-					m.uniforms.squareBrush.value = 0;
-					if (a.blend < 1) {
-						m.blending = THREE.CustomBlending;
-						m.blendEquation = THREE.AddEquation;
-						m.blendSrc = THREE.SrcAlphaFactor;
-						m.blendDst = THREE.OneMinusSrcAlphaFactor;
-						m.blendEquationAlpha = THREE.MaxEquation;
-						m.blendSrcAlpha = THREE.OneFactor;
-						m.blendDstAlpha = THREE.OneFactor;
-					} else {
-						m.blending = THREE.CustomBlending;
-						m.blendEquation = THREE.AddEquation;
-						m.blendSrc = THREE.SrcAlphaFactor;
-						m.blendDst = THREE.OneMinusSrcAlphaFactor;
-						m.blendEquationAlpha = THREE.MaxEquation;
-						m.blendSrcAlpha = THREE.OneFactor;
-						m.blendDstAlpha = THREE.OneFactor;
-					}
-					this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
-				}
+					var rdx = dx / d;
+					var rdy = dy / d;
+					var rdp = dp / d;
+					var od = d;
+					d = 0;
+					var isStart = a.isStart;
 
-				if (a.blend < 1) {
-					this.copyDrawingToBrush(x, y, r, screenWidth, screenHeight);
+					while (d < od) {
+						var x = (last.x + d*rdx);
+						var y = (last.y + d*rdy);
+						var p = (last.pressure + d*rdp);
+
+						this.renderBrush(
+							x,
+							y,
+							this.curvePoint(p, a.radiusCurve) * a.r,
+							a.color,
+							this.curvePoint(p, a.opacityCurve) * a.opacity,
+							isStart,
+							a.blend,
+							a.textured
+						);
+
+						d += Math.clamp(0.25 * this.curvePoint(p, a.radiusCurve) * a.r, 0.125, 1);
+						isStart = false;
+					}
 				}
 			}
 		}
@@ -621,6 +705,43 @@
 		// this.brushQuad.material.uniforms.blend.value = 0;
 		// this.brushQuad.material.uniforms.squareBrush.value = 1;
 		// this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+	};
+
+	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, textured) {
+		if (isStart && blend < 1) {
+
+		} else {
+			this.brushQuad.position.set(x, y, 0);
+			this.brushQuad.scale.set(r,r,r);
+			var m = this.brushQuad.material;
+			m.uniforms.opacity.value = opacity;
+			m.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
+			m.uniforms.blend.value = blend;
+			m.uniforms.textured.value = textured;
+			m.uniforms.squareBrush.value = 0;
+			if (blend < 1) {
+				m.blending = THREE.CustomBlending;
+				m.blendEquation = THREE.AddEquation;
+				m.blendSrc = THREE.SrcAlphaFactor;
+				m.blendDst = THREE.OneMinusSrcAlphaFactor;
+				m.blendEquationAlpha = THREE.MaxEquation;
+				m.blendSrcAlpha = THREE.OneFactor;
+				m.blendDstAlpha = THREE.OneFactor;
+			} else {
+				m.blending = THREE.CustomBlending;
+				m.blendEquation = THREE.AddEquation;
+				m.blendSrc = THREE.SrcAlphaFactor;
+				m.blendDst = THREE.OneMinusSrcAlphaFactor;
+				m.blendEquationAlpha = THREE.MaxEquation;
+				m.blendSrcAlpha = THREE.OneFactor;
+				m.blendDstAlpha = THREE.OneFactor;
+			}
+			this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
+		}
+
+		if (blend < 1) {
+			this.copyDrawingToBrush(x, y, r, screenWidth, screenHeight);
+		}					
 	};
 
 	App.prototype.tick = function() {
@@ -638,6 +759,7 @@
 			this.renderer.render(this.strokeScene, this.strokeCamera);
 			this.needUpdate = false;
 
+			window.debug.innerHTML = this.drawArray.length + " events, " + this.byteCount + " bytes";
 		}
 
 		if (this.colorMixer) {
