@@ -428,10 +428,12 @@
 		}
 		ctx.putImageData(id, 0, 0);
 
+		var filename = 'Drawmore '+(new Date().toString().replace(/:/g, '.'))+ '.png';
+
 		var blob;
-		// if (canvas.toBlob) {
-			// blob = canvas.toBlob();
-		// } else {
+		if (canvas.msToBlob) {
+			blob = canvas.msToBlob();
+		} else {
 			var data = canvas.toDataURL();
 			var binary = atob(data.slice(data.indexOf(',') + 1));
 			var arr = new Uint8Array(binary.length);
@@ -439,20 +441,30 @@
 				arr[i] = binary.charCodeAt(i);
 			}
 			blob = new Blob([arr]);
-		// }
-		var dlURL = window.URL.createObjectURL(blob);
-		var a = document.createElement('a');
-		a.href = dlURL;
-		a.download = 'Drawmore '+(new Date().toString().replace(/:/g, '.'))+ '.png';
-		document.body.appendChild(a);
-		var clickEvent = new MouseEvent('click', {
-			'view': window,
-			'bubbles': true,
-			'cancelable': false,
-		});
-		a.dispatchEvent(clickEvent);
-		document.body.removeChild(a);
-		window.URL.revokeObjectURL(dlURL);
+		}
+
+		this.saveBlob(blob, filename);
+	};
+
+	App.prototype.saveBlob = function(blob, filename) {
+		if (window.navigator.msSaveBlob) {
+			window.navigator.msSaveBlob(blob, filename);			
+		} else {
+			var dlURL = window.URL.createObjectURL(blob);
+			var a = document.createElement('a');
+			a.href = dlURL;
+			a.download = filename;
+			document.body.appendChild(a);
+
+			var clickEvent = new MouseEvent('click', {
+				'view': window,
+				'bubbles': true,
+				'cancelable': false,
+			});
+			a.dispatchEvent(clickEvent);
+			document.body.removeChild(a);
+			window.URL.revokeObjectURL(dlURL);
+		}
 	};
 
 	App.prototype.pressureCurve = function(v, x0, y0, x1, y1) {
