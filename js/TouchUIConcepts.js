@@ -183,7 +183,7 @@
 		this.renderer.render(this.strokeScene, this.strokeCamera, this.copyRenderTarget);
 		this.strokeQuad.scale.y = 1;
 
-		var image = new ImageData(this.renderer.domElement.width, this.renderer.domElement.height);
+		var image = new ImageData(this.width, this.height);
 		var u8 = new Uint8Array(image.data.buffer);
 		image.dataU8 = u8;
 		gl.readPixels(
@@ -212,9 +212,12 @@
 		renderer.domElement.id = 'draw-canvas';
 		document.body.appendChild(renderer.domElement);
 
-		var strokeRenderTarget = new THREE.WebGLRenderTarget(renderer.domElement.width, renderer.domElement.height);
-		var drawRenderTarget = new THREE.WebGLRenderTarget(renderer.domElement.width, renderer.domElement.height);
-		var copyRenderTarget = new THREE.WebGLRenderTarget(renderer.domElement.width, renderer.domElement.height);
+		this.width = renderer.domElement.width;
+		this.height = renderer.domElement.height;
+
+		var strokeRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height);
+		var drawRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height);
+		var copyRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height);
 
 		this.strokeRenderTarget = strokeRenderTarget;
 		this.drawRenderTarget = drawRenderTarget;
@@ -249,7 +252,7 @@
 		this.copyScene = new THREE.Scene();
 		this.copyCamera = new THREE.Camera();
 		this.copyScene.add(this.copyCamera);
-		this.copyQuadTexture = new THREE.DataTexture(null, renderer.domElement.width, renderer.domElement.height);
+		this.copyQuadTexture = new THREE.DataTexture(null, this.width, this.height);
 		this.copyQuad = new THREE.Mesh(
 			new THREE.PlaneBufferGeometry(2, 2),
 			new THREE.MeshBasicMaterial({
@@ -329,7 +332,7 @@
 				].join("\n"),
 
 				uniforms: {
-					resolution: { type: 'v2', value: new THREE.Vector2(renderer.domElement.width, renderer.domElement.height) },
+					resolution: { type: 'v2', value: new THREE.Vector2(this.width, this.height) },
 					color: { type: 'v3', value: new THREE.Vector3(0, 0, 0) },
 					opacity: { type: 'f', value: 0.5 },
 					paint: { type: 't', value: this.brushRenderTarget },
@@ -625,7 +628,9 @@
 		this.renderer.setClearColor(0xffffff, 1.0);
 	};
 
-	App.prototype.copyDrawingToBrush = function(x, y, r, screenWidth, screenHeight) {
+	App.prototype.copyDrawingToBrush = function(x, y, r) {
+		var screenWidth = this.width / this.pixelRatio;
+		var screenHeight = this.height / this.pixelRatio;
 		// For smudge, render the current composite under the brush quad to the brushRenderTarget.
 		// Set up the brush camera to capture only the area of the brush quad.
 		var m = this.brushCamera.projectionMatrix.elements;
@@ -640,8 +645,6 @@
 	};
 
 	App.prototype.renderDrawArray = function() {
-		var screenWidth = this.renderer.domElement.width / this.pixelRatio;
-		var screenHeight = this.renderer.domElement.height / this.pixelRatio;
 		for (var i=this.drawStartIndex; i<this.drawEndIndex; i++) {
 			var a = this.drawArray[i];
 			if (a.type === 'end') {
@@ -740,7 +743,7 @@
 		}
 
 		if (blend < 1) {
-			this.copyDrawingToBrush(x, y, r, screenWidth, screenHeight);
+			this.copyDrawingToBrush(x, y, r);
 		}					
 	};
 
@@ -1147,7 +1150,7 @@
 						var pixels = new Uint8Array(4);
 						var gl = app.renderer.context;
 						app.renderer.setRenderTarget(app.drawRenderTarget);
-						gl.readPixels(x, app.renderer.domElement.height-y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+						gl.readPixels(x, app.height-y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 						app.brush.color = App.toColor(pixels);
 						app.brush.colorArray = pixels;
 					}
