@@ -834,6 +834,10 @@
 			if (!force && touch.radiusX !== 0) {
 				force = 1;
 			}
+			if (touch.pointerType != undefined && force === 0.5 && touch.pointerType !== 'pen') {
+				// Set touch & mouse force to 1 on IE (why is 0.5 the "not applicable" value?)
+				force = 1;
+			}
 			return force;
 		},
 
