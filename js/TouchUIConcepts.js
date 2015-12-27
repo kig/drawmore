@@ -402,7 +402,12 @@
 
 		click(window.mirror, this.mirror.bind(this));
 
-		window.onbeforeunload = function() {
+		var self = this;
+		window.onbeforeunload = function(ev) {
+			if (self.drawArray.length === 0) {
+				ev.preventDefault();
+				return;
+			}
 			return "Leaving this page will erase your drawing.";
 		};
 	};
