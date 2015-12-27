@@ -1051,7 +1051,11 @@
 		var brushCircle;
 		if (targetMode === App.Mode.COLOR_PICKER) {
 			colorMixer = new ColorMixer(document.body, 100, 100, function(c) {
-				app.brush.colorArray = [c[0]*255, c[1]*255, c[2]*255, 255];
+				app.brush.colorArray = new Uint8Array(4);
+				app.brush.colorArray[0] = c[0]*255;
+				app.brush.colorArray[1] = c[1]*255;
+				app.brush.colorArray[2] = c[2]*255;
+				app.brush.colorArray[3] = 255;
 				app.brush.color = App.toColor(app.brush.colorArray);
 				update();
 			});
@@ -1062,6 +1066,8 @@
 			var toggleColorMixer = function() {
 				if (colorMixer.widget.style.display === 'none') {
 					colorMixer.widget.style.display = 'block';
+					var c = app.brush.colorArray;
+					colorMixer.setColor([c[0]/255, c[1]/255, c[2]/255]);
 				} else {
 					colorMixer.widget.style.display = 'none';
 				}

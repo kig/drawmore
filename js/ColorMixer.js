@@ -133,7 +133,6 @@ ColorMixer.prototype = {
   },
 
   setSaturation : function(s, signal) {
-    this.cursor.moveTo(s*this.canvas.width/this.pixelRatio, this.cursor.y);
     this.saturation = s;
     if (signal == true) {
       this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
@@ -142,7 +141,6 @@ ColorMixer.prototype = {
   },
 
   setValue : function(s, signal) {
-    this.cursor.moveTo(this.cursor.x, (1-s)*this.canvas.height/this.pixelRatio);
     this.value = s;
     if (signal == true) {
       this.currentColor = this.hsv2rgb(this.hue, this.saturation, this.value);
