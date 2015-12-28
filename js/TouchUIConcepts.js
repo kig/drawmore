@@ -482,10 +482,37 @@
 		this.drawArray[this.drawEndIndex++] = state;
 	};
 
-	App.prototype.oneCurve = [0, 1, 0, 1, 1, 1, 1, 1];
+	App.Curves = {
+		one : [0, 1, 0, 1, 1, 1, 1, 1],
+		linear: [0, 0, 0, 0, 1, 1, 1, 1],
+		linear15: [0, 0, 0, 0, 0.75, 1, 0.75, 1],
+		pencilOpacity: [0, 0, 0.9, 0.0, 1, 1, 1, 1],
+		pencilRadius: [0, 0.5, 0, 0.65, 0.8, 1, 1, 1],
 
-	App.prototype.linearCurve = [0, 0, 0, 0, 1, 1, 1, 1];
-	App.prototype.linear15Curve = [0, 0, 0, 0, 0.75, 1, 0.75, 1];
+		wateryOpacity: [0, 0, 0, 1, 0, 1, 1, 0]
+	};
+
+	App.CurvePresets = {
+		brush: {
+			radius: App.Curves.linear,
+			opacity: App.Curves.linear15
+		},
+
+		liner: {
+			radius: App.Curves.linear15,
+			opacity: App.Curves.one
+		},
+
+		pencil: {
+			radius: App.Curves.pencilRadius,
+			opacity: App.Curves.pencilOpacity
+		},
+
+		watery: {
+			radius: App.Curves.linear,
+			opacity: App.Curves.wateryOpacity
+		}
+	};
 
 	App.prototype.curvePoint = (function() {
 		var xy = {x:0, y:0};
@@ -558,11 +585,13 @@
 
 	App.prototype.drawBrush = function(isStart) {
 
+		var curve = App.CurvePresets[window.curve.value];
+
 		var brush = this.brush;
 		var blend = window.blending.checked ? 0 : 1;
 		var textured = window.texturedBrush.checked ? 1 : 0;
-		var radiusCurve = window.radiusPressure.checked ? this.linearCurve : this.oneCurve;
-		var opacityCurve = window.opacityPressure.checked ? this.linear15Curve : this.oneCurve;
+		var radiusCurve = window.radiusPressure.checked ? curve.radius : App.Curves.one;
+		var opacityCurve = window.opacityPressure.checked ? curve.opacity : App.Curves.one;
 
 		this.byteCount += isStart ? 15 : 2;
 		if (!isStart) {
