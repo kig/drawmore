@@ -203,7 +203,7 @@
 		var near = 0.1;
 		var far = 100;
 
-		var renderer = new THREE.WebGLRenderer();
+		var renderer = new THREE.WebGLRenderer({ premultipliedAlpha: true });
 		renderer.setClearColor(0xffffff, 1.0);
 		renderer.setPixelRatio( this.pixelRatio );
 		renderer.setSize(width, height);
@@ -324,8 +324,8 @@
 					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
 					"	float maskV = 1.0-texture2D(mask, vUv).r;",
 					"	float brushOpacity = max(squareBrush, mix(smoothstep(1.0, 0.9, length(unitUv)), maskV, textured));",
-					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend);",
 					"	gl_FragColor.a = opacity * brushOpacity;",
+					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend) * gl_FragColor.a;",
 					"}"
 				].join("\n"),
 
@@ -771,7 +771,7 @@
 			if (blend < 1) {
 				m.blending = THREE.CustomBlending;
 				m.blendEquation = THREE.AddEquation;
-				m.blendSrc = THREE.SrcAlphaFactor;
+				m.blendSrc = THREE.OneFactor;
 				m.blendDst = THREE.OneMinusSrcAlphaFactor;
 				m.blendEquationAlpha = THREE.MaxEquation;
 				m.blendSrcAlpha = THREE.OneFactor;
@@ -779,7 +779,7 @@
 			} else {
 				m.blending = THREE.CustomBlending;
 				m.blendEquation = THREE.AddEquation;
-				m.blendSrc = THREE.SrcAlphaFactor;
+				m.blendSrc = THREE.OneFactor;
 				m.blendDst = THREE.OneMinusSrcAlphaFactor;
 				m.blendEquationAlpha = THREE.MaxEquation;
 				m.blendSrcAlpha = THREE.OneFactor;
