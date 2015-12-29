@@ -11,8 +11,127 @@
 		COLOR_PICKER: 3
 	};
 
-	App.prototype.snapshotSeparation = 3000;
+	App.prototype.snapshotSeparation = 500;
 	App.prototype.maxSnapshotCount = 6;
+
+	App.prototype.initIndexedDB = function(callback) {
+		// IndexedDB
+		window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB,
+		    IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
+		    dbVersion = 1;
+
+		/* 
+		    Note: The recommended way to do this is assigning it to window.indexedDB,
+		    to avoid potential issues in the global scope when web browsers start 
+		    removing prefixes in their implementations.
+		    You can assign it to a varible, like var indexedDB… but then you have 
+		    to make sure that the code is contained within a function.
+		*/
+
+		// Create/open database
+		var request = indexedDB.open("drawmoreFiles", dbVersion);
+		var self = this;
+
+        var createObjectStore = function (dataBase) {
+            // Create an objectStore
+            console.log("Creating objectStore")
+            dataBase.createObjectStore("images");
+        };
+
+		request.onsuccess = function (event) {
+		    console.log("Success creating/accessing IndexedDB database");
+		    var db = self.indexedDB = request.result;
+
+		    db.onerror = function (event) {
+		        console.log("Error creating/accessing IndexedDB database");
+		    };
+		    
+		    // Interim solution for Google Chrome to create an objectStore. Will be deprecated
+		    if (db.setVersion) {
+		        if (db.version != dbVersion) {
+		            var setVersion = db.setVersion(dbVersion);
+		            setVersion.onsuccess = function () {
+		                createObjectStore(db);
+		                callback();
+		            };
+		        }
+		        else {
+		            callback();
+		        }
+		    }
+		    else {
+		        callback();
+		    }
+		}
+
+		// For future use. Currently only in latest Firefox versions
+		request.onupgradeneeded = function (event) {
+		    createObjectStore(event.target.result);
+		};
+	};
+
+	App.prototype.saveImageToDB = function(name) {
+		this.putToDB(name, this.serializeImage());
+	};
+
+	App.prototype.loadImageFromDB = function(name) {
+    	this.getFromDB(name, this.loadSerializedImage.bind(this));
+	};
+
+	App.prototype.loadSerializedImage = function(buf) {
+		if (!buf) {
+			return;
+		}
+
+		var u32 = new Uint32Array(buf, 0, 2);
+		var version = u32[0];
+		if (version !== 0) {
+			throw("Unknown image version");
+		}
+		var dataLength = u32[1];
+		var data = new Uint8Array(buf, 8, dataLength);
+		var snapshots = new Uint8Array(buf, 8+dataLength);
+		var dataString = [];
+		for (var i=0; i<data.length; i+=4096) {
+			dataString.push( String.fromCharCode.apply(null, data.slice(i, i+4096)) );
+		}
+		this.drawArray = JSON.parse(dataString.join(""));
+		this.snapshots.splice(1);
+		this.drawStartIndex = 0;
+		this.drawEndIndex = this.drawArray.length;
+		this.needUpdate = true;
+	};
+
+	App.prototype.serializeImage = function() {
+		var dataString = JSON.stringify(this.drawArray);
+		var buf = new ArrayBuffer(8 + dataString.length);
+		var u32 = new Uint32Array(buf, 0, 2);
+		var u8 = new Uint8Array(buf);
+		u32[0] = 0;
+		u32[1] = dataString.length;
+		for (var i=0; i<dataString.length; i++) {
+			u8[i + 8] = dataString.charCodeAt(i);
+		}
+		return buf;
+	};
+
+	App.prototype.putToDB = function(key, value) {
+        // Open a transaction to the database
+        var transaction = this.indexedDB.transaction(["images"], 'readwrite');
+
+        // Put the value into the database
+        var put = transaction.objectStore("images").put(value, key);
+	};
+
+	App.prototype.getFromDB = function(key, callback) {
+        // Open a transaction to the database
+        var transaction = this.indexedDB.transaction(["images"], 'readonly');
+
+        // Retrieve the file that was just stored
+        transaction.objectStore("images").get(key).onsuccess = function (event) {
+        	callback(event.target.result);
+        };
+	};
 
 	App.prototype.init = function() {
 		this.pixelRatio = window.devicePixelRatio;
@@ -41,6 +160,11 @@
 
 		this.setupCanvas();
 		this.addEventListeners();
+
+		var self = this;
+		this.initIndexedDB(function() {
+			self.loadImageFromDB('drawingInProgress');
+		});
 	};
 
 	App.prototype.undo = function() {
@@ -399,17 +523,30 @@
 		click(window.showUI, function() {
 			document.body.classList.remove('hide-ui');
 		});
-		click(window.save, this.save.bind(this));
+		click(window.savePNG, this.save.bind(this));
 
 		click(window.mirror, this.mirror.bind(this));
 
+		// click(window.save, function() { self.saveImageToDB('drawingInProgress'); });
+		click(window.newDrawing, function() { 
+			if (confirm("Erase current drawing?")) {
+				self.timeTravel(0);
+				self.drawArray.splice(0);
+			}
+		});
+
 		var self = this;
 		window.onbeforeunload = function(ev) {
-			if (self.drawArray.length === 0) {
+			if (self.saved) {
 				ev.preventDefault();
 				return;
 			}
-			return "Leaving this page will erase your drawing.";
+			try {
+				self.saveImageToDB('drawingInProgress');
+				return;
+			} catch(e) {
+				return "Leaving this page will erase your drawing.";
+			}
 		};
 	};
 
@@ -808,7 +945,7 @@
 			this.renderer.render(this.strokeScene, this.strokeCamera);
 			this.needUpdate = false;
 
-			window.debug.innerHTML = this.drawArray.length + " events, " + this.byteCount + " bytes";
+			// window.debug.innerHTML = this.drawArray.length + " events, " + this.byteCount + " bytes";
 		}
 
 		if (this.colorMixer) {
