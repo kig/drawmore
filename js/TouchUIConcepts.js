@@ -203,7 +203,7 @@
 		var near = 0.1;
 		var far = 100;
 
-		var renderer = new THREE.WebGLRenderer({ premultipliedAlpha: true });
+		var renderer = new THREE.WebGLRenderer({ premultipliedAlpha: true, alpha: false });
 		renderer.setClearColor(0xffffff, 1.0);
 		renderer.setPixelRatio( this.pixelRatio );
 		renderer.setSize(width, height);
@@ -286,6 +286,9 @@
 		this.camera = camera;
 		this.scene.add(this.camera);
 
+		this.dstRenderTarget = new THREE.WebGLRenderTarget(64, 64);
+		this.dstRenderTarget.texture.generateMipmaps = false;
+
 		this.brushRenderTarget = new THREE.WebGLRenderTarget(64, 64);
 		this.brushRenderTarget.texture.generateMipmaps = false;
 
@@ -313,19 +316,45 @@
 					"uniform vec2 resolution;",
 					"uniform vec3 color;",
 					"uniform float opacity;",
+					"uniform float radius;",
 					"uniform float blend;",
 					"uniform float textured;",
 					"uniform float squareBrush;",
+					"uniform sampler2D dst;",
 					"uniform sampler2D paint;",
 					"uniform sampler2D mask;",
 
 					"void main(void) {",
-					"	vec4 paintContent = texture2D(paint, vUv);",
+
 					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
+
+					"	vec4 paintContent = texture2D(paint, vUv);",
+
+					"	vec2 pxUv = vUv;",
+					"#ifdef CRAZY",
+					"	pxUv = pxUv / radius * 32.0;",
+					"#endif",
+
+					"	vec2 zero = vec2((32.0 - radius) / 64.0);",
+					"	vec2 one = 1.0 - zero;",
+					"	vec2 unit = one - zero;",
+
+					"	vec4 dstC = texture2D(dst, zero + unit * pxUv);",
+
 					"	float maskV = 1.0-texture2D(mask, vUv).r;",
+
 					"	float brushOpacity = max(squareBrush, mix(smoothstep(1.0, 0.9, length(unitUv)), maskV, textured));",
-					"	gl_FragColor.a = opacity * brushOpacity;",
-					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend) * gl_FragColor.a;",
+
+					"	vec4 srcC = mix(paintContent, vec4(color, 1.0), blend);",
+					"	srcC.a *= opacity * brushOpacity;",
+
+					"	float a = srcC.a + (1.0 - srcC.a) * dstC.a;",
+
+					"	if (srcC.a > 0.0) {",
+					"		gl_FragColor = vec4( (srcC.rgb*srcC.a + dstC.rgb * (1.0 - srcC.a)), max(srcC.a, dstC.a));",
+					"	} else {",
+					"		gl_FragColor = dstC;",
+					"	}",
 					"}"
 				].join("\n"),
 
@@ -333,6 +362,8 @@
 					resolution: { type: 'v2', value: new THREE.Vector2(this.width, this.height) },
 					color: { type: 'v3', value: new THREE.Vector3(0, 0, 0) },
 					opacity: { type: 'f', value: 0.5 },
+					radius: { type: 'f', value: 3 },
+					dst: { type: 't', value: this.dstRenderTarget },
 					paint: { type: 't', value: this.brushRenderTarget },
 					mask: { type: 't', value: this.maskTexture },
 					blend: { type: 'f', value: 1 },
@@ -340,16 +371,9 @@
 					textured: { type: 'f', value: 0 }
 				},
 
-				transparent: true,
+				transparent: false,
 				depthWrite: false,
-				depthTest: false,
-				blending: THREE.CustomBlending,
-				blendEquation: THREE.AddEquation,
-				blendSrc: THREE.OneFactor,
-				blendDst: THREE.ZeroFactor,
-				blendEquationAlpha: THREE.MaxEquation,
-				blendSrcAlpha: THREE.OneFactor,
-				blendDstAlpha: THREE.OneFactor
+				depthTest: false
 			})
 		);
 		this.brushQuad.material.side = THREE.DoubleSide;
@@ -647,25 +671,28 @@
 
 	App.prototype.endDrawBrush = function(noSnapshot) {
 		this.renderer.render(this.strokeScene, this.strokeCamera, this.drawRenderTarget);
+		this.renderer.setClearColor(0,0);
+		this.renderer.clearTarget(this.strokeRenderTarget);
+		this.renderer.setClearColor(0xffffff,1);
 
-		var m = this.drawQuad.material;
+		// var m = this.drawQuad.material;
 
-		m.blending = THREE.CustomBlending;
-		m.blendEquation = THREE.AddEquation;
-		m.blendSrc = THREE.OneFactor;
-		m.blendDst = THREE.ZeroFactor;
-		m.blendEquationAlpha = THREE.AddEquation;
-		m.blendSrcAlpha = THREE.ZeroFactor;
-		m.blendDstAlpha = THREE.ZeroFactor;
+		// m.blending = THREE.CustomBlending;
+		// m.blendEquation = THREE.AddEquation;
+		// m.blendSrc = THREE.OneFactor;
+		// m.blendDst = THREE.ZeroFactor;
+		// m.blendEquationAlpha = THREE.AddEquation;
+		// m.blendSrcAlpha = THREE.ZeroFactor;
+		// m.blendDstAlpha = THREE.ZeroFactor;
 
-		this.renderer.render(this.drawScene, this.drawCamera, this.strokeRenderTarget);
+		// this.renderer.render(this.drawScene, this.drawCamera, this.strokeRenderTarget);
 
-		m.blendEquation = THREE.AddEquation;
-		m.blendSrc = THREE.OneFactor;
-		m.blendDst = THREE.ZeroFactor;
-		m.blendEquationAlpha = THREE.AddEquation;
-		m.blendSrcAlpha = THREE.OneFactor; // OneMinusDstAlpha
-		m.blendDstAlpha = THREE.ZeroFactor; // One
+		// m.blendEquation = THREE.AddEquation;
+		// m.blendSrc = THREE.OneFactor;
+		// m.blendDst = THREE.ZeroFactor;
+		// m.blendEquationAlpha = THREE.AddEquation;
+		// m.blendSrcAlpha = THREE.OneFactor;
+		// m.blendDstAlpha = THREE.ZeroFactor;
 
 		this.needUpdate = true;
 
@@ -690,6 +717,22 @@
 		this.renderer.render(this.strokeScene, this.brushCamera, this.brushRenderTarget);
 	};
 
+	App.prototype.copyDrawingToDst = function(x, y) {
+		var screenWidth = this.width / this.pixelRatio;
+		var screenHeight = this.height / this.pixelRatio;
+		// For smudge, render the current composite under the brush quad to the brushRenderTarget.
+		// Set up the brush camera to capture only the area of the brush quad.
+		var m = this.brushCamera.projectionMatrix.elements;
+		m[0] = 0.5*screenWidth / 32;
+		m[5] = 0.5*screenHeight / 32;
+		m[12] = 4*m[0] * -(x - screenWidth/2) / (screenWidth*2);
+		m[13] = 4*m[5] * (y - screenHeight/2) / (screenHeight*2);
+		this.renderer.setClearColor(0x000000, 0.0);
+		this.renderer.clearTarget(this.dstRenderTarget);
+		this.renderer.render(this.drawScene, this.brushCamera, this.dstRenderTarget);
+		this.renderer.render(this.strokeScene, this.brushCamera, this.dstRenderTarget);
+	};
+
 	App.prototype.renderDrawArray = function() {
 		for (var i=this.drawStartIndex; i<this.drawEndIndex; i++) {
 			var a = this.drawArray[i];
@@ -698,6 +741,8 @@
 			} else if (a.type === 'mirror') {
 				this.mirrorDrawRenderTarget();
 			} else {
+
+				this.brushObject = new THREE.Object3D();
 
 				var last = a.isStart ? a : this.drawArray[i-1];
 
@@ -757,34 +802,20 @@
 	};
 
 	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, textured) {
+		this.copyDrawingToDst(x, y);
+
 		if (isStart && blend < 1) {
 
 		} else {
 			this.brushQuad.position.set(x, y, 0);
 			this.brushQuad.scale.set(r,r,r);
 			var m = this.brushQuad.material;
+			m.uniforms.radius.value = r;
 			m.uniforms.opacity.value = opacity;
 			m.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
 			m.uniforms.blend.value = blend;
 			m.uniforms.textured.value = textured;
 			m.uniforms.squareBrush.value = 0;
-			if (blend < 1) {
-				m.blending = THREE.CustomBlending;
-				m.blendEquation = THREE.AddEquation;
-				m.blendSrc = THREE.OneFactor;
-				m.blendDst = THREE.OneMinusSrcAlphaFactor;
-				m.blendEquationAlpha = THREE.MaxEquation;
-				m.blendSrcAlpha = THREE.OneFactor;
-				m.blendDstAlpha = THREE.OneFactor;
-			} else {
-				m.blending = THREE.CustomBlending;
-				m.blendEquation = THREE.AddEquation;
-				m.blendSrc = THREE.OneFactor;
-				m.blendDst = THREE.OneMinusSrcAlphaFactor;
-				m.blendEquationAlpha = THREE.MaxEquation;
-				m.blendSrcAlpha = THREE.OneFactor;
-				m.blendDstAlpha = THREE.OneFactor;
-			}
 			this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
 		}
 
