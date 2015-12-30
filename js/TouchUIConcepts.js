@@ -83,9 +83,9 @@
 			return;
 		}
 
-		var u32 = new Uint32Array(buf, 0, 2);
+		var u32 = new Uint32Array(buf);
 		var version = u32[0];
-		if (version !== 0) {
+		if (!(version === 0 || version === 1)) {
 			throw("Unknown image version");
 		}
 		var dataLength = u32[1];
@@ -95,22 +95,82 @@
 		for (var i=0; i<data.length; i+=4096) {
 			dataString.push( String.fromCharCode.apply(null, data.slice(i, i+4096)) );
 		}
-		this.drawArray = JSON.parse(dataString.join(""));
+		dataString = dataString.join("");
+		this.drawArray = JSON.parse(dataString);
 		this.snapshots.splice(1);
 		this.drawStartIndex = 0;
+		if (version === 1) {
+			var offset = 8 + Math.ceil(dataString.length / 4) * 4
+			while (offset < snapshots.length) {
+				var u32Offset = offset / 4;
+				var snapshotIndex = u32[u32Offset++];
+				var snapshotLength = u32[u32Offset++];
+				var snapshot = {index: snapshotIndex, state: {}};
+				offset += 8;
+				if (snapshotLength > 0) {
+					var w = u32[u32Offset++];
+					var h = u32[u32Offset++];
+					var data = new Uint8Array(buf, u32Offset*4, w*h*4);
+					snapshot.state.texture = {
+						width: w,
+						height: h,
+						data: data
+					}
+				}
+				this.snapshots.push(snapshot);
+				offset += snapshotLength;
+				offset = Math.ceil(offset / 4) * 4;
+				this.drawStartIndex = snapshotIndex;
+			}
+			this.applySnapshot(this.snapshots[this.snapshots.length-1]);
+			if (this.snapshots[1] && this.snapshots[1].index === 0) {
+				this.snapshots.shift();
+			}
+		}
 		this.drawEndIndex = this.drawArray.length;
 		this.needUpdate = true;
 	};
 
 	App.prototype.serializeImage = function() {
+		var headerLength = 8;
+
 		var dataString = JSON.stringify(this.drawArray);
-		var buf = new ArrayBuffer(8 + dataString.length);
-		var u32 = new Uint32Array(buf, 0, 2);
+		var dataStringByteLength = Math.ceil(dataString.length / 4) * 4;
+
+		var snapshots = this.snapshots;
+		var snapshotByteLength = 0;
+		for (var i=0; i<snapshots.length; i++) {
+			snapshotByteLength += 8;
+			if (snapshots[i].state.texture) {
+				snapshotByteLength += 8 + snapshots[i].state.texture.data.byteLength;
+			}
+			snapshotByteLength = Math.ceil(snapshotByteLength / 4) * 4;
+		}
+
+		var buf = new ArrayBuffer(headerLength + dataStringByteLength + snapshotByteLength);
+		var u32 = new Uint32Array(buf);
 		var u8 = new Uint8Array(buf);
-		u32[0] = 0;
+		u32[0] = 1; // version
 		u32[1] = dataString.length;
 		for (var i=0; i<dataString.length; i++) {
-			u8[i + 8] = dataString.charCodeAt(i);
+			u8[i + headerLength] = dataString.charCodeAt(i);
+		}
+		var snapshotOffset = headerLength + dataStringByteLength;
+		for (var i=0; i<snapshots.length; i++) {
+			var snapshotU32Offset = snapshotOffset / 4;
+			var s = snapshots[i];
+			u32[snapshotU32Offset++] = s.index;
+			u32[snapshotU32Offset++] = s.state.texture ? 8 + s.state.texture.data.byteLength : 0;
+			if (s.state.texture) {
+				u32[snapshotU32Offset++] = s.state.texture.width;
+				u32[snapshotU32Offset++] = s.state.texture.height;
+				snapshotOffset = snapshotU32Offset * 4;
+				var d = s.state.texture.data;
+				for (var j=0; j<d.byteLength; j++) {
+					u8[snapshotOffset++] = d[j];
+				}
+				snapshotOffset = Math.ceil(snapshotOffset / 4) * 4;
+			}
 		}
 		return buf;
 	};
