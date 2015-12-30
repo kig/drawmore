@@ -127,6 +127,7 @@ ColorMixer.prototype = {
       this.setValue(hsv[2], false);
       this.currentColor = this.colorVec(c[0],c[1],c[2], 1);
     }
+    this.requestRedraw();
     if (signal == true) {
       this.signalChange();
     }
