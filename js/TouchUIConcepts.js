@@ -85,22 +85,32 @@
 
 		var u32 = new Uint32Array(buf);
 		var version = u32[0];
-		if (!(version === 0 || version === 1)) {
+		if (version > 2) {
 			throw("Unknown image version");
 		}
 		var dataLength = u32[1];
-		var data = new Uint8Array(buf, 8, dataLength);
-		var snapshots = new Uint8Array(buf, 8+dataLength);
+		var headerLength = 8;
+		if (version >= 2) {
+			headerLength = 12;
+		}
+		var data = new Uint8Array(buf, headerLength, dataLength);
+		var snapshots = new Uint8Array(buf, headerLength+dataLength);
 		var dataString = [];
 		for (var i=0; i<data.length; i+=4096) {
 			dataString.push( String.fromCharCode.apply(null, data.slice(i, i+4096)) );
 		}
 		dataString = dataString.join("");
 		this.drawArray = JSON.parse(dataString);
+		if (!this.drawArray || this.drawArray.indexOf(null) !== -1) {
+			this.drawArray = [];
+			this.drawStartIndex = 0;
+			this.drawEndIndex = 0;
+			return;
+		}
 		this.snapshots.splice(1);
 		this.drawStartIndex = 0;
-		if (version === 1) {
-			var offset = 8 + Math.ceil(dataString.length / 4) * 4
+		if (version > 0) {
+			var offset = headerLength + Math.ceil(dataString.length / 4) * 4
 			while (offset < snapshots.length) {
 				var u32Offset = offset / 4;
 				var snapshotIndex = u32[u32Offset++];
@@ -115,24 +125,30 @@
 						width: w,
 						height: h,
 						data: data
-					}
+					};
 				}
 				this.snapshots.push(snapshot);
 				offset += snapshotLength;
 				offset = Math.ceil(offset / 4) * 4;
 				this.drawStartIndex = snapshotIndex;
 			}
-			this.applySnapshot(this.snapshots[this.snapshots.length-1]);
 			if (this.snapshots[1] && this.snapshots[1].index === 0) {
 				this.snapshots.shift();
 			}
 		}
-		this.drawEndIndex = this.drawArray.length;
+		var end;
+		if (version < 2) {
+			end = this.drawArray.length;
+		} else {
+			end = Math.min(u32[2], this.drawArray.length);
+		}
+		console.log(end, this.drawArray.length, u32[2]);
+		this.timeTravel(end);
 		this.needUpdate = true;
 	};
 
 	App.prototype.serializeImage = function() {
-		var headerLength = 8;
+		var headerLength = 12;
 
 		var dataString = JSON.stringify(this.drawArray);
 		var dataStringByteLength = Math.ceil(dataString.length / 4) * 4;
@@ -150,8 +166,9 @@
 		var buf = new ArrayBuffer(headerLength + dataStringByteLength + snapshotByteLength);
 		var u32 = new Uint32Array(buf);
 		var u8 = new Uint8Array(buf);
-		u32[0] = 1; // version
+		u32[0] = 2; // version
 		u32[1] = dataString.length;
+		u32[2] = this.drawEndIndex;
 		for (var i=0; i<dataString.length; i++) {
 			u8[i + headerLength] = dataString.charCodeAt(i);
 		}
