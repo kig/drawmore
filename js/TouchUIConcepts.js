@@ -142,7 +142,6 @@
 		} else {
 			end = Math.min(u32[2], this.drawArray.length);
 		}
-		console.log(end, this.drawArray.length, u32[2]);
 		this.timeTravel(end);
 		this.needUpdate = true;
 	};
@@ -213,6 +212,8 @@
 	App.prototype.init = function() {
 		this.pixelRatio = window.devicePixelRatio;
 		this.mode = App.Mode.DRAW;
+
+		this.brushes = {};
 
 		this.ticker = this.tick.bind(this);
 
@@ -397,6 +398,25 @@
 		};
 	};
 
+	App.prototype.getTextureDataForImage = function(image) {
+		var c = document.createElement('canvas');
+		c.width = image.width;
+		c.height = image.height;
+		var ctx = c.getContext('2d');
+		ctx.globalCompositeOperation = 'copy';
+		ctx.drawImage(image, 0, 0);
+		var id = ctx.getImageData(0, 0, image.width, image.height);
+		var a = [];
+		for (var i=0; i<id.data.length; i++) {
+			a[i] = id.data[i];
+		}
+		return {
+			width: id.width,
+			height: id.height,
+			data: a
+		};
+	}
+
 	App.prototype.setupCanvas = function() {
 
 		var width = window.innerWidth;
@@ -493,7 +513,18 @@
 		this.brushCamera = new THREE.Camera();
 		this.brushCamera.matrixAutoUpdate = false;
 
-		this.maskTexture = new THREE.TextureLoader().load('texture.png');
+		this.brushTextureLoaded = false;
+
+		var self = this;
+		this.maskTexture = new THREE.DataTexture();
+		var image = new Image();
+		image.onload = function() {
+			self.brushTextureLoaded = true;
+			if (!self.drawArray.find(function(c){ return c.type === 'addBrush' && c.name === 'texture.png'; })) {
+				self.addBrush('texture.png', self.getTextureDataForImage(this));
+			}
+		};
+		image.src = 'texture.png';
 
 		this.brushQuad = new THREE.Mesh(
 			new THREE.PlaneBufferGeometry(2, 2),
@@ -609,6 +640,7 @@
 			if (confirm("Erase current drawing?")) {
 				self.timeTravel(0);
 				self.drawArray.splice(0);
+				self.addBrush('texture.png', self.brushes['texture.png']);
 			}
 		});
 
@@ -683,6 +715,14 @@
 
 	App.prototype.pressureCurve = function(v, x0, y0, x1, y1) {
 		return Math.clamp(Math.pow(v, f), 0, 1);
+	};
+
+	App.prototype.addBrush = function(name, tex) {
+		this.drawArrayPush({
+			type: 'addBrush',
+			name: name,
+			texture: tex
+		});
 	};
 
 	App.prototype.drawArrayPush = function(state) {
@@ -911,6 +951,12 @@
 				this.endDrawBrush();
 			} else if (a.type === 'mirror') {
 				this.mirrorDrawRenderTarget();
+			} else if (a.type === 'addBrush') {
+				this.maskTexture.image.width = a.texture.width;
+				this.maskTexture.image.height = a.texture.height;
+				this.maskTexture.image.data = new Uint8Array(a.texture.data);
+				this.maskTexture.needsUpdate = true;
+				this.brushes[a.name] = a.texture;
 			} else {
 
 				var last = a.isStart ? a : this.drawArray[i-1];
@@ -1012,7 +1058,7 @@
 		var mode = this.mode;
 		var pixelRatio = this.pixelRatio;
 
-		if (this.needUpdate) {
+		if (this.needUpdate && this.brushTextureLoaded) {
 
 			this.renderDrawArray();
 			this.drawStartIndex = this.drawEndIndex;
