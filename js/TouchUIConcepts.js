@@ -14,6 +14,25 @@
 	App.prototype.snapshotSeparation = 500;
 	App.prototype.maxSnapshotCount = 6;
 
+	App.prototype.plotCurve = function(curveCanvas, curve) {
+		var ctx = curveCanvas.getContext('2d');
+		ctx.save();
+		ctx.clearRect(0, 0, 100, 100);
+		ctx.translate(0, 100);
+		ctx.scale(1, -1);
+		ctx.beginPath();
+		for (var x=0; x<100; x++) {
+			var y = 99 * curve(x/99);
+			if (x === 0) {
+				ctx.moveTo(x, y);
+			} else {
+				ctx.lineTo(x, y);
+			}
+		}
+		ctx.stroke();
+		ctx.restore();
+	};
+
 	App.prototype.initIndexedDB = function(callback) {
 		// IndexedDB
 		window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB,
@@ -585,6 +604,7 @@
 	};
 
 	App.prototype.addEventListeners = function() {
+		var self = this;
 		this.eventHandler = new App.EventHandler(this, this.renderer.domElement);
 		var f = function(ev){ ev.preventDefault(); };
 		var click = function(el, g) {
@@ -608,6 +628,18 @@
 
 		click(window.mirror, this.mirror.bind(this));
 
+		window.curve.onchange = function() {
+			var curveName = this.value;
+			var curve = App.CurvePresets[curveName];
+			self.plotCurve(window.opacityCurveCanvas, function(x) {
+				return self.curvePoint(x, curve.opacity);
+			});
+			self.plotCurve(window.brushSizeCurveCanvas, function(x) {
+				return self.curvePoint(x, curve.radius);
+			});
+		};
+		window.curve.onchange();
+
 		// click(window.save, function() { self.saveImageToDB('drawingInProgress'); });
 		click(window.newDrawing, function() { 
 			if (confirm("Erase current drawing?")) {
@@ -617,7 +649,6 @@
 			}
 		});
 
-		var self = this;
 		window.onbeforeunload = function(ev) {
 			if (self.saved) {
 				ev.preventDefault();
