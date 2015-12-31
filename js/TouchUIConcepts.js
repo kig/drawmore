@@ -20,15 +20,51 @@
 		ctx.clearRect(0, 0, 100, 100);
 		ctx.translate(0, 100);
 		ctx.scale(1, -1);
+
+		ctx.translate(7, 7)
+		ctx.scale(86/100, 86/100);
+
+		ctx.strokeStyle = '#CCC';
+		ctx.strokeRect(0, 0, 100, 100);
+
+		ctx.strokeStyle = '#888';
+
 		ctx.beginPath();
-		for (var x=0; x<100; x++) {
-			var y = 99 * curve(x/99);
-			if (x === 0) {
-				ctx.moveTo(x, y);
-			} else {
-				ctx.lineTo(x, y);
-			}
+		ctx.moveTo(curve[0]*99, curve[1]*99);
+		ctx.lineTo(curve[2]*99, curve[3]*99);
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.moveTo(curve[6]*99, curve[7]*99);
+		ctx.lineTo(curve[4]*99, curve[5]*99);
+		ctx.stroke();
+
+		ctx.fillStyle = '#888';
+
+		ctx.beginPath();
+		ctx.arc(curve[0]*99, curve[1]*99, 5, 0, 2*Math.PI, true);
+		ctx.fill();
+
+		ctx.beginPath();
+		ctx.arc(curve[6]*99, curve[7]*99, 5, 0, 2*Math.PI, true);
+		ctx.fill();
+
+		ctx.beginPath();
+		ctx.fillStyle = '#CCC';
+
+		ctx.beginPath();
+		ctx.fillRect(curve[2]*99 - 3, curve[3]*99 - 3, 7, 7);
+		ctx.fillRect(curve[4]*99 - 3, curve[5]*99 - 3, 7, 7);
+
+		ctx.strokeStyle = '#444';
+
+		ctx.beginPath();
+		ctx.moveTo(curve[0]*99, curve[1]*99);
+		for (var i=0; i<100; i++) {
+			var x = i;
+			var y = 99*this.curvePoint(x/99, curve);
+			ctx.lineTo(x, y);
 		}
+		ctx.lineTo(curve[6]*99, curve[7]*99);
 		ctx.stroke();
 		ctx.restore();
 	};
@@ -631,12 +667,8 @@
 		window.curve.onchange = function() {
 			var curveName = this.value;
 			var curve = App.CurvePresets[curveName];
-			self.plotCurve(window.opacityCurveCanvas, function(x) {
-				return self.curvePoint(x, curve.opacity);
-			});
-			self.plotCurve(window.brushSizeCurveCanvas, function(x) {
-				return self.curvePoint(x, curve.radius);
-			});
+			self.plotCurve(window.opacityCurveCanvas, curve.opacity);
+			self.plotCurve(window.brushSizeCurveCanvas, curve.radius);
 		};
 		window.curve.onchange();
 
