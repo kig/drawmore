@@ -213,7 +213,7 @@
 		this.pixelRatio = window.devicePixelRatio;
 		this.mode = App.Mode.DRAW;
 
-		this.brushes = {};
+		this.brushTextures = {};
 
 		this.ticker = this.tick.bind(this);
 
@@ -244,6 +244,12 @@
 			self.loadImageFromDB('drawingInProgress');
 		});
 	};
+
+	// Use ShaderToy shaders as brush shaders / filters.
+	// 
+
+	// Have a bunch of other brush textures to load & use.
+	//
 
 	App.prototype.undo = function() {
 		if (this.drawEndIndex > 0) {
@@ -520,8 +526,8 @@
 		var image = new Image();
 		image.onload = function() {
 			self.brushTextureLoaded = true;
-			if (!self.drawArray.find(function(c){ return c.type === 'addBrush' && c.name === 'texture.png'; })) {
-				self.addBrush('texture.png', self.getTextureDataForImage(this));
+			if (!self.drawArray.find(function(c){ return c.type === 'addBrush' && c.name === 1; })) {
+				self.addBrush(1, self.getTextureDataForImage(this));
 			}
 		};
 		image.src = 'texture.png';
@@ -640,7 +646,7 @@
 			if (confirm("Erase current drawing?")) {
 				self.timeTravel(0);
 				self.drawArray.splice(0);
-				self.addBrush('texture.png', self.brushes['texture.png']);
+				self.addBrush(1, self.brushTextures[1]);
 			}
 		});
 
@@ -843,7 +849,7 @@
 
 		var brush = this.brush;
 		var blend = window.blending.checked ? 0 : 1;
-		var textured = window.texturedBrush.checked ? 1 : 0;
+		var texture = window.texturedBrush.checked ? 1 : 0;
 		var radiusCurve = window.radiusPressure.checked ? curve.radius : App.Curves.one;
 		var opacityCurve = window.opacityPressure.checked ? curve.opacity : App.Curves.one;
 
@@ -888,7 +894,7 @@
 			opacityCurve: opacityCurve, // 8 bits
 
 			blend: blend, // 8 bits
-			textured: textured // 8 bits -- index to brush array
+			texture: texture // 8 bits -- index to brush array
 		});
 
 		this.needUpdate = true;
@@ -952,11 +958,7 @@
 			} else if (a.type === 'mirror') {
 				this.mirrorDrawRenderTarget();
 			} else if (a.type === 'addBrush') {
-				this.maskTexture.image.width = a.texture.width;
-				this.maskTexture.image.height = a.texture.height;
-				this.maskTexture.image.data = new Uint8Array(a.texture.data);
-				this.maskTexture.needsUpdate = true;
-				this.brushes[a.name] = a.texture;
+				this.brushTextures[a.name] = a.texture;
 			} else {
 
 				var last = a.isStart ? a : this.drawArray[i-1];
@@ -975,7 +977,7 @@
 						this.curvePoint(a.pressure, a.opacityCurve) * a.opacity,
 						a.isStart,
 						a.blend,
-						a.textured
+						a.texture
 					);
 
 				} else {
@@ -999,7 +1001,7 @@
 							this.curvePoint(p, a.opacityCurve) * a.opacity,
 							isStart,
 							a.blend,
-							a.textured
+							a.texture
 						);
 
 						d += Math.clamp(0.25 * this.curvePoint(p, a.radiusCurve) * a.r, 0.125, 1);
@@ -1016,7 +1018,19 @@
 		// this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
 	};
 
-	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, textured) {
+	App.prototype.setBrushTexture = function(textureName) {
+		var texture = this.brushTextures[textureName];
+
+		if (this.maskTexture.brushTexture !== texture) {
+			this.maskTexture.image.width = texture.width;
+			this.maskTexture.image.height = texture.height;
+			this.maskTexture.image.data = new Uint8Array(texture.data);
+			this.maskTexture.brushTexture = texture;
+			this.maskTexture.needsUpdate = true;
+		}
+	};
+
+	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, texture) {
 		if (isStart && blend < 1) {
 
 		} else {
@@ -1026,7 +1040,10 @@
 			m.uniforms.opacity.value = opacity;
 			m.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
 			m.uniforms.blend.value = blend;
-			m.uniforms.textured.value = textured;
+			if (texture) {
+				this.setBrushTexture(texture);
+			}
+			m.uniforms.textured.value = texture ? 1 : 0;
 			m.uniforms.squareBrush.value = 0;
 			if (blend < 1) {
 				m.blending = THREE.CustomBlending;
