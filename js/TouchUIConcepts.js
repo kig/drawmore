@@ -85,64 +85,65 @@
 
 		var u32 = new Uint32Array(buf);
 		var version = u32[0];
-		if (version > 2) {
+		if (version !== 3) {
 			throw("Unknown image version");
 		}
 		var dataLength = u32[1];
-		var headerLength = 8;
-		if (version >= 2) {
-			headerLength = 12;
-		}
+		var drawEndIndex = u32[2];
+
+		var headerLength = 12;
+
 		var data = new Uint8Array(buf, headerLength, dataLength);
-		var snapshots = new Uint8Array(buf, headerLength+dataLength);
+		var snapshotsByteIndex = headerLength + Math.ceil(dataLength/4)*4;
+		var snapshots = new Uint8Array(buf, snapshotsByteIndex);
 		var dataString = [];
 		for (var i=0; i<data.length; i+=4096) {
 			dataString.push( String.fromCharCode.apply(null, data.slice(i, i+4096)) );
 		}
 		dataString = dataString.join("");
-		this.drawArray = JSON.parse(dataString);
-		if (!this.drawArray || this.drawArray.indexOf(null) !== -1) {
-			this.drawArray = [];
-			this.drawStartIndex = 0;
-			this.drawEndIndex = 0;
-			return;
+		var drawArray = JSON.parse(dataString);
+		if (!drawArray) {
+			throw("No drawArray found in loaded image");
+		} else if (drawArray.indexOf(null) !== -1) {
+			throw("Corrupt drawArray");
 		}
-		this.snapshots.splice(1);
-		this.drawStartIndex = 0;
-		if (version > 0) {
-			var offset = headerLength + Math.ceil(dataString.length / 4) * 4
-			while (offset < snapshots.length) {
-				var u32Offset = offset / 4;
-				var snapshotIndex = u32[u32Offset++];
-				var snapshotLength = u32[u32Offset++];
-				var snapshot = {index: snapshotIndex, state: {}};
-				offset += 8;
-				if (snapshotLength > 0) {
-					var w = u32[u32Offset++];
-					var h = u32[u32Offset++];
-					var data = new Uint8Array(buf, u32Offset*4, w*h*4);
-					snapshot.state.texture = {
-						width: w,
-						height: h,
-						data: data
-					};
+
+		if (drawEndIndex > drawArray.length) {
+			throw("Corrupt drawEndIndex + drawArray");
+		}
+
+		var newSnapshots = [];
+
+		var offset = 0;
+		while (offset < snapshots.length) {
+			var u32Offset = (snapshotsByteIndex + offset) / 4;
+			var snapshotIndex = u32[u32Offset++];
+			var snapshotLength = u32[u32Offset++];
+			var snapshot = {index: snapshotIndex, state: {}};
+			offset += 8;
+			if (snapshotLength > 0) {
+				var w = u32[u32Offset++];
+				var h = u32[u32Offset++];
+				if (w*h*4 !== snapshotLength-8) {
+					throw("Corrupt snapshot when loading image");
 				}
-				this.snapshots.push(snapshot);
-				offset += snapshotLength;
-				offset = Math.ceil(offset / 4) * 4;
-				this.drawStartIndex = snapshotIndex;
+				var data = new Uint8Array(buf, u32Offset*4, w*h*4);
+				snapshot.state.texture = {
+					width: w,
+					height: h,
+					data: data
+				};
 			}
-			if (this.snapshots[1] && this.snapshots[1].index === 0) {
-				this.snapshots.shift();
-			}
+			newSnapshots.push(snapshot);
+			offset += snapshotLength;
+			offset = Math.ceil(offset / 4) * 4;
 		}
-		var end;
-		if (version < 2) {
-			end = this.drawArray.length;
-		} else {
-			end = Math.min(u32[2], this.drawArray.length);
+		if (!newSnapshots[0] || newSnapshots[0].index !== 0) {
+			throw("Corrupt snapshot when loading image");
 		}
-		this.timeTravel(end);
+		this.drawArray = drawArray;
+		this.snapshots = newSnapshots;
+		this.timeTravel(drawEndIndex);
 		this.needUpdate = true;
 	};
 
@@ -165,7 +166,7 @@
 		var buf = new ArrayBuffer(headerLength + dataStringByteLength + snapshotByteLength);
 		var u32 = new Uint32Array(buf);
 		var u8 = new Uint8Array(buf);
-		u32[0] = 2; // version
+		u32[0] = 3; // version
 		u32[1] = dataString.length;
 		u32[2] = this.drawEndIndex;
 		for (var i=0; i<dataString.length; i++) {
@@ -302,44 +303,10 @@
 				this.snapshots.splice(1, 1);
 				/*
 					Snapshots should be spaced with exponential separations so that
-					undo is fast and doesn't eat too much memory.
+					undo is usually fast and doesn't usually eat too much memory.
 
-					  |
-					  ||
-					  |||
-					  ||||
-					  |||||
-					  ||||||
-					1 |x|||||
-					2 |x|x||||
-					3 |x|x|x|||
-
-					4 |x|x|x|x||
-					1 |xxx|x|x|||
-
-					4 |xxx|x|x|x||
-					2 |xxx|xxx|x|||
-
-					4 |xxx|xxx|x|x||
-					3 |xxx|xxx|xxx|||
-
-					4 |xxx|xxx|xxx|x||
-					4 |xxx|xxx|xxx|xx||
-					4 |xxx|xxx|xxx|xxx||
-					1 |xxxxxxx|xxx|xxx|||
-
-					4 |xxxxxxx|xxx|xxx|x||
-					4 |xxxxxxx|xxx|xxx|xx||
-					4 |xxxxxxx|xxx|xxx|xxx||
-					2 |xxxxxxx|xxxxxxx|xxx|||
-
-					4 |xxxxxxx|xxx|xxx|xxx|x||
-					4 |xxxxxxx|xxx|xxx|xxx|xx||
-					4 |xxxxxxx|xxx|xxx|xxx|xxx||
-					3 |xxxxxxx|xxxxxxx|xxxxxxx|||
-
-					FIXME Rebuild snapshots while undoing so that there's always a 
-						  snapshot within snapshotSeparation of current undo state.
+					Also, rebuild snapshots while undoing so that there's always a 
+					snapshot within snapshotSeparation of current undo state.
 				*/
 
 			}
@@ -645,7 +612,7 @@
 		click(window.newDrawing, function() { 
 			if (confirm("Erase current drawing?")) {
 				self.timeTravel(0);
-				self.drawArray.splice(0);
+				self.drawArray = [];
 				self.addBrush(1, self.brushTextures[1]);
 			}
 		});
