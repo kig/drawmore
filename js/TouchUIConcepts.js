@@ -20,6 +20,8 @@
 		var c1 = svg.querySelector('.c1');
 		var c2 = svg.querySelector('.c2');
 		var path = svg.querySelector('.curve');
+		var line1 = svg.querySelector('.pc1');
+		var line2 = svg.querySelector('.pc2');
 
 		p1.setAttribute('cx', curve[0]*99);
 		p1.setAttribute('cy', 99-curve[1]*99);
@@ -38,6 +40,15 @@
 			     curve[4]*99, 99-curve[5]*99,
 			     curve[6]*99, 99-curve[7]*99,
 			'L', 99, 99-curve[7]*99
+		].join(" "));
+
+		line1.setAttribute('d', [
+			'M', p1.getAttribute('cx'), p1.getAttribute('cy'),
+			'L', parseFloat(c1.getAttribute('x'))+5, parseFloat(c1.getAttribute('y'))+5
+		].join(" "));
+		line2.setAttribute('d', [
+			'M', p2.getAttribute('cx'), p2.getAttribute('cy'),
+			'L', parseFloat(c2.getAttribute('x'))+5, parseFloat(c2.getAttribute('y'))+5
 		].join(" "));
 	};
 
@@ -97,7 +108,7 @@
 		el.addEventListener('touchcancel', touchWrap(onUp), false);
 	};
 
-	App.prototype.draggableCurve = function(svg, curve) {
+	App.prototype.draggableCurve = function(svg, curveCallback) {
 		var p1 = svg.querySelector('.p1');
 		var p2 = svg.querySelector('.p2');
 		var c1 = svg.querySelector('.c1');
@@ -107,28 +118,45 @@
 		var line2 = svg.querySelector('.pc2');
 
 		var updatePath = function() {
+			var p1x = parseFloat(p1.getAttribute('cx'));
+			var p1y = parseFloat(p1.getAttribute('cy'));
+			var p2x = parseFloat(p2.getAttribute('cx'));
+			var p2y = parseFloat(p2.getAttribute('cy'));
+
+			var c1x = Math.clamp(parseFloat(c1.getAttribute('x')), p1x-5, p2x-5);
+			c1.setAttribute('x', c1x);
+			c1x += 5;
+
+			var c2x = Math.clamp(parseFloat(c2.getAttribute('x')), p1x-5, p2x-5);
+			c2.setAttribute('x', c2x);
+			c2x += 5;
+
+			var c1y = parseFloat(c1.getAttribute('y'))+5;
+			var c2y = parseFloat(c2.getAttribute('y'))+5;
 			path.setAttribute('d', [
-				'M', '0', p1.getAttribute('cy'),
-				'L', p1.getAttribute('cx'), p1.getAttribute('cy'),
-				'C', parseFloat(c1.getAttribute('x'))+5, parseFloat(c1.getAttribute('y'))+5,
-				     parseFloat(c2.getAttribute('x'))+5, parseFloat(c2.getAttribute('y'))+5,
-				     p2.getAttribute('cx'), p2.getAttribute('cy'),
-				'L', '99', p2.getAttribute('cy')
+				'M', '0', p1y,
+				'L', p1x, p1y,
+				'C', c1x, c1y, c2x, c2y, p2x, p2y,
+				'L', '99', p2y
 			].join(" "));
 			line1.setAttribute('d', [
-				'M', p1.getAttribute('cx'), p1.getAttribute('cy'),
-				'L', parseFloat(c1.getAttribute('x'))+5, parseFloat(c1.getAttribute('y'))+5
+				'M', p1x, p1y,
+				'L', c1x, c1y
 			].join(" "));
 			line2.setAttribute('d', [
-				'M', p2.getAttribute('cx'), p2.getAttribute('cy'),
-				'L', parseFloat(c2.getAttribute('x'))+5, parseFloat(c2.getAttribute('y'))+5
+				'M', p2x, p2y,
+				'L', c2x, c2y
 			].join(" "));
 
-			var x = Math.clamp(parseFloat(c1.getAttribute('x')), parseFloat(p1.getAttribute('cx'))-5, parseFloat(p2.getAttribute('cx'))-5);
-			c1.setAttribute('x', x);
-
-			var x = Math.clamp(parseFloat(c2.getAttribute('x')), parseFloat(p1.getAttribute('cx'))-5, parseFloat(p2.getAttribute('cx'))-5);
-			c2.setAttribute('x', x);
+			var curve = curveCallback();
+			curve[0] = p1x / 99;
+			curve[1] = 1 - p1y / 99;
+			curve[2] = c1x / 99;
+			curve[3] = 1 - c1y / 99;
+			curve[4] = c2x / 99;
+			curve[5] = 1 - c2y / 99;
+			curve[6] = p2x / 99;
+			curve[7] = 1 - p2y / 99;
 		};
 
 		this.draggable(p1, ['cx', 'cy'], function(xy) {
@@ -754,8 +782,16 @@
 
 		click(window.mirror, this.mirror.bind(this));
 
-		this.draggableCurve(window.opacityCurveCanvas);
-		this.draggableCurve(window.brushSizeCurveCanvas);
+		this.draggableCurve(window.opacityCurveCanvas, function() {
+			var curveName = window.curve.value;
+			var curve = App.CurvePresets[curveName];
+			return curve.opacity;
+		});
+		this.draggableCurve(window.brushSizeCurveCanvas, function() {
+			var curveName = window.curve.value;
+			var curve = App.CurvePresets[curveName];
+			return curve.radius;
+		});
 
 		window.curve.onchange = function() {
 			var curveName = this.value;
@@ -877,23 +913,23 @@
 
 	App.CurvePresets = {
 		brush: {
-			radius: App.Curves.linear,
-			opacity: App.Curves.linear15
+			radius: App.Curves.linear.slice(),
+			opacity: App.Curves.linear15.slice()
 		},
 
 		liner: {
-			radius: App.Curves.linear15,
-			opacity: App.Curves.one
+			radius: App.Curves.linear15.slice(),
+			opacity: App.Curves.one.slice()
 		},
 
 		pencil: {
-			radius: App.Curves.pencilRadius,
-			opacity: App.Curves.pencilOpacity
+			radius: App.Curves.pencilRadius.slice(),
+			opacity: App.Curves.pencilOpacity.slice()
 		},
 
 		watery: {
-			radius: App.Curves.linear,
-			opacity: App.Curves.wateryOpacity
+			radius: App.Curves.linear.slice(),
+			opacity: App.Curves.wateryOpacity.slice()
 		}
 	};
 

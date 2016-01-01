@@ -136,10 +136,12 @@
 			}*/
 
 			#brushSizeCurve {
-				margin-top: -50px;
+				margin-top: 0px;
+				/*-60px;*/
 			}
 			#opacityCurve {
-				margin-top: -70px;
+				margin-top: -160px;
+				/*-100px;*/
 			}
 			#brushSizeCurveCanvas path,
 			#opacityCurveCanvas path
@@ -151,20 +153,48 @@
 				position: absolute;
 				z-index: 3;
 				top: 50%;
-				left: 50px;
+				left: 60px;
 				border: 1px solid silver;
 				line-height: 0;
 				transition: 0.3s;
+				background: white;
 			}
 			.hidden {
 				opacity: 0;
 				pointer-events: none;
+			}
+
+			#brushSizeCurveButton {
+				width: 20px;
+				height: 40px;
+				position: absolute;
+				left: 40px;
+				line-height: 40px;
+				z-index: 3;
+				top: 50%;
+				margin-top: -20px;
+				text-align: center;
+				cursor: pointer;
+			}
+
+			#opacityCurveButton {
+				width: 20px;
+				height: 40px;
+				position: absolute;
+				left: 40px;
+				line-height: 40px;
+				z-index: 3;
+				top: 50%;
+				margin-top: -60px;
+				text-align: center;
+				cursor: pointer;
 			}
 		</style>
 	</head>
 	<body>
 		<pre id="debug"></pre>
 		<div class="mode-toggle" id="brushResize"></div>
+		<div id="brushSizeCurveButton" onclick="brushSizeCurve.classList.toggle('hidden')">+</div>
 		<div id="brushSizeCurve" class="pressure-curve hidden">
 			<svg id="brushSizeCurveCanvas" width="120" height="120">
 				<g transform="translate(10 10)">
@@ -175,20 +205,23 @@
 					<circle class="p2" cx="100" cy="0" r="5" stroke="#888888" fill="#CCCCCC" />
 					<rect class="c1" x="20" y="70" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
 					<rect class="c2" x="70" y="20" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
-					<path class="curve" d="M 0 100 L 0 100 C 25 75 75 25 100 0 L 100 0" stroke-width="2" stroke="#000000" fill="none" />
+					<path class="curve" d="M 0 100 L 0 100 C 25 75 75 25 100 0 L 100 0" stroke-width="2" stroke="#446688" fill="none" />
 				</g>
 			</svg>
 		</div>
 		<div class="mode-toggle" id="opacityChange"></div>
+		<div id="opacityCurveButton" onclick="opacityCurve.classList.toggle('hidden')">+</div>
 		<div id="opacityCurve" class="pressure-curve hidden">
 			<svg id="opacityCurveCanvas" width="120" height="120">
 				<g transform="translate(10 10)">
 					<rect x="0" y="0" width="100" height="100" stroke="#CCCCCC" fill="none" />
+					<path class="pc1" d="M 0 0" stroke="#888888" fill="none" />
+					<path class="pc2" d="M 0 0" stroke="#888888" fill="none" />
 					<circle class="p1" cx="0" cy="100" r="5" stroke="#888888" fill="#CCCCCC" />
 					<circle class="p2" cx="100" cy="0" r="5" stroke="#888888" fill="#CCCCCC" />
 					<rect class="c1" x="20" y="70" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
 					<rect class="c2" x="70" y="20" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
-					<path class="curve" d="M 0 100 L 0 100 C 25 75 75 25 100 0 L 100 0" stroke-width="2" stroke="#000000" fill="none" />
+					<path class="curve" d="M 0 100 L 0 100 C 25 75 75 25 100 0 L 100 0" stroke-width="2" stroke="#446688" fill="none" />
 				</g>
 			</svg>
 		</div>
