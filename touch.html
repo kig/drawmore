@@ -159,42 +159,40 @@
 				transition: 0.3s;
 				background: white;
 			}
+
+			.pressure-curve-button {
+				width: 20px;
+				height: 40px;
+				position: absolute;
+				left: 40px;
+				line-height: 40px;
+				z-index: 3;
+				top: 50%;
+				transition: 0.3s;
+				text-align: center;
+				cursor: pointer;
+			}
+
+			.hide-ui .pressure-curve,
+			.hide-ui .pressure-curve-button,
 			.hidden {
 				opacity: 0;
 				pointer-events: none;
 			}
 
 			#brushSizeCurveButton {
-				width: 20px;
-				height: 40px;
-				position: absolute;
-				left: 40px;
-				line-height: 40px;
-				z-index: 3;
-				top: 50%;
 				margin-top: -20px;
-				text-align: center;
-				cursor: pointer;
 			}
 
 			#opacityCurveButton {
-				width: 20px;
-				height: 40px;
-				position: absolute;
-				left: 40px;
-				line-height: 40px;
-				z-index: 3;
-				top: 50%;
 				margin-top: -60px;
-				text-align: center;
-				cursor: pointer;
 			}
 		</style>
 	</head>
 	<body>
 		<pre id="debug"></pre>
 		<div class="mode-toggle" id="brushResize"></div>
-		<div id="brushSizeCurveButton" onclick="brushSizeCurve.classList.toggle('hidden')">+</div>
+		<div id="brushSizeCurveButton" class="pressure-curve-button" onclick="brushSizeCurve.classList.toggle('hidden')">+</div>
 		<div id="brushSizeCurve" class="pressure-curve hidden">
 			<svg id="brushSizeCurveCanvas" width="120" height="120">
 				<g transform="translate(10 10)">
@@ -210,7 +208,7 @@
 			</svg>
 		</div>
 		<div class="mode-toggle" id="opacityChange"></div>
-		<div id="opacityCurveButton" onclick="opacityCurve.classList.toggle('hidden')">+</div>
+		<div id="opacityCurveButton" class="pressure-curve-button" onclick="opacityCurve.classList.toggle('hidden')">+</div>
 		<div id="opacityCurve" class="pressure-curve hidden">
 			<svg id="opacityCurveCanvas" width="120" height="120">
 				<g transform="translate(10 10)">
