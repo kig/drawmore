@@ -14,6 +14,8 @@
 	App.prototype.snapshotSeparation = 500;
 	App.prototype.maxSnapshotCount = 6;
 
+	App.prototype.penMode = false;
+
 	App.prototype.plotCurve = function(svg, curve) {
 		var p1 = svg.querySelector('.p1');
 		var p2 = svg.querySelector('.p2');
@@ -778,9 +780,12 @@
 			document.body.classList.remove('hide-ui');
 		});
 		click(window.savePNG, this.save.bind(this));
-		// click(window.save, this.serializeImage.bind(this));
 
 		click(window.mirror, this.mirror.bind(this));
+
+		window.penMode.onchange = function(ev) {
+			self.penMode = this.checked;
+		};
 
 		this.draggableCurve(window.opacityCurveCanvas, function() {
 			var curveName = window.curve.value;
@@ -801,7 +806,14 @@
 		};
 		window.curve.onchange();
 
-		// click(window.save, function() { self.saveImageToDB('drawingInProgress'); });
+		click(window.save, function() {
+			var name = prompt("Name");
+			self.saveImageToDB(name);
+		});
+		click(window.load, function() {
+			var name = prompt("Name");
+			self.loadImageFromDB(name);
+		});
 		click(window.newDrawing, function() { 
 			if (confirm("Erase current drawing?")) {
 				self.timeTravel(0);
@@ -1318,6 +1330,19 @@
 			return force;
 		},
 
+		getPenTouch: function(ev) {
+			var touches = ev.changedTouches;
+			for (var i=0; i<touches.length; i++) {
+				if (touches[i].radiusX === 0 && touches[i].radiusY === 0) {
+					return touches[i];
+				}
+			}
+			if (this.app.penMode) {
+				return null;
+			}
+			return ev.touches[0];
+		},
+
 		startBrushStroke: function(x, y, pressure) {
 			this.startX = x;
 			this.startY = y;
@@ -1401,10 +1426,14 @@
 
 
 		touchstart: function(ev) {
+			var touch = this.getPenTouch(ev, this.app.penMode);
+			if (!touch) {
+				return;
+			}
 			this.startBrushStroke(
-				ev.touches[0].clientX,
-				ev.touches[0].clientY,
-				this.parsePressure(ev.touches[0])
+				touch.clientX,
+				touch.clientY,
+				this.parsePressure(touch)
 			);
 		},
 
@@ -1417,7 +1446,15 @@
 		},
 
 		touchmove: function(ev) {
-			this.moveBrushStroke(ev.touches[0].clientX, ev.touches[0].clientY, this.parsePressure(ev.touches[0]));
+			var touch = this.getPenTouch(ev);
+			if (!touch) {
+				return;
+			}
+			this.moveBrushStroke(
+				touch.clientX,
+				touch.clientY,
+				this.parsePressure(touch)
+			);
 		}
 	};
 
