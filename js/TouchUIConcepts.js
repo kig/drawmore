@@ -321,6 +321,7 @@
 			var s = snapshots[i];
 			u32[snapshotU32Offset++] = s.index;
 			u32[snapshotU32Offset++] = s.state.texture ? 8 + s.state.texture.data.byteLength : 0;
+			snapshotOffset = snapshotU32Offset * 4;
 			if (s.state.texture) {
 				u32[snapshotU32Offset++] = s.state.texture.width;
 				u32[snapshotU32Offset++] = s.state.texture.height;
@@ -749,6 +750,7 @@
 			document.body.classList.remove('hide-ui');
 		});
 		click(window.savePNG, this.save.bind(this));
+		// click(window.save, this.serializeImage.bind(this));
 
 		click(window.mirror, this.mirror.bind(this));
 
@@ -971,8 +973,8 @@
 		var brush = this.brush;
 		var blend = window.blending.checked ? 0 : 1;
 		var texture = window.texturedBrush.checked ? 1 : 0;
-		var radiusCurve = window.radiusPressure.checked ? curve.radius : App.Curves.one;
-		var opacityCurve = window.opacityPressure.checked ? curve.opacity : App.Curves.one;
+		var radiusCurve = curve.radius;
+		var opacityCurve = curve.opacity;
 
 		this.byteCount += isStart ? 15 : 2;
 		if (!isStart) {
