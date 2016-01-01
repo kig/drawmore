@@ -14,59 +14,147 @@
 	App.prototype.snapshotSeparation = 500;
 	App.prototype.maxSnapshotCount = 6;
 
-	App.prototype.plotCurve = function(curveCanvas, curve) {
-		var ctx = curveCanvas.getContext('2d');
-		ctx.save();
-		ctx.clearRect(0, 0, 100, 100);
-		ctx.translate(0, 100);
-		ctx.scale(1, -1);
+	App.prototype.plotCurve = function(svg, curve) {
+		var p1 = svg.querySelector('.p1');
+		var p2 = svg.querySelector('.p2');
+		var c1 = svg.querySelector('.c1');
+		var c2 = svg.querySelector('.c2');
+		var path = svg.querySelector('.curve');
 
-		ctx.translate(7, 7)
-		ctx.scale(86/100, 86/100);
+		p1.setAttribute('cx', curve[0]*99);
+		p1.setAttribute('cy', 99-curve[1]*99);
+		p2.setAttribute('cx', curve[6]*99);
+		p2.setAttribute('cy', 99-curve[7]*99);
 
-		ctx.strokeStyle = '#CCC';
-		ctx.strokeRect(0, 0, 100, 100);
+		c1.setAttribute('x', curve[2]*99-5);
+		c1.setAttribute('y', 99-curve[3]*99-5);
+		c2.setAttribute('x', curve[4]*99-5);
+		c2.setAttribute('y', 99-curve[5]*99-5);
 
-		ctx.strokeStyle = '#888';
+		path.setAttribute('d', [
+			'M', 0, 99-curve[1]*99,
+			'L', curve[0]*99, 99-curve[1]*99,
+			'C', curve[2]*99, 99-curve[3]*99,
+			     curve[4]*99, 99-curve[5]*99,
+			     curve[6]*99, 99-curve[7]*99,
+			'L', 99, 99-curve[7]*99
+		].join(" "));
+	};
 
-		ctx.beginPath();
-		ctx.moveTo(curve[0]*99, curve[1]*99);
-		ctx.lineTo(curve[2]*99, curve[3]*99);
-		ctx.stroke();
-		ctx.beginPath();
-		ctx.moveTo(curve[6]*99, curve[7]*99);
-		ctx.lineTo(curve[4]*99, curve[5]*99);
-		ctx.stroke();
+	App.prototype.draggable = function(el, xyParams, moveCallback, upCallback) {
+		var down = false;
+		var previousX = 0;
+		var previousY = 0;
+		var onDown = function(ev) {
+			down = true;
+			previousX = ev.clientX;
+			previousY = ev.clientY;
+			if (ev.preventDefault) {
+				ev.preventDefault();
+			}
+		};
+		var onMove = function(ev) {
+			if (down) {
+				var dx = ev.clientX - previousX;
+				var dy = ev.clientY - previousY;
+				previousX = ev.clientX;
+				previousY = ev.clientY;
+				var x = parseFloat(el.getAttribute(xyParams[0]));
+				var y = parseFloat(el.getAttribute(xyParams[1]));
+				var xy = {x: x+dx, y: y+dy};
+				var newXY = moveCallback(xy);
+				el.setAttribute(xyParams[0], newXY.x);
+				el.setAttribute(xyParams[1], newXY.y);
+				if (ev.preventDefault) {
+					ev.preventDefault();
+				}
+			}
+		};
+		var onUp = function(ev) {
+			if (down) {
+				down = false;
+				if (ev.preventDefault) {
+					ev.preventDefault();
+				}
+				upCallback();
+			}
+		};
 
-		ctx.fillStyle = '#888';
+		var touchWrap = function(touchHandler) {
+			return function(ev) {
+				ev.preventDefault();
+				touchHandler(ev.touches[0]);
+			}
+		};
 
-		ctx.beginPath();
-		ctx.arc(curve[0]*99, curve[1]*99, 5, 0, 2*Math.PI, true);
-		ctx.fill();
+		el.addEventListener('mousedown', onDown, false);
+		window.addEventListener('mousemove', onMove, false);
+		window.addEventListener('mouseup', onUp, false);
 
-		ctx.beginPath();
-		ctx.arc(curve[6]*99, curve[7]*99, 5, 0, 2*Math.PI, true);
-		ctx.fill();
+		el.addEventListener('touchstart', touchWrap(onDown), false);
+		el.addEventListener('touchmove', touchWrap(onMove), false);
+		el.addEventListener('touchend', touchWrap(onUp), false);
+		el.addEventListener('touchcancel', touchWrap(onUp), false);
+	};
 
-		ctx.beginPath();
-		ctx.fillStyle = '#CCC';
+	App.prototype.draggableCurve = function(svg, curve) {
+		var p1 = svg.querySelector('.p1');
+		var p2 = svg.querySelector('.p2');
+		var c1 = svg.querySelector('.c1');
+		var c2 = svg.querySelector('.c2');
+		var path = svg.querySelector('.curve');
+		var line1 = svg.querySelector('.pc1');
+		var line2 = svg.querySelector('.pc2');
 
-		ctx.beginPath();
-		ctx.fillRect(curve[2]*99 - 3, curve[3]*99 - 3, 7, 7);
-		ctx.fillRect(curve[4]*99 - 3, curve[5]*99 - 3, 7, 7);
+		var updatePath = function() {
+			path.setAttribute('d', [
+				'M', '0', p1.getAttribute('cy'),
+				'L', p1.getAttribute('cx'), p1.getAttribute('cy'),
+				'C', parseFloat(c1.getAttribute('x'))+5, parseFloat(c1.getAttribute('y'))+5,
+				     parseFloat(c2.getAttribute('x'))+5, parseFloat(c2.getAttribute('y'))+5,
+				     p2.getAttribute('cx'), p2.getAttribute('cy'),
+				'L', '99', p2.getAttribute('cy')
+			].join(" "));
+			line1.setAttribute('d', [
+				'M', p1.getAttribute('cx'), p1.getAttribute('cy'),
+				'L', parseFloat(c1.getAttribute('x'))+5, parseFloat(c1.getAttribute('y'))+5
+			].join(" "));
+			line2.setAttribute('d', [
+				'M', p2.getAttribute('cx'), p2.getAttribute('cy'),
+				'L', parseFloat(c2.getAttribute('x'))+5, parseFloat(c2.getAttribute('y'))+5
+			].join(" "));
 
-		ctx.strokeStyle = '#444';
+			var x = Math.clamp(parseFloat(c1.getAttribute('x')), parseFloat(p1.getAttribute('cx'))-5, parseFloat(p2.getAttribute('cx'))-5);
+			c1.setAttribute('x', x);
 
-		ctx.beginPath();
-		ctx.moveTo(curve[0]*99, curve[1]*99);
-		for (var i=0; i<100; i++) {
-			var x = i;
-			var y = 99*this.curvePoint(x/99, curve);
-			ctx.lineTo(x, y);
-		}
-		ctx.lineTo(curve[6]*99, curve[7]*99);
-		ctx.stroke();
-		ctx.restore();
+			var x = Math.clamp(parseFloat(c2.getAttribute('x')), parseFloat(p1.getAttribute('cx'))-5, parseFloat(p2.getAttribute('cx'))-5);
+			c2.setAttribute('x', x);
+		};
+
+		this.draggable(p1, ['cx', 'cy'], function(xy) {
+			xy.x = Math.clamp(xy.x, 0, parseFloat(p2.getAttribute('cx')));
+			xy.y = Math.clamp(xy.y, 0, 99);
+			updatePath();
+			return xy;
+		}, updatePath);
+		this.draggable(p2, ['cx', 'cy'], function(xy) {
+			xy.x = Math.clamp(xy.x, parseFloat(p1.getAttribute('cx')), 99);
+			xy.y = Math.clamp(xy.y, 0, 99);
+			updatePath();
+			return xy;
+		}, updatePath);
+		this.draggable(c1, ['x', 'y'], function(xy) {
+			xy.x = Math.clamp(xy.x, parseFloat(p1.getAttribute('cx'))-5, parseFloat(p2.getAttribute('cx'))-5);
+			xy.y = Math.clamp(xy.y, -5, 94);
+			updatePath();
+			return xy;
+		}, updatePath);
+		this.draggable(c2, ['x', 'y'], function(xy) {
+			xy.x = Math.clamp(xy.x, parseFloat(p1.getAttribute('cx'))-5, parseFloat(p2.getAttribute('cx'))-5);
+			xy.y = Math.clamp(xy.y, -5, 94);
+			updatePath();
+			return xy;
+		}, updatePath);
 	};
 
 	App.prototype.initIndexedDB = function(callback) {
@@ -663,6 +751,9 @@
 		click(window.savePNG, this.save.bind(this));
 
 		click(window.mirror, this.mirror.bind(this));
+
+		this.draggableCurve(window.opacityCurveCanvas);
+		this.draggableCurve(window.brushSizeCurveCanvas);
 
 		window.curve.onchange = function() {
 			var curveName = this.value;
