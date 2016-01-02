@@ -12,6 +12,10 @@
 				margin: 0;
 				padding: 0;
 				overflow: hidden;
+
+				font-family: sans-serif;
+				text-transform: uppercase;
+				font-size: 11px;
 			}
 			
 			#draw-canvas {
@@ -74,17 +78,42 @@
 				z-index: 3;
 				top: 5px;
 				left: 30px;
-				font-family: sans-serif;
-				text-transform: uppercase;
-				font-size: 11px;
 			}
-			.pressure-controls input {
-				vertical-align: middle;
+			input[type="checkbox"] {
+				vertical-align: top;
 				position: relative;
-				top: -1px;
-				margin-right: 6px;
+				top: -3px;
+
 				float: left;
 				margin-right: -18px;
+
+				height: 13px;
+				background: white;
+				border: 0px;
+				-webkit-appearance: initial;
+				display: inline-block;
+				width: 13px;
+				border: 2px solid silver;
+				outline: 0;
+
+				transform: rotate(135deg);
+			}
+			input[type="checkbox"]:checked:after {
+				border-top: 10px solid gray;
+				width: 5px;
+				transition: 0.3s cubic-bezier(0.22, 0.8, 0.57, 1) width, 0.3s 0.3s cubic-bezier(0.22, 0.8, 0.57, 1) border;
+			}
+			input[type="checkbox"]:after {
+				content: "";
+				position: absolute;
+				top: 2px;
+				left: 2px;
+				width: 0px;
+				height: 5px;
+				border-top: 0px solid gray;
+				display: block;
+				background: gray;
+				transition: 0.3s cubic-bezier(0.22, 0.8, 0.57, 1) border, 0.3s 0.3s cubic-bezier(0.22, 0.8, 0.57, 1) width;
 			}
 
 			#debug {
@@ -120,11 +149,11 @@
 			#hideUI
 			{
 				position: absolute;
-				top: 5px;
-				left: 5px;
+				top: 0px;
+				left: 0px;
 				z-index: 3;
-				width: 14px;
-				height: 14px;
+				width: 34px;
+				height: 34px;
 				cursor: pointer;
 			}
 
@@ -187,12 +216,12 @@
 			#save { background: url(img/save.svg) 50% 50% / 100% 100% no-repeat; }
 			#load { background: url(img/load.svg) 50% 50% / 100% 100% no-repeat; }
 */
-			#hideUI { background: url(img/hamburger.svg) 50% 50% / 100% 100% no-repeat; }
-			#showUI { background: url(img/hamburger.svg) 50% 50% / 100% 100% no-repeat; }
+			#hideUI { background: url(img/hamburger.svg) 50% 50% / 16px 16px no-repeat; }
+			#showUI { background: url(img/hamburger.svg) 50% 50% / 16px 16px no-repeat; }
 
 			#menu {
 				position: absolute;
-				left: 25px;
+				left: 40px;
 				top: 5px;
 				border: 1px solid silver;
 				width: 200px;
@@ -219,11 +248,39 @@
 			#menu > *:first-child {
 				border-top: 0;
 			}
+			#menu:after {
+				content: "";
+				width: 8px;
+				height: 8px;
+				transform: rotate(-45deg);
+				position: absolute;
+				left: -6px;
+				top: 7px;
+				border-left: 1px solid silver;
+				border-top: 1px solid silver;
+				background: white;
+			}
 
 			body:not(.hide-ui) #menu {
 				opacity: 0;
 				transform: translateX(-10px);
 				pointer-events: none;
+			}
+
+			#top-bar {
+				position: absolute;
+				z-index: 2;
+				left: 50px;
+				top: 0px;
+				height: 34px;
+				line-height: 34px;
+			}
+
+			#top-bar div {
+				display: inline-block;
+				padding-left: 10px;
+				padding-right: 10px;
+				margin-right: 10px;
 			}
 
 		</style>
@@ -263,13 +320,8 @@
 			</svg>
 		</div>
 		<div class="mode-toggle" id="colorPicker"></div>
-		<div id="menu" class="pressure-controls">
-			<div id="newDrawing">New</div>
-			<div id="save">Save</div>
-			<div id="load">Load</div>
-			<div id="savePNG">Save PNG</div>
-			<label for="penMode"><div><input id="penMode" type="checkbox" /> Pen mode</div></label>
-
+		<div class="mode-toggle" id="brushShape"></div>
+		<div id="brushShapeControls">
 			<label for="blending"><div><input id="blending" type="checkbox" /> Smudge</div></label>
 			<label for="texturedBrush"><div><input id="texturedBrush" type="checkbox" /> Textured</div></label>
 			<div>
@@ -280,12 +332,21 @@
 					<option value="watery">Watery</option>
 				</select>
 			</div>
+		</div>
+		<div id="menu" class="pressure-controls">
+			<div id="newDrawing">New</div>
+			<div id="save">Save</div>
+			<div id="load">Load</div>
+			<div id="savePNG">Save PNG</div>
+			<label for="penMode"><div><input id="penMode" type="checkbox" /> Pen mode</div></label>
+		</div>
+		<div id="hideUI"></div>
+		<div id="showUI"></div>
+		<div id="top-bar">
 			<div id="mirror">Mirror</div> 
 			<div id="undo">Undo</div>
 			<div id="redo">Redo</div> 
 		</div>
-		<div id="hideUI"></div>
-		<div id="showUI"></div>
 
 		<script src="js/three.js"></script>
 		<script src="js/ColorUtils.js"></script>
