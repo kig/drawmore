@@ -8,7 +8,8 @@
 		DRAW: 0,
 		BRUSH_RESIZE: 1,
 		OPACITY_CHANGE: 2,
-		COLOR_PICKER: 3
+		COLOR_PICKER: 3,
+		BRUSH_SHAPE: 4
 	};
 
 	App.prototype.snapshotSeparation = 500;
@@ -417,6 +418,7 @@
 			r: 3,
 			opacity: 1,
 			blend: 0.5,
+			hardness: 1,
 			color: '#000000',
 			colorArray: new Uint8Array([0,0,0,255])
 		};
@@ -429,6 +431,7 @@
 		App.modeToggle(this, window.brushResize, App.Mode.BRUSH_RESIZE);
 		App.modeToggle(this, window.opacityChange, App.Mode.OPACITY_CHANGE);
 		App.modeToggle(this, window.colorPicker, App.Mode.COLOR_PICKER);
+		App.modeToggle(this, window.brushShape, App.Mode.BRUSH_SHAPE);
 
 		this.setupCanvas();
 		this.addEventListeners();
@@ -718,14 +721,15 @@
 					"uniform sampler2D mask;",
 					"uniform float radius;",
 					"uniform float pixelRatio;",
+					"uniform float hardness;",
 
 					"void main(void) {",
 					"	vec4 paintContent = texture2D(paint, vUv);",
 					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
 					"	float maskV = 1.0-texture2D(mask, vUv).r;",
-					"	float brushOpacity = max(squareBrush, mix(smoothstep(1.0, max(0.1, 1.0 - (2.0 / (pixelRatio*radius))), length(unitUv)), maskV, textured));",
+					"	float brushOpacity = max(squareBrush, mix(smoothstep(1.0, hardness * max(0.1, 1.0 - (2.0 / (pixelRatio*radius))), length(unitUv)), maskV, textured));",
+					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend);",
 					"	gl_FragColor.a = opacity * brushOpacity;",
-					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend) * gl_FragColor.a;",
 					"}"
 				].join("\n"),
 
@@ -736,6 +740,7 @@
 					paint: { type: 't', value: this.brushRenderTarget },
 					mask: { type: 't', value: this.maskTexture },
 					radius: { type: 'f', value: 3 },
+					hardness: { type: 'f', value: 1 },
 					pixelRatio: { type: 'f', value: window.devicePixelRatio || 1 },
 					blend: { type: 'f', value: 1 },
 					squareBrush: { type: 'f', value: 0 },
@@ -1092,6 +1097,7 @@
 
 			r: brush.r, // 16 bits
 			opacity: brush.opacity, // 8 bits
+			hardness: brush.hardness, // 8 bits
 
 			radiusCurve: radiusCurve, // 8 bits -- index to curve array
 			opacityCurve: opacityCurve, // 8 bits
@@ -1180,7 +1186,8 @@
 						this.curvePoint(a.pressure, a.opacityCurve) * a.opacity,
 						a.isStart,
 						a.blend,
-						a.texture
+						a.texture,
+						a.hardness
 					);
 
 				} else {
@@ -1204,7 +1211,8 @@
 							this.curvePoint(p, a.opacityCurve) * a.opacity,
 							isStart,
 							a.blend,
-							a.texture
+							a.texture,
+							a.hardness
 						);
 
 						d += Math.clamp(0.25 * this.curvePoint(p, a.radiusCurve) * a.r, 0.125, 1);
@@ -1233,7 +1241,7 @@
 		}
 	};
 
-	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, texture) {
+	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, texture, hardness) {
 		if (isStart && blend < 1) {
 
 		} else {
@@ -1243,6 +1251,7 @@
 			m.uniforms.opacity.value = opacity;
 			m.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
 			m.uniforms.blend.value = blend;
+			m.uniforms.hardness.value = hardness;
 			if (texture) {
 				this.setBrushTexture(texture);
 			}
@@ -1252,7 +1261,7 @@
 			if (blend < 1) {
 				m.blending = THREE.CustomBlending;
 				m.blendEquation = THREE.AddEquation;
-				m.blendSrc = THREE.OneFactor;
+				m.blendSrc = THREE.SrcAlphaFactor;
 				m.blendDst = THREE.OneMinusSrcAlphaFactor;
 				m.blendEquationAlpha = THREE.MaxEquation;
 				m.blendSrcAlpha = THREE.OneFactor;
@@ -1261,7 +1270,7 @@
 				m.blending = THREE.CustomBlending;
 				m.blendEquation = THREE.AddEquation;
 				m.blendSrc = THREE.OneFactor;
-				m.blendDst = THREE.OneMinusSrcAlphaFactor;
+				m.blendDst = THREE.ZeroFactor;
 				m.blendEquationAlpha = THREE.MaxEquation;
 				m.blendSrcAlpha = THREE.OneFactor;
 				m.blendDstAlpha = THREE.OneFactor;
@@ -1538,6 +1547,45 @@
 				toggleCtx.fillStyle = app.brush.color;
 				toggleCtx.fillRect(0, 0, w, h);
 
+			} else if (targetMode === App.Mode.BRUSH_SHAPE) {
+
+				var tex = app.brush.texture;
+				if (tex) {
+					if (!tex.canvas) {
+						var c = tex.canvas = document.createElement('canvas');
+						c.width = tex.width;
+						c.height = tex.height;
+						var ctx = c.getContext('2d');
+						var id = ctx.getImageData(0, 0, c.width, c.height);
+						for (var i=0; i<id.data.length; i++) {
+							id.data[i] = tex.data[i];
+						}
+						ctx.putImageData(id, 0, 0);
+					}
+					toggleCtx.drawImage(tex.canvas, 0, 0, w, h);
+				} else {
+					var r = app.brush.hardness;
+
+					toggleCtx.fillStyle = '#AAA';
+					toggleCtx.fillRect(0, 0, w, h);
+
+					var gradient = toggleCtx.createRadialGradient(w/2, h/2-5, 0, w/2, h/2-5, h/2-8);
+					gradient.addColorStop(0, 'rgba(0,0,0,1)');
+					gradient.addColorStop(r, 'rgba(0,0,0,1)');
+					gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+					toggleCtx.beginPath();
+					toggleCtx.arc(w/2, h/2-5, h/2-8, 0, Math.PI*2, true);
+					toggleCtx.fillStyle = gradient;
+					toggleCtx.fill();
+
+					toggleCtx.fillStyle = 'black';
+
+					var rs =  Math.round(app.brush.hardness * 100).toString() + '%';
+					var tw = toggleCtx.measureText(rs).width;
+					toggleCtx.fillText(rs, w/2-tw/2, h-2);
+				}
+
 			} else if (targetMode === App.Mode.BRUSH_RESIZE) {
 
 				if (app.brushCircle) {
@@ -1604,6 +1652,7 @@
 			app.brush.opacity = this.startOpacity;
 			app.brush.color = this.startColor;
 			app.brush.colorArray = this.startColorArray;
+			app.brush.hardness = this.startHardness;
 		};
 
 		var colorMixer;
@@ -1647,6 +1696,7 @@
 			this.startOpacity = app.brush.opacity;
 			this.startColor = app.brush.color;
 			this.startColorArray = app.brush.colorArray;
+			this.startHardness = app.brush.hardness;
 
 			this.startX = ev.clientX;
 			this.startY = ev.clientY;
@@ -1693,6 +1743,13 @@
 					var dy = ev.clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
 					app.brush.opacity = Math.max(0, Math.min(1, this.startOpacity - dy/100));
+					break;
+				}
+				case App.Mode.BRUSH_SHAPE: {
+					var dx = ev.clientX - this.startX;
+					var dy = ev.clientY - this.startY;
+					var d = Math.sqrt(dx*dx + dy*dy);
+					app.brush.hardness = Math.max(0, Math.min(1, this.startHardness - dy/100));
 					break;
 				}
 				case App.Mode.COLOR_PICKER: {
