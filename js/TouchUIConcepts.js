@@ -384,6 +384,25 @@
         };
 	};
 
+	App.prototype.getSavedImageNames = function(callback) {
+        // Open a transaction to the database
+        var transaction = this.indexedDB.transaction(["images"], 'readonly');
+
+        var names = [];
+
+        // Retrieve the keys
+        var request = transaction.objectStore("images").openCursor();
+        request.onsuccess = function (event) {
+        	var cursor = event.target.result;
+        	if (cursor) {
+        		names.push(cursor.key);
+        		cursor.continue();
+			} else {
+				callback(names);
+			}
+        };
+	};
+
 	App.prototype.init = function() {
 		this.pixelRatio = window.devicePixelRatio;
 		this.mode = App.Mode.DRAW;
@@ -808,11 +827,15 @@
 
 		click(window.save, function() {
 			var name = prompt("Name");
+			if (!name) return;
 			self.saveImageToDB(name);
 		});
 		click(window.load, function() {
-			var name = prompt("Name");
-			self.loadImageFromDB(name);
+			self.getSavedImageNames(function(names) {
+				var name = prompt("Name: " + names.join(", "));
+				if (!name) return;
+				self.loadImageFromDB(name);
+			})
 		});
 		click(window.newDrawing, function() { 
 			if (confirm("Erase current drawing?")) {
