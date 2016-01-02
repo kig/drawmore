@@ -938,11 +938,16 @@
 
 	App.Curves = {
 		one : [0, 1, 0, 1, 1, 1, 1, 1],
+
 		linear: [0, 0, 0, 0, 1, 1, 1, 1],
-		linear15: [0, 0, 0, 0, 0.75, 1, 0.75, 1],
+		linear15: [0, 0, 0, 0, 0.65, 1, 0.65, 1],
+
+		linerRadius: [0, 0.5, 0, 1, 0.75, 1, 1, 1],
+
 		pencilOpacity: [0, 0, 0.9, 0.0, 1, 1, 1, 1],
 		pencilRadius: [0, 0.5, 0, 0.65, 0.8, 1, 1, 1],
 
+		wateryRadius: [0, 0.1, 0, 0.1, 1, 1, 1, 1],
 		wateryOpacity: [0, 0, 0, 1, 0, 1, 1, 0.1]
 	};
 
@@ -953,7 +958,7 @@
 		},
 
 		liner: {
-			radius: App.Curves.linear15.slice(),
+			radius: App.Curves.linerRadius.slice(),
 			opacity: App.Curves.one.slice()
 		},
 
@@ -963,7 +968,7 @@
 		},
 
 		watery: {
-			radius: App.Curves.linear.slice(),
+			radius: App.Curves.wateryRadius.slice(),
 			opacity: App.Curves.wateryOpacity.slice()
 		}
 	};
