@@ -39,8 +39,8 @@
 			'M', 0, 99-curve[1]*99,
 			'L', curve[0]*99, 99-curve[1]*99,
 			'C', curve[2]*99, 99-curve[3]*99,
-			     curve[4]*99, 99-curve[5]*99,
-			     curve[6]*99, 99-curve[7]*99,
+				 curve[4]*99, 99-curve[5]*99,
+				 curve[6]*99, 99-curve[7]*99,
 			'L', 99, 99-curve[7]*99
 		].join(" "));
 
@@ -190,56 +190,56 @@
 	App.prototype.initIndexedDB = function(callback) {
 		// IndexedDB
 		window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB,
-		    IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
-		    dbVersion = 1;
+			IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
+			dbVersion = 1;
 
 		/* 
-		    Note: The recommended way to do this is assigning it to window.indexedDB,
-		    to avoid potential issues in the global scope when web browsers start 
-		    removing prefixes in their implementations.
-		    You can assign it to a varible, like var indexedDB… but then you have 
-		    to make sure that the code is contained within a function.
+			Note: The recommended way to do this is assigning it to window.indexedDB,
+			to avoid potential issues in the global scope when web browsers start 
+			removing prefixes in their implementations.
+			You can assign it to a varible, like var indexedDB… but then you have 
+			to make sure that the code is contained within a function.
 		*/
 
 		// Create/open database
 		var request = indexedDB.open("drawmoreFiles", dbVersion);
 		var self = this;
 
-        var createObjectStore = function (dataBase) {
-            // Create an objectStore
-            console.log("Creating objectStore")
-            dataBase.createObjectStore("images");
-        };
+		var createObjectStore = function (dataBase) {
+			// Create an objectStore
+			console.log("Creating objectStore")
+			dataBase.createObjectStore("images");
+		};
 
 		request.onsuccess = function (event) {
-		    console.log("Success creating/accessing IndexedDB database");
-		    var db = self.indexedDB = request.result;
+			console.log("Success creating/accessing IndexedDB database");
+			var db = self.indexedDB = request.result;
 
-		    db.onerror = function (event) {
-		        console.log("Error creating/accessing IndexedDB database");
-		    };
-		    
-		    // Interim solution for Google Chrome to create an objectStore. Will be deprecated
-		    if (db.setVersion) {
-		        if (db.version != dbVersion) {
-		            var setVersion = db.setVersion(dbVersion);
-		            setVersion.onsuccess = function () {
-		                createObjectStore(db);
-		                callback();
-		            };
-		        }
-		        else {
-		            callback();
-		        }
-		    }
-		    else {
-		        callback();
-		    }
+			db.onerror = function (event) {
+				console.log("Error creating/accessing IndexedDB database");
+			};
+			
+			// Interim solution for Google Chrome to create an objectStore. Will be deprecated
+			if (db.setVersion) {
+				if (db.version != dbVersion) {
+					var setVersion = db.setVersion(dbVersion);
+					setVersion.onsuccess = function () {
+						createObjectStore(db);
+						callback();
+					};
+				}
+				else {
+					callback();
+				}
+			}
+			else {
+				callback();
+			}
 		}
 
 		// For future use. Currently only in latest Firefox versions
 		request.onupgradeneeded = function (event) {
-		    createObjectStore(event.target.result);
+			createObjectStore(event.target.result);
 		};
 	};
 
@@ -248,7 +248,7 @@
 	};
 
 	App.prototype.loadImageFromDB = function(name) {
-    	this.getFromDB(name, this.loadSerializedImage.bind(this));
+		this.getFromDB(name, this.loadSerializedImage.bind(this));
 	};
 
 	App.prototype.loadSerializedImage = function(buf) {
@@ -367,40 +367,40 @@
 	};
 
 	App.prototype.putToDB = function(key, value) {
-        // Open a transaction to the database
-        var transaction = this.indexedDB.transaction(["images"], 'readwrite');
+		// Open a transaction to the database
+		var transaction = this.indexedDB.transaction(["images"], 'readwrite');
 
-        // Put the value into the database
-        var put = transaction.objectStore("images").put(value, key);
+		// Put the value into the database
+		var put = transaction.objectStore("images").put(value, key);
 	};
 
 	App.prototype.getFromDB = function(key, callback) {
-        // Open a transaction to the database
-        var transaction = this.indexedDB.transaction(["images"], 'readonly');
+		// Open a transaction to the database
+		var transaction = this.indexedDB.transaction(["images"], 'readonly');
 
-        // Retrieve the file that was just stored
-        transaction.objectStore("images").get(key).onsuccess = function (event) {
-        	callback(event.target.result);
-        };
+		// Retrieve the file that was just stored
+		transaction.objectStore("images").get(key).onsuccess = function (event) {
+			callback(event.target.result);
+		};
 	};
 
 	App.prototype.getSavedImageNames = function(callback) {
-        // Open a transaction to the database
-        var transaction = this.indexedDB.transaction(["images"], 'readonly');
+		// Open a transaction to the database
+		var transaction = this.indexedDB.transaction(["images"], 'readonly');
 
-        var names = [];
+		var names = [];
 
-        // Retrieve the keys
-        var request = transaction.objectStore("images").openCursor();
-        request.onsuccess = function (event) {
-        	var cursor = event.target.result;
-        	if (cursor) {
-        		names.push(cursor.key);
-        		cursor.continue();
+		// Retrieve the keys
+		var request = transaction.objectStore("images").openCursor();
+		request.onsuccess = function (event) {
+			var cursor = event.target.result;
+			if (cursor) {
+				names.push(cursor.key);
+				cursor.continue();
 			} else {
 				callback(names);
 			}
-        };
+		};
 	};
 
 	App.prototype.init = function() {
