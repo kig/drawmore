@@ -716,12 +716,13 @@
 					"uniform float squareBrush;",
 					"uniform sampler2D paint;",
 					"uniform sampler2D mask;",
+					"uniform float radius;",
 
 					"void main(void) {",
 					"	vec4 paintContent = texture2D(paint, vUv);",
 					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
 					"	float maskV = 1.0-texture2D(mask, vUv).r;",
-					"	float brushOpacity = max(squareBrush, mix(smoothstep(1.0, 0.9, length(unitUv)), maskV, textured));",
+					"	float brushOpacity = max(squareBrush, mix(smoothstep(1.0, max(0.1, 1.0 - (2.0 / radius)), length(unitUv)), maskV, textured));",
 					"	gl_FragColor.a = opacity * brushOpacity;",
 					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend) * gl_FragColor.a;",
 					"}"
@@ -733,6 +734,7 @@
 					opacity: { type: 'f', value: 0.5 },
 					paint: { type: 't', value: this.brushRenderTarget },
 					mask: { type: 't', value: this.maskTexture },
+					radius: { type: 'f', value: 3 },
 					blend: { type: 'f', value: 1 },
 					squareBrush: { type: 'f', value: 0 },
 					textured: { type: 'f', value: 0 }
@@ -1244,6 +1246,7 @@
 			}
 			m.uniforms.textured.value = texture ? 1 : 0;
 			m.uniforms.squareBrush.value = 0;
+			m.uniforms.radius.value = r;
 			if (blend < 1) {
 				m.blending = THREE.CustomBlending;
 				m.blendEquation = THREE.AddEquation;

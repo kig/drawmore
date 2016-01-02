@@ -187,6 +187,21 @@
 			#opacityCurveButton {
 				margin-top: -60px;
 			}
+			.pressure-controls div {
+				display: inline-block;
+				width: 20px;
+				height: 20px;
+				cursor: pointer;
+				color: transparent;
+				font-size: 0;
+				vertical-align: top;
+			}
+			#mirror { background: url(img/mirror.svg) 50% 50% / 100% 100% no-repeat; }
+			#undo { background: url(img/undo.svg) 50% 50% / 100% 100% no-repeat; }
+			#redo { background: url(img/redo.svg) 50% 50% / 100% 100% no-repeat; }
+			#newDrawing { background: url(img/new.svg) 50% 50% / 100% 100% no-repeat; }
+			#save { background: url(img/save.svg) 50% 50% / 100% 100% no-repeat; }
+			#load { background: url(img/load.svg) 50% 50% / 100% 100% no-repeat; }
 		</style>
 	</head>
 	<body>
@@ -228,13 +243,13 @@
 			Smudge <input id="blending" type="checkbox" />
 			Textured <input id="texturedBrush" type="checkbox" />
 			Pen mode <input id="penMode" type="checkbox" />
-			<button id="mirror">Mirror</button> 
-			<button id="undo">Undo</button>
-			<button id="redo">Redo</button> 
-			<button id="newDrawing">New</button>
-			<button id="savePNG">Save PNG</button>
-			<button id="save">Save</button>
-			<button id="load">Load</button>
+			<div id="mirror">Mirror</div> 
+			<div id="undo">Undo</div>
+			<div id="redo">Redo</div> 
+			<div id="newDrawing">New</div>
+			<button id="savePNG">PNG</button>
+			<div id="save">Save</div>
+			<div id="load">Load</div>
 			<select id="curve">
 				<option value="brush">Brush</option>
 				<option value="pencil">Pencil</option>
