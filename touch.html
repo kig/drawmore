@@ -32,7 +32,7 @@
 				position: absolute;
 				left: 0px;
 				top: 50%;
-				z-index: 3;
+				z-index: 2;
 			}
 			.mode-toggle.active {
 			}
@@ -63,6 +63,8 @@
 				top: 50%;
 				margin-top: -60px;
 				z-index: 3;
+
+				transition: 0.3s;
 			}
 
 			#brushCircle {
@@ -106,7 +108,7 @@
 			input[type="checkbox"]:checked:after {
 				border-top: 10px solid gray;
 				width: 5px;
-				transition: 0.3s cubic-bezier(0.22, 0.8, 0.57, 1) width, 0.3s 0.3s cubic-bezier(0.22, 0.8, 0.57, 1) border;
+				transition: 0.1s cubic-bezier(0.22, 0.8, 0.57, 1) width, 0.1s 0.1s cubic-bezier(0.22, 0.8, 0.57, 1) border;
 			}
 			input[type="checkbox"]:after {
 				content: "";
@@ -118,7 +120,7 @@
 				border-top: 0px solid gray;
 				display: block;
 				background: gray;
-				transition: 0.3s cubic-bezier(0.22, 0.8, 0.57, 1) border, 0.3s 0.3s cubic-bezier(0.22, 0.8, 0.57, 1) width;
+				transition: 0.1s cubic-bezier(0.22, 0.8, 0.57, 1) border, 0.1s 0.1s cubic-bezier(0.22, 0.8, 0.57, 1) width;
 			}
 
 			#debug {
@@ -288,6 +290,55 @@
 				cursor: pointer;
 			}
 
+			#brushShapeControls {
+				position: absolute;
+				left: 60px;
+				top: 50%;
+				margin-top: -95px;
+				border: 1px solid silver;
+				width: 200px;
+				padding: 20px;
+				padding-top: 3px;
+				padding-bottom: 2px;
+				z-index: 2;
+				opacity: 1;
+
+				box-sizing: border-box;
+				text-align: center;
+
+				background: white;
+
+				transition: 0.3s cubic-bezier(0.22, 0.8, 0.57, 1);
+			}
+
+			#brushShapeControls > * {
+				display: block;
+				border-top: 1px solid silver;
+				padding: 10px;
+				cursor: pointer;
+			}
+
+			#brushShapeControls > *:first-child {
+				border-top: 0;
+			}
+			#brushShapeControls:after {
+				content: "";
+				width: 8px;
+				height: 8px;
+				transform: rotate(-45deg);
+				position: absolute;
+				left: -6px;
+				top: 7px;
+				border-left: 1px solid silver;
+				border-top: 1px solid silver;
+				background: white;
+			}
+
+			#brushShapeControls.hidden {
+				opacity: 0;
+				transform: translateX(-10px);
+				pointer-events: none;
+			}
 		</style>
 	</head>
 	<body>
@@ -326,7 +377,7 @@
 		</div>
 		<div class="mode-toggle" id="colorPicker"></div>
 		<div class="mode-toggle" id="brushShape"></div>
-		<div id="brushShapeControls">
+		<div id="brushShapeControls" class="hidden">
 			<label for="blending"><div><input id="blending" type="checkbox" /> Smudge</div></label>
 			<label for="texturedBrush"><div><input id="texturedBrush" type="checkbox" /> Textured</div></label>
 			<div>

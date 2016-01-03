@@ -1071,7 +1071,7 @@
 				Math.abs(dx) / 32, Math.abs(dy) / 32, Math.abs(dp * 2048) / 32
 			));
 			if (add > 0) {
-				console.log('adding', add);
+				// console.log('adding', add);
 			}
 			this.byteCount += add;
 		}
@@ -1401,7 +1401,7 @@
 				this.app.drawBrush(true);
 			}
 
-			this.app.colorMixer.widget.style.display = 'none';
+			this.app.colorMixer.widget.classList.add('hidden');
 		},
 
 		endBrushStroke: function() {
@@ -1672,15 +1672,23 @@
 			app.colorMixer = colorMixer;
 
 			var toggleColorMixer = function() {
-				if (colorMixer.widget.style.display === 'none') {
-					colorMixer.widget.style.display = 'block';
+				if (colorMixer.widget.classList.contains('hidden')) {
+					colorMixer.widget.classList.remove('hidden');
 					var c = app.brush.colorArray;
 					colorMixer.setColor([c[0]/255, c[1]/255, c[2]/255]);
 				} else {
-					colorMixer.widget.style.display = 'none';
+					colorMixer.widget.classList.add('hidden');
 				}
 			};
-			toggleColorMixer();
+
+		} else if (targetMode === App.Mode.BRUSH_SHAPE) {
+			var toggleBrushShape = function() {
+				if (window.brushShapeControls.classList.contains('hidden')) {
+					window.brushShapeControls.classList.remove('hidden');
+				} else {
+					window.brushShapeControls.classList.add('hidden');
+				}
+			};
 
 		} else if (targetMode === App.Mode.BRUSH_RESIZE) {
 			brushCircle = document.createElement('div');
@@ -1689,7 +1697,7 @@
 			document.body.appendChild(brushCircle);
 		}
 
-		var wasVisible = false;
+		var wasVisible = false, brushShapeWasVisible = false;
 		
 		toggle.start = function(ev) {
 			this.startRadius = app.brush.r;
@@ -1701,8 +1709,10 @@
 			this.startX = ev.clientX;
 			this.startY = ev.clientY;
 
-			wasVisible = app.colorMixer.widget.style.display !== 'none';
-			app.colorMixer.widget.style.display = 'none';
+			wasVisible = !app.colorMixer.widget.classList.contains('hidden');
+			app.colorMixer.widget.classList.add('hidden');
+			brushShapeWasVisible = !window.brushShapeControls.classList.contains('hidden');
+			window.brushShapeControls.classList.add('hidden');
 
 			app.brushCircle.style.opacity = (targetMode === App.Mode.BRUSH_RESIZE) ? 1 : 0;
 
@@ -1716,6 +1726,12 @@
 						toggleColorMixer();
 					}
 					this.revertBrush();
+				}
+			} else if (targetMode === App.Mode.BRUSH_SHAPE) {
+				if (touchInsideElement(this, ev)) {
+					if (!brushShapeWasVisible) {
+						toggleBrushShape();
+					}
 				}
 			}
 			app.brushCircle.style.opacity = 0;

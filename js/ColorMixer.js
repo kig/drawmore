@@ -20,6 +20,7 @@ ColorMixer.prototype = {
     var widget = document.createElement('div');
     widget.style.position = 'relative';
     widget.style.padding = '0px';
+    widget.classList.add('hidden');
     this.widget = widget;
     container.appendChild(this.widget);
 
