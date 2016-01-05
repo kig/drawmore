@@ -1900,21 +1900,21 @@
 					var dx = ev.clientX - this.startX;
 					var dy = ev.clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
-					app.brush.r = Math.max(0.5, this.startRadius - dy/3);
+					app.brush.r = Math.max(0.5, this.startRadius - dx/3);
 					break;
 				}
 				case App.Mode.OPACITY_CHANGE: {
 					var dx = ev.clientX - this.startX;
 					var dy = ev.clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
-					app.brush.opacity = Math.max(0, Math.min(1, this.startOpacity - dy/100));
+					app.brush.opacity = Math.max(0, Math.min(1, this.startOpacity - dx/100));
 					break;
 				}
 				case App.Mode.BRUSH_SHAPE: {
 					var dx = ev.clientX - this.startX;
 					var dy = ev.clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
-					app.brush.hardness = Math.max(0, Math.min(1, this.startHardness - dy/100));
+					app.brush.hardness = Math.max(0, Math.min(1, this.startHardness - dx/100));
 					break;
 				}
 				case App.Mode.COLOR_PICKER: {
