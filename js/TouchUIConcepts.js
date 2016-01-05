@@ -192,7 +192,7 @@
 		// IndexedDB
 		window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB,
 			IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
-			dbVersion = 1;
+			dbVersion = 2;
 
 		/* 
 			Note: The recommended way to do this is assigning it to window.indexedDB,
@@ -206,10 +206,68 @@
 		var request = indexedDB.open("drawmoreFiles", dbVersion);
 		var self = this;
 
+		var cb = callback;
+
+		callback = function() {
+			var callback = function(names) {
+				if (names.length === 0 || (names.length === 1 && names[0] === 'drawingInProgress')) {
+					populateNames(self.indexedDB, cb);
+				} else {
+					cb();
+				}
+			}
+			// Open a transaction to the database
+			var transaction = self.indexedDB.transaction(["imageNames"], 'readwrite');
+
+			var names = [];
+
+			// Retrieve the keys
+			var request = transaction.objectStore("imageNames").openCursor();
+			request.onsuccess = function (event) {
+				var cursor = event.target.result;
+				if (cursor) {
+					names.push(cursor.key);
+					cursor.continue();
+				} else {
+					callback(names);
+				}
+			};
+		};
+
+		var populateNames = function(dataBase, cb) {
+			var callback = function(names) {
+				names.forEach(function(n){ self.putNameToDB(n); });
+				cb();
+			};
+
+			// Open a transaction to the database
+			var transaction = dataBase.transaction(["images"], 'readwrite');
+
+			var names = [];
+
+			// Retrieve the keys
+			var request = transaction.objectStore("images").openCursor();
+			request.onsuccess = function (event) {
+				var cursor = event.target.result;
+				if (cursor) {
+					names.push(cursor.key);
+					cursor.continue();
+				} else {
+					callback(names);
+				}
+			};
+
+		};
+
 		var createObjectStore = function (dataBase) {
 			// Create an objectStore
-			console.log("Creating objectStore")
-			dataBase.createObjectStore("images");
+			console.log("Creating objectStore");
+			try {
+				dataBase.createObjectStore("images");
+			} catch(e) {}
+			try {
+				dataBase.createObjectStore("imageNames");
+			} catch(e) {}
 		};
 
 		request.onsuccess = function (event) {
@@ -226,7 +284,7 @@
 					var setVersion = db.setVersion(dbVersion);
 					setVersion.onsuccess = function () {
 						createObjectStore(db);
-						callback();
+						setTimeout(callback, 100);
 					};
 				}
 				else {
@@ -246,10 +304,16 @@
 
 	App.prototype.saveImageToDB = function(name) {
 		this.putToDB(name, this.serializeImage());
+		this.putNameToDB(name);
 	};
 
 	App.prototype.loadImageFromDB = function(name) {
 		this.getFromDB(name, this.loadSerializedImage.bind(this));
+	};
+
+	App.prototype.deleteImageFromDB = function(name) {
+		this.deleteFromDB(name);
+		this.deleteNameFromDB(name);
 	};
 
 	App.prototype.loadSerializedImage = function(buf) {
@@ -375,6 +439,30 @@
 		var put = transaction.objectStore("images").put(value, key);
 	};
 
+	App.prototype.putNameToDB = function(key) {
+		// Open a transaction to the database
+		var transaction = this.indexedDB.transaction(["imageNames"], 'readwrite');
+
+		// Put the value into the database
+		var put = transaction.objectStore("imageNames").put(true, key);
+	};
+
+	App.prototype.deleteFromDB = function(key) {
+		// Open a transaction to the database
+		var transaction = this.indexedDB.transaction(["images"], 'readwrite');
+
+		// Put the value into the database
+		var put = transaction.objectStore("images").delete(key);
+	};
+
+	App.prototype.deleteNameFromDB = function(key) {
+		// Open a transaction to the database
+		var transaction = this.indexedDB.transaction(["imageNames"], 'readwrite');
+
+		// Put the value into the database
+		var put = transaction.objectStore("imageNames").delete(key);
+	};
+
 	App.prototype.getFromDB = function(key, callback) {
 		// Open a transaction to the database
 		var transaction = this.indexedDB.transaction(["images"], 'readonly');
@@ -387,12 +475,12 @@
 
 	App.prototype.getSavedImageNames = function(callback) {
 		// Open a transaction to the database
-		var transaction = this.indexedDB.transaction(["images"], 'readonly');
+		var transaction = this.indexedDB.transaction(["imageNames"], 'readonly');
 
 		var names = [];
 
 		// Retrieve the keys
-		var request = transaction.objectStore("images").openCursor();
+		var request = transaction.objectStore("imageNames").openCursor();
 		request.onsuccess = function (event) {
 			var cursor = event.target.result;
 			if (cursor) {

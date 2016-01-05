@@ -18,7 +18,16 @@
 				text-transform: uppercase;
 				font-size: 11px;
 			}
-			
+
+			/* Disable selection for UI components that don't need it. */
+			canvas, #menu, #hideUI, #showUI, .pressure-controls, #top-bar, .mode-toggle, .pressure-curve, .pressure-curve-button
+			{
+				-moz-user-select: none;
+				-webkit-user-select: none;
+				-ms-user-select: none;
+				user-select: none;
+			}
+
 			#draw-canvas {
 				position: absolute;
 				top: 0;
