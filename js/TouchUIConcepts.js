@@ -607,6 +607,12 @@
 		var drawRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height);
 		var copyRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height);
 
+		this.resizeThese = [
+			strokeRenderTarget,
+			drawRenderTarget,
+			copyRenderTarget
+		];
+
 		this.strokeRenderTarget = strokeRenderTarget;
 		this.drawRenderTarget = drawRenderTarget;
 		this.copyRenderTarget = copyRenderTarget;
@@ -761,6 +767,40 @@
 		);
 		this.brushQuad.material.side = THREE.DoubleSide;
 		this.scene.add(this.brushQuad);
+
+		var self = this;
+		window.onresize = function() {
+			self.renderer.setSize(window.innerWidth, window.innerHeight);
+			self.width = self.renderer.domElement.width;
+			self.height = self.renderer.domElement.height;
+			self.resizeThese.forEach(function(rt) {
+				rt.setSize(self.width, self.height);
+			});
+
+			self.camera.right = self.width;
+			self.camera.bottom = self.height;
+			self.camera.updateProjectionMatrix();
+
+			var t = self.copyQuadTexture;
+			var w = t.image.width;
+			var h = t.image.height;
+			var d = t.image.data;
+			t.image.width = self.width;
+			t.image.height = self.height;
+			if (d) {
+				t.image.data = new Uint8Array(self.width * self.height * 4);
+				for (var y=0, hi = Math.min(h, self.height); y<hi; y++) {
+					for (var x=0, wi = Math.min(w, self.width); x<wi; x++) {
+						var off = (y*w + x) * 4;
+						var doff = (y*self.width + x) * 4;
+						t.image.data[doff++] = d[off++];
+						t.image.data[doff++] = d[off++];
+						t.image.data[doff++] = d[off++];
+						t.image.data[doff++] = d[off++];
+					}
+				}
+			}
+		};
 
 		this.endDrawBrush();
 	};
