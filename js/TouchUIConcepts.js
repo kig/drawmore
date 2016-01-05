@@ -728,7 +728,7 @@
 					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
 					"	float maskV = 1.0-texture2D(mask, vUv).r;",
 					"	float brushOpacity = max(squareBrush, mix(smoothstep(1.0, hardness * max(0.1, 1.0 - (2.0 / (pixelRatio*radius))), length(unitUv)), maskV, textured));",
-					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend);",
+					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend) * opacity * brushOpacity;",
 					"	gl_FragColor.a = opacity * brushOpacity;",
 					"}"
 				].join("\n"),
@@ -807,8 +807,10 @@
 		click(window.showUI, function() {
 			document.body.classList.remove('hide-ui');
 		});
-		click(window.savePNG, this.save.bind(this));
-
+		click(window.savePNG, function() {
+			self.save();
+			closeMenu();
+		});
 		click(window.mirror, this.mirror.bind(this));
 
 		window.penMode.onchange = function(ev) {
@@ -834,23 +836,32 @@
 		};
 		window.curve.onchange();
 
+		var closeMenu = function() {
+			document.body.classList.remove('hide-ui');
+		};
+
 		click(window.save, function() {
-			var name = prompt("Name");
-			if (!name) return;
-			self.saveImageToDB(name);
+			self.getSavedImageNames(function(names) {
+				var name = prompt("Name: " + names.join(", "));
+				if (!name) return;
+				self.saveImageToDB(name);
+				closeMenu();
+			});
 		});
 		click(window.load, function() {
 			self.getSavedImageNames(function(names) {
 				var name = prompt("Name: " + names.join(", "));
 				if (!name) return;
 				self.loadImageFromDB(name);
-			})
+				closeMenu();
+			});
 		});
 		click(window.newDrawing, function() { 
 			if (confirm("Erase current drawing?")) {
 				self.timeTravel(0);
 				self.drawArray = [];
 				self.addBrush(1, self.brushTextures[1]);
+				closeMenu();
 			}
 		});
 
@@ -861,7 +872,7 @@
 			}
 			try {
 				self.saveImageToDB('drawingInProgress');
-				return;
+				return "Drawing in progress saved!";
 			} catch(e) {
 				return "Leaving this page will erase your drawing.";
 			}
@@ -1261,7 +1272,7 @@
 			if (blend < 1) {
 				m.blending = THREE.CustomBlending;
 				m.blendEquation = THREE.AddEquation;
-				m.blendSrc = THREE.SrcAlphaFactor;
+				m.blendSrc = THREE.OneFactor;
 				m.blendDst = THREE.OneMinusSrcAlphaFactor;
 				m.blendEquationAlpha = THREE.MaxEquation;
 				m.blendSrcAlpha = THREE.OneFactor;
@@ -1270,7 +1281,7 @@
 				m.blending = THREE.CustomBlending;
 				m.blendEquation = THREE.AddEquation;
 				m.blendSrc = THREE.OneFactor;
-				m.blendDst = THREE.ZeroFactor;
+				m.blendDst = THREE.OneMinusSrcAlphaFactor;
 				m.blendEquationAlpha = THREE.MaxEquation;
 				m.blendSrcAlpha = THREE.OneFactor;
 				m.blendDstAlpha = THREE.OneFactor;
