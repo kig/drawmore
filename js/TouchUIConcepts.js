@@ -210,7 +210,7 @@
 
 		callback = function() {
 			var callback = function(names) {
-				if (names.length === 0) {
+				if (names.length === 0 || (names.length === 1 && names[0] === 'drawingInProgress')) {
 					populateNames(dataBase, cb);
 				} else {
 					cb();
