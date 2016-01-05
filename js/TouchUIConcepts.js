@@ -211,13 +211,13 @@
 		callback = function() {
 			var callback = function(names) {
 				if (names.length === 0 || (names.length === 1 && names[0] === 'drawingInProgress')) {
-					populateNames(dataBase, cb);
+					populateNames(self.indexedDB, cb);
 				} else {
 					cb();
 				}
 			}
 			// Open a transaction to the database
-			var transaction = dataBase.transaction(["imageNames"], 'readwrite');
+			var transaction = self.indexedDB.transaction(["imageNames"], 'readwrite');
 
 			var names = [];
 
