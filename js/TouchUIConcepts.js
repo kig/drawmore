@@ -867,7 +867,10 @@
 
 		window.penMode.onchange = function(ev) {
 			self.penMode = this.checked;
+			localStorage.DrawMorePenMode = this.checked;
 		};
+
+		window.penMode.checked = this.penMode = (localStorage.DrawMorePenMode === 'true');
 
 		this.draggableCurve(window.opacityCurveCanvas, function() {
 			var curve = self.brush.curve;
