@@ -417,8 +417,10 @@
 			y: 0,
 			r: 3,
 			opacity: 1,
-			blend: 0.5,
+			blend: 0.0,
 			hardness: 1,
+			curve: CurvePresets.liner,
+			texture: 'texture.png',
 			color: '#000000',
 			colorArray: new Uint8Array([0,0,0,255])
 		};
@@ -853,28 +855,28 @@
 		});
 		click(window.mirror, this.mirror.bind(this));
 
+		for (var name in BrushPresets) {
+			var div = document.createElement('div');
+			div.appendChild(document.createTextNode(name));
+			div.dataset.name = name;
+			click(div, function() {
+				self.setBrushPreset(BrushPresets[this.dataset.name]);
+			});
+			window.brushShapeControls.appendChild(div);
+		}
+
 		window.penMode.onchange = function(ev) {
 			self.penMode = this.checked;
 		};
 
 		this.draggableCurve(window.opacityCurveCanvas, function() {
-			var curveName = window.curve.value;
-			var curve = App.CurvePresets[curveName];
+			var curve = self.brush.curve;
 			return curve.opacity;
 		});
 		this.draggableCurve(window.brushSizeCurveCanvas, function() {
-			var curveName = window.curve.value;
-			var curve = App.CurvePresets[curveName];
+			var curve = self.brush.curve;
 			return curve.radius;
 		});
-
-		window.curve.onchange = function() {
-			var curveName = this.value;
-			var curve = App.CurvePresets[curveName];
-			self.plotCurve(window.opacityCurveCanvas, curve.opacity);
-			self.plotCurve(window.brushSizeCurveCanvas, curve.radius);
-		};
-		window.curve.onchange();
 
 		var closeMenu = function() {
 			document.body.classList.remove('hide-ui');
@@ -917,6 +919,22 @@
 				return "Leaving this page will erase your drawing.";
 			}
 		};
+
+		var self = this;
+		var curve = self.brush.curve;
+		self.plotCurve(window.opacityCurveCanvas, curve.opacity);
+		self.plotCurve(window.brushSizeCurveCanvas, curve.radius);
+	};
+
+	App.prototype.setBrushPreset = function(preset) {
+		for (var i in preset) {
+			this.brush[i] = preset[i];
+		}
+
+		var self = this;
+		var curve = self.brush.curve;
+		self.plotCurve(window.opacityCurveCanvas, curve.opacity);
+		self.plotCurve(window.brushSizeCurveCanvas, curve.radius);
 	};
 
 	App.prototype.save = function() {
@@ -996,43 +1014,6 @@
 		this.drawArray[this.drawEndIndex++] = state;
 	};
 
-	App.Curves = {
-		one : [0, 1, 0, 1, 1, 1, 1, 1],
-
-		linear: [0, 0, 0, 0, 1, 1, 1, 1],
-		linear15: [0, 0, 0, 0, 0.65, 1, 0.65, 1],
-
-		linerRadius: [0, 0.33, 0, 1, 0.75, 1, 1, 1],
-
-		pencilOpacity: [0, 0, 0.9, 0.0, 1, 1, 1, 1],
-		pencilRadius: [0, 0.5, 0, 0.65, 0.8, 1, 1, 1],
-
-		wateryRadius: [0, 0.1, 0, 0.1, 1, 1, 1, 1],
-		wateryOpacity: [0, 0, 0, 1, 0, 1, 1, 0.1]
-	};
-
-	App.CurvePresets = {
-		brush: {
-			radius: App.Curves.linear.slice(),
-			opacity: App.Curves.linear15.slice()
-		},
-
-		liner: {
-			radius: App.Curves.linerRadius.slice(),
-			opacity: App.Curves.one.slice()
-		},
-
-		pencil: {
-			radius: App.Curves.pencilRadius.slice(),
-			opacity: App.Curves.pencilOpacity.slice()
-		},
-
-		watery: {
-			radius: App.Curves.wateryRadius.slice(),
-			opacity: App.Curves.wateryOpacity.slice()
-		}
-	};
-
 	App.prototype.curvePoint = (function() {
 		var xy = {x:0, y:0};
 
@@ -1104,11 +1085,11 @@
 
 	App.prototype.drawBrush = function(isStart) {
 
-		var curve = App.CurvePresets[window.curve.value];
 
 		var brush = this.brush;
+		var curve = brush.curve;
 		var blend = window.blending.checked ? 0 : 1;
-		var texture = window.texturedBrush.checked ? 1 : 0;
+		var texture = brush.texture ? 1 : 0;
 		var radiusCurve = curve.radius;
 		var opacityCurve = curve.opacity;
 
@@ -1601,7 +1582,7 @@
 			} else if (targetMode === App.Mode.BRUSH_SHAPE) {
 
 				var tex = app.brush.texture;
-				if (tex) {
+				if (tex && false) {
 					if (!tex.canvas) {
 						var c = tex.canvas = document.createElement('canvas');
 						c.width = tex.width;
