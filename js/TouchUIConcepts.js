@@ -206,11 +206,16 @@
 		var request = indexedDB.open("drawmoreFiles", dbVersion);
 		var self = this;
 
-		var populateNames = function(dataBase) {
-			var callback = function(names) {
-				names.forEach(function(n){ self.putNameToDB(n); });
-			};
+		var cb = callback;
 
+		callback = function() {
+			var callback = function(names) {
+				if (names.length === 0) {
+					populateNames(dataBase, cb);
+				} else {
+					cb();
+				}
+			}
 			// Open a transaction to the database
 			var transaction = dataBase.transaction(["imageNames"], 'readwrite');
 
@@ -218,6 +223,30 @@
 
 			// Retrieve the keys
 			var request = transaction.objectStore("imageNames").openCursor();
+			request.onsuccess = function (event) {
+				var cursor = event.target.result;
+				if (cursor) {
+					names.push(cursor.key);
+					cursor.continue();
+				} else {
+					callback(names);
+				}
+			};
+		};
+
+		var populateNames = function(dataBase, cb) {
+			var callback = function(names) {
+				names.forEach(function(n){ self.putNameToDB(n); });
+				cb();
+			};
+
+			// Open a transaction to the database
+			var transaction = dataBase.transaction(["images"], 'readwrite');
+
+			var names = [];
+
+			// Retrieve the keys
+			var request = transaction.objectStore("images").openCursor();
 			request.onsuccess = function (event) {
 				var cursor = event.target.result;
 				if (cursor) {
@@ -255,8 +284,7 @@
 					var setVersion = db.setVersion(dbVersion);
 					setVersion.onsuccess = function () {
 						createObjectStore(db);
-						setTimeout(populateNames, 100);
-						callback();
+						setTimeout(callback, 100);
 					};
 				}
 				else {
