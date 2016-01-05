@@ -31,37 +31,36 @@
 				color: black;
 				position: absolute;
 				left: 0px;
-				top: 50%;
+				top: 0px;
 				z-index: 2;
 			}
 			.mode-toggle.active {
 			}
 			#colorPicker {
-				margin-top: 20px;
+				left: 60px;
 			}
 			#colorPicker canvas {
-				border-bottom-right-radius: 5px;
+				border-bottom-left-radius: 5px;
 			}
 			#brushResize {
-				margin-top: -20px;
+				left: 100px;
 				background: #AAA;
 			}
 			#opacityChange {
-				margin-top: -60px;
+				left: 140px;
 			}
 
 			#brushShape {
-				margin-top: -100px;
+				left: 180px;
 			}
 			#brushShape canvas {
-				border-top-right-radius: 5px;
+				border-bottom-right-radius: 5px;
 			}
 
 			#colorMixer {
 				position: absolute !important;
-				left: 40px;
-				top: 50%;
-				margin-top: -60px;
+				left: 0px;
+				top: 40px;
 				z-index: 3;
 
 				transition: 0.3s;
@@ -72,8 +71,8 @@
 				opacity: 0;
 				transition: 0.5s opacity;
 				pointer-events: none;
-				left: 45px;
-				top: 50%;
+				left: 120px;
+				top: 45px;
 				margin-top: 0px;
 				border: 1px solid #888;
 				z-index: 3;
@@ -165,11 +164,11 @@
 			}
 
 			#brushSizeCurve {
-				margin-top: 0px;
+				left: 10px;
 				/*-60px;*/
 			}
 			#opacityCurve {
-				margin-top: -160px;
+				left: 150px;
 				/*-100px;*/
 			}
 			#brushSizeCurveCanvas path,
@@ -181,8 +180,8 @@
 			.pressure-curve {
 				position: absolute;
 				z-index: 3;
-				top: 50%;
-				left: 60px;
+				top: 60px;
+				left: 100px;
 				border: 1px solid silver;
 				line-height: 0;
 				transition: 0.3s;
@@ -190,13 +189,12 @@
 			}
 
 			.pressure-curve-button {
-				width: 20px;
-				height: 40px;
+				width: 40px;
+				height: 20px;
 				position: absolute;
-				left: 40px;
-				line-height: 40px;
+				top: 40px;
+				line-height: 20px;
 				z-index: 3;
-				top: 50%;
 				transition: 0.3s;
 				text-align: center;
 				cursor: pointer;
@@ -210,11 +208,11 @@
 			}
 
 			#brushSizeCurveButton {
-				margin-top: -20px;
+				left: 100px;
 			}
 
 			#opacityCurveButton {
-				margin-top: -60px;
+				left: 140px;
 			}
 /*			#mirror { background: url(img/mirror.svg) 50% 50% / 100% 100% no-repeat; }
 			#undo { background: url(img/undo.svg) 50% 50% / 100% 100% no-repeat; }
@@ -292,9 +290,8 @@
 
 			#brushShapeControls {
 				position: absolute;
-				left: 60px;
-				top: 50%;
-				margin-top: -95px;
+				left: 20px;
+				top: 60px;
 				border: 1px solid silver;
 				width: 200px;
 				padding: 20px;
@@ -325,10 +322,10 @@
 				content: "";
 				width: 8px;
 				height: 8px;
-				transform: rotate(-45deg);
+				transform: rotate(45deg);
 				position: absolute;
-				left: -6px;
-				top: 7px;
+				right: 15px;
+				top: -6px;
 				border-left: 1px solid silver;
 				border-top: 1px solid silver;
 				background: white;
@@ -336,7 +333,7 @@
 
 			#brushShapeControls.hidden {
 				opacity: 0;
-				transform: translateX(-10px);
+				transform: translateY(-10px);
 				pointer-events: none;
 			}
 		</style>
