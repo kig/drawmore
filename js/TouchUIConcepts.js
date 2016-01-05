@@ -777,8 +777,8 @@
 				rt.setSize(self.width, self.height);
 			});
 
-			self.camera.right = self.width;
-			self.camera.bottom = self.height;
+			self.camera.right = window.innerWidth;
+			self.camera.bottom = window.innerHeight;
 			self.camera.updateProjectionMatrix();
 
 			var t = self.copyQuadTexture;
