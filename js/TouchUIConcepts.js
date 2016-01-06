@@ -1024,11 +1024,21 @@
 		}
 		click(window.toggleFullScreenButton, toggleFullScreen);
 
+		var brush = localStorage.DrawMoreBrush;
+		if (brush) {
+			try {
+				brush = JSON.parse(brush);
+				for (var i in brush) {
+					this.brush[i] = brush[i];
+				}
+			} catch(e) {}
+		}
 		window.onbeforeunload = function(ev) {
 			if (self.saved) {
 				ev.preventDefault();
 				return;
 			}
+			localStorage.DrawMoreBrush = JSON.stringify(self.brush);
 			try {
 				self.saveImageToDB('drawingInProgress');
 				return "Drawing in progress saved!";
