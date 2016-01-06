@@ -1765,7 +1765,7 @@
 
 				if (app.brushCircle) {
 					app.brushCircle.style.borderRadius = app.brush.r+2 + 'px';
-					app.brushCircle.style.marginleft = -app.brush.r + 'px';
+					app.brushCircle.style.marginLeft = -app.brush.r + 'px';
 					app.brushCircle.style.width = app.brushCircle.style.height = 2 * app.brush.r + 'px';
 				}
 
