@@ -918,6 +918,21 @@
 
 	App.prototype.addEventListeners = function() {
 		var self = this;
+
+		var brush = localStorage.DrawMoreBrush;
+		if (brush) {
+			try {
+				brush = JSON.parse(brush);
+				for (var i in brush) {
+					this.brush[i] = brush[i];
+				}
+				window.colorPicker.update();
+				window.opacityChange.update();
+				window.brushResize.update();
+				window.brushShape.update();
+			} catch(e) {}
+		}
+
 		this.eventHandler = new App.EventHandler(this, this.renderer.domElement);
 		var f = function(ev){ ev.preventDefault(); };
 		var click = function(el, g) {
@@ -949,6 +964,11 @@
 			div.dataset.name = name;
 			click(div, function() {
 				self.setBrushPreset(BrushPresets[this.dataset.name]);
+				window.colorPicker.update();
+				window.opacityChange.update();
+				window.brushResize.update();
+				window.brushShape.update();
+				closeBrushMenu();
 			});
 			window.brushShapeControls.appendChild(div);
 		}
@@ -971,6 +991,10 @@
 
 		var closeMenu = function() {
 			document.body.classList.remove('hide-ui');
+		};
+
+		var closeBrushMenu = function() {
+			window.brushShapeControls.classList.add('hidden');
 		};
 
 		click(window.save, function() {
@@ -1021,18 +1045,10 @@
 		      document.webkitExitFullscreen();
 		    }
 		  }
+		  closeMenu();
 		}
 		click(window.toggleFullScreenButton, toggleFullScreen);
 
-		var brush = localStorage.DrawMoreBrush;
-		if (brush) {
-			try {
-				brush = JSON.parse(brush);
-				for (var i in brush) {
-					this.brush[i] = brush[i];
-				}
-			} catch(e) {}
-		}
 		window.onbeforeunload = function(ev) {
 			if (self.saved) {
 				ev.preventDefault();
@@ -1748,8 +1764,8 @@
 			} else if (targetMode === App.Mode.BRUSH_RESIZE) {
 
 				if (app.brushCircle) {
-					app.brushCircle.style.borderRadius = app.brush.r+1 + 'px';
-					app.brushCircle.style.marginTop = -app.brush.r + 'px';
+					app.brushCircle.style.borderRadius = app.brush.r+2 + 'px';
+					app.brushCircle.style.marginleft = -app.brush.r + 'px';
 					app.brushCircle.style.width = app.brushCircle.style.height = 2 * app.brush.r + 'px';
 				}
 
@@ -1797,6 +1813,7 @@
 
 			}
 		};
+		toggle.update = update;
 		update();
 
 		var touchInsideElement = function(el, ev) {
@@ -1910,21 +1927,21 @@
 					var dx = ev.clientX - this.startX;
 					var dy = ev.clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
-					app.brush.r = Math.max(0.5, this.startRadius + dx/3);
+					app.brush.r = Math.max(0.5, this.startRadius + dx/3 - dy/3);
 					break;
 				}
 				case App.Mode.OPACITY_CHANGE: {
 					var dx = ev.clientX - this.startX;
 					var dy = ev.clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
-					app.brush.opacity = Math.max(0, Math.min(1, this.startOpacity + dx/100));
+					app.brush.opacity = Math.max(0, Math.min(1, this.startOpacity + dx/100 - dy/100));
 					break;
 				}
 				case App.Mode.BRUSH_SHAPE: {
 					var dx = ev.clientX - this.startX;
 					var dy = ev.clientY - this.startY;
 					var d = Math.sqrt(dx*dx + dy*dy);
-					app.brush.hardness = Math.max(0, Math.min(1, this.startHardness + dx/100));
+					app.brush.hardness = Math.max(0, Math.min(1, this.startHardness + dx/100 - dy/100));
 					break;
 				}
 				case App.Mode.COLOR_PICKER: {
