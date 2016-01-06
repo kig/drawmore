@@ -323,7 +323,8 @@
 			#brushShapeControls > * {
 				display: block;
 				border-top: 1px solid silver;
-				padding: 10px;
+				padding-top: 10px;
+				padding-bottom: 10px;
 				cursor: pointer;
 			}
 
@@ -410,9 +411,29 @@
 			<div id="texture">
 				<p>BRUSH SHAPE</p>
 				<svg width="38" height="38"><circle cx="19" cy="19" r="17" fill="#000000"></circle></svg><img src="texture.png"><img src="texture2.png"><img src="texture3.png">
+				<br>
+				Add shape image
+			</div>
+			<div>
+				Brush presets<br>
+				Save &middot; Import &middot; Export
 			</div>
 			<!-- <label for="texturedBrush"><div><input id="texturedBrush" type="checkbox" /> Textured</div></label> -->
 		</div>
+
+		<div id="palette" class="hidden">
+			<div class="palette-color"></div>
+			<div class="palette-color"></div>
+			<div class="palette-color"></div>
+			<div class="palette-color"></div>
+			<div class="palette-color"></div>
+			<div class="palette-color"></div>
+			<div class="palette-color"></div>
+			<div class="palette-color"></div>
+			<button>Save palette</button>
+			<button>Load palette</button>
+		</div>
+
 		<div id="menu" class="pressure-controls">
 			<div id="toggleFullScreenButton">Fullscreen</div>
 			<div id="newDrawing">New</div>
