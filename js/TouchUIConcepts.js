@@ -778,18 +778,9 @@
 		this.brushCamera = new THREE.Camera();
 		this.brushCamera.matrixAutoUpdate = false;
 
-		this.brushTextureLoaded = false;
+		this.brushTextureLoaded = 0;
 
-		var self = this;
 		this.maskTexture = new THREE.DataTexture();
-		var image = new Image();
-		image.onload = function() {
-			self.brushTextureLoaded = true;
-			if (!self.drawArray.find(function(c){ return c.type === 'addBrush' && c.name === 1; })) {
-				self.addBrush(1, self.getTextureDataForImage(this));
-			}
-		};
-		image.src = 'texture.png';
 
 		this.brushQuad = new THREE.Mesh(
 			new THREE.PlaneBufferGeometry(2, 2),
@@ -895,6 +886,20 @@
 		this.endDrawBrush();
 	};
 
+	App.prototype.loadBrush = function(src, brushIndex) {
+		this.brushTextureLoaded++;
+		var self = this;
+		var image = new Image();
+		image.onload = function() {
+			self.brushTextureLoaded--;
+			if (!self.drawArray.find(function(c){ return c.type === 'addBrush' && c.name === brushIndex; })) {
+				var tex = self.getTextureDataForImage(this);
+				self.addBrush(brushIndex, tex);
+			}
+		};
+		image.src = src;
+	};
+
 	App.prototype.mirrorDrawRenderTarget = function() {
 		this.renderer.setClearColor(0xffffff, 0.0);
 		this.renderer.clearTarget(this.strokeRenderTarget);
@@ -957,6 +962,27 @@
 			closeMenu();
 		});
 		click(window.mirror, this.mirror.bind(this));
+
+		var brushShapes = document.querySelectorAll('#texture > div > img');
+		for (var i=0; i<brushShapes.length; i++) {
+			var el = brushShapes[i];
+			el.brushId = i;
+			click(el, function() {
+				var sel = document.querySelector('#texture > .selected');
+				if (sel) {
+					sel.classList.remove('selected');
+				}
+				this.parentElement.classList.add('selected');
+				self.brush.texture = this.brushId;
+			});
+			if (el.className === 'svg') {
+			} else {
+				this.loadBrush(el.getAttribute('src'), parseInt(el.brushId));
+			}
+			if (this.brush.texture === el.brushId) {
+				el.parentElement.classList.add('selected');
+			}
+		}
 
 		for (var name in BrushPresets) {
 			var div = document.createElement('div');
@@ -1057,7 +1083,7 @@
 			localStorage.DrawMoreBrush = JSON.stringify(self.brush);
 			try {
 				self.saveImageToDB('drawingInProgress');
-				return "Drawing in progress saved!";
+				return;
 			} catch(e) {
 				return "Leaving this page will erase your drawing.";
 			}
@@ -1228,11 +1254,10 @@
 
 	App.prototype.drawBrush = function(isStart) {
 
-
 		var brush = this.brush;
 		var curve = brush.curve;
 		var blend = window.blending.checked ? 0 : 1;
-		var texture = brush.texture ? 1 : 0;
+		var texture = brush.texture;
 		var radiusCurve = curve.radius;
 		var opacityCurve = curve.opacity;
 
@@ -1463,7 +1488,7 @@
 		var mode = this.mode;
 		var pixelRatio = this.pixelRatio;
 
-		if (this.needUpdate && this.brushTextureLoaded) {
+		if (this.needUpdate && this.brushTextureLoaded === 0) {
 
 			this.renderDrawArray();
 			this.drawStartIndex = this.drawEndIndex;

@@ -357,8 +357,11 @@
 				margin-top: 0;
 				margin-bottom: 9px;
 			}
-			#texture > img,
-			#texture > svg
+			#texture > div {
+				position: relative;
+				display: inline-block;
+			}
+			#texture > div > img
 			{
 				vertical-align: top;
 				width: 38px;
@@ -367,6 +370,16 @@
 				margin-left: -1px;
 				display: inline-block;
 				cursor: pointer;
+			}
+			#texture > div.selected:after {
+				position: absolute;
+				content: "";
+				top: 0;
+				left: 0;
+				width: 40px;
+				height: 40px;
+				background: blue;
+				opacity: 0.5;
 			}
 		</style>
 	</head>
@@ -410,9 +423,7 @@
 			<label for="blending"><div><input id="blending" type="checkbox" /> Smudge</div></label>
 			<div id="texture">
 				<p>BRUSH SHAPE</p>
-				<svg width="38" height="38"><circle cx="19" cy="19" r="17" fill="#000000"></circle></svg><img src="texture.png"><img src="texture2.png"><img src="texture3.png">
-				<br>
-				Add shape image
+				<div><img class="svg" src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"><circle cx="19" cy="19" r="17" fill="#000000" /></svg>'></div><div><img src="texture.png"></div><div><img src="texture2.png"></div><div><img src="texture3.png"></div>
 			</div>
 			<div>
 				Brush presets<br>
