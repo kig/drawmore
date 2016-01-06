@@ -39,27 +39,26 @@ BrushPresets = {
 	"Felt Pen": {
 		curve: CurvePresets.liner,
 		r: 3,
-		texture: 'texture.png'
+		texture: 1
 	},
 
 	"Pencil": {
 		curve: CurvePresets.pencil,
 		r: 2,
-		texture: 'texture.png'
+		texture: 3
 	},
 
 	"DigiBrush": {
 		curve: CurvePresets.brush,
-		texture: null
+		texture: 0
 	},
 
 	"Liner": {
-		curve: CurvePresets.liner,
-		texture: null
+		curve: CurvePresets.liner
 	},
 	
 	"Brushy": {
 		curve: CurvePresets.watery,
-		texture: 'texture.png'
+		texture: 3
 	}
 };
