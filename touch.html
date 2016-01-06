@@ -348,6 +348,25 @@
 				transform: translateY(-10px);
 				pointer-events: none;
 			}
+			#texture {
+				padding-left: 0;
+				padding-right: 0;
+			}
+			#texture p {
+				margin-top: 0;
+				margin-bottom: 9px;
+			}
+			#texture > img,
+			#texture > svg
+			{
+				vertical-align: top;
+				width: 38px;
+				height: 38px;
+				border: 1px solid silver;
+				margin-left: -1px;
+				display: inline-block;
+				cursor: pointer;
+			}
 		</style>
 	</head>
 	<body>
@@ -388,6 +407,10 @@
 		<div class="mode-toggle" id="brushShape"></div>
 		<div id="brushShapeControls" class="hidden">
 			<label for="blending"><div><input id="blending" type="checkbox" /> Smudge</div></label>
+			<div id="texture">
+				<p>BRUSH SHAPE</p>
+				<svg width="38" height="38"><circle cx="19" cy="19" r="17" fill="#000000"></circle></svg><img src="texture.png"><img src="texture2.png"><img src="texture3.png">
+			</div>
 			<!-- <label for="texturedBrush"><div><input id="texturedBrush" type="checkbox" /> Textured</div></label> -->
 		</div>
 		<div id="menu" class="pressure-controls">
