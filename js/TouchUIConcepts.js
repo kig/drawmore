@@ -1684,7 +1684,9 @@
 
 		endBrushStroke: function() {
 			if (this.app.mode === App.Mode.DRAW) {
-				document.body.classList.remove('hide-ui');
+				this.showUITimeout = setTimeout(function() {
+					document.body.classList.remove('hide-ui');
+				}, 1000);
 				this.app.endBrush();
 			}
 			this.resetMode();
@@ -1694,6 +1696,9 @@
 			this.app.brush.pressure = pressure;
 			if (this.app.mode === App.Mode.DRAW) {
 				if (y < 60) {
+					if (this.showUITimeout) {
+						clearTimeout(this.showUITimeout);
+					}
 					document.body.classList.add('hide-ui');
 				}
 				this.app.brush.x = x;
