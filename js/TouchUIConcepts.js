@@ -1938,6 +1938,7 @@
 			app.brush.color = this.startColor;
 			app.brush.colorArray = this.startColorArray;
 			app.brush.hardness = this.startHardness;
+			this.update();
 		};
 
 		var colorMixer;
@@ -2011,6 +2012,26 @@
 						toggleColorMixer();
 					}
 					this.revertBrush();
+				}
+				if (!window.palette.classList.contains('hidden')) {
+					var paletteColors = document.querySelectorAll('.palette-color');
+					for (var i=0; i<paletteColors.length; i++) {
+						if (touchInsideElement(paletteColors[i], ev)) {
+							var c = this.startColorArray;
+							DefaultPalette[i] = paletteColors[i].color = [c[0], c[1], c[2]];
+							paletteColors[i].style.background = 'rgb('+ paletteColors[i].color.join(",") +')';
+
+							this.revertBrush();
+
+							var palette = [];
+							for (var j=0; j<paletteColors.length; j++) {
+								palette.push(paletteColors[j].color);
+							}
+
+							localStorage.DrawMorePalette = JSON.stringify(palette);
+							break;
+						}
+					}
 				}
 			} else if (targetMode === App.Mode.BRUSH_SHAPE) {
 				if (touchInsideElement(this, ev)) {
