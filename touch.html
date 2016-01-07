@@ -141,38 +141,6 @@
 				pointer-events: none;
 			}
 
-/*			.hide-ui .mode-toggle {
-				display: none;
-			}
-
-			.hide-ui .pressure-controls {
-				display: none;
-			}
-*/
-			body.hide-ui #showUI,
-			body:not(.hide-ui) #hideUI,
-			{
-				display: block;
-			}
-
-			body:not(.hide-ui) #showUI,
-			body.hide-ui #hideUI
-			{
-				display: none;
-			}
-
-			#showUI,
-			#hideUI
-			{
-				position: absolute;
-				top: 0px;
-				left: 0px;
-				z-index: 3;
-				width: 34px;
-				height: 34px;
-				cursor: pointer;
-			}
-
 			#brushSizeCurve {
 				left: 10px;
 				/*-60px;*/
@@ -211,9 +179,7 @@
 				text-shadow: 1px 1px 1px rgba(255,255,255,0.5);
 			}
 
-/*			.hide-ui .pressure-curve,
-			.hide-ui .pressure-curve-button,
-*/			.hidden {
+			.hidden {
 				opacity: 0;
 				pointer-events: none;
 			}
@@ -230,16 +196,16 @@
 				left: 140px;
 			}
 
-
-/*			#mirror { background: url(img/mirror.svg) 50% 50% / 100% 100% no-repeat; }
-			#undo { background: url(img/undo.svg) 50% 50% / 100% 100% no-repeat; }
-			#redo { background: url(img/redo.svg) 50% 50% / 100% 100% no-repeat; }
-			#newDrawing { background: url(img/new.svg) 50% 50% / 100% 100% no-repeat; }
-			#save { background: url(img/save.svg) 50% 50% / 100% 100% no-repeat; }
-			#load { background: url(img/load.svg) 50% 50% / 100% 100% no-repeat; }
-*/
-			#hideUI { background: url(img/hamburger.svg) 50% 50% / 16px 16px no-repeat; }
-			#showUI { background: url(img/hamburger.svg) 50% 50% / 16px 16px no-repeat; }
+			#menuButton {
+				position: absolute;
+				top: 0px;
+				left: 0px;
+				z-index: 3;
+				width: 34px;
+				height: 34px;
+				cursor: pointer;
+				background: url(img/hamburger.svg) 50% 50% / 16px 16px no-repeat; 
+			}
 
 			#menu {
 				position: absolute;
@@ -283,7 +249,7 @@
 				background: white;
 			}
 
-			body:not(.hide-ui) #menu {
+			#menu.hidden {
 				opacity: 0;
 				transform: translateX(-10px);
 				pointer-events: none;
@@ -432,81 +398,95 @@
 				opacity: 0;
 				transform: translateY(-10px);
 				pointer-events: none;
-			}			
+			}
+
+			#ui-container {
+				transition: 0.3s;
+				z-index: 2;
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 100%;
+			}
+			.hide-ui #ui-container {
+				pointer-events: none;
+				opacity: 0;
+			}
 		</style>
 	</head>
 	<body>
-		<pre id="debug"></pre>
-		<div class="mode-toggle" id="brushResize"></div>
-		<div id="brushSizeCurveButton" class="pressure-curve-button" onclick="brushSizeCurve.classList.toggle('hidden')">+</div>
-		<div id="brushSizeCurve" class="pressure-curve hidden">
-			<svg id="brushSizeCurveCanvas" width="120" height="120">
-				<g transform="translate(10 10)">
-					<rect x="0" y="0" width="100" height="100" stroke="#CCCCCC" fill="none" />
-					<path class="pc1" d="M 0 0" stroke="#888888" fill="none" />
-					<path class="pc2" d="M 0 0" stroke="#888888" fill="none" />
-					<circle class="p1" cx="0" cy="100" r="5" stroke="#888888" fill="#CCCCCC" />
-					<circle class="p2" cx="100" cy="0" r="5" stroke="#888888" fill="#CCCCCC" />
-					<rect class="c1" x="20" y="70" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
-					<rect class="c2" x="70" y="20" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
-					<path class="curve" d="M 0 100 L 0 100 C 25 75 75 25 100 0 L 100 0" stroke-width="2" stroke="#446688" fill="none" />
-				</g>
-			</svg>
-		</div>
-		<div class="mode-toggle" id="opacityChange"></div>
-		<div id="opacityCurveButton" class="pressure-curve-button" onclick="opacityCurve.classList.toggle('hidden')">+</div>
-		<div id="opacityCurve" class="pressure-curve hidden">
-			<svg id="opacityCurveCanvas" width="120" height="120">
-				<g transform="translate(10 10)">
-					<rect x="0" y="0" width="100" height="100" stroke="#CCCCCC" fill="none" />
-					<path class="pc1" d="M 0 0" stroke="#888888" fill="none" />
-					<path class="pc2" d="M 0 0" stroke="#888888" fill="none" />
-					<circle class="p1" cx="0" cy="100" r="5" stroke="#888888" fill="#CCCCCC" />
-					<circle class="p2" cx="100" cy="0" r="5" stroke="#888888" fill="#CCCCCC" />
-					<rect class="c1" x="20" y="70" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
-					<rect class="c2" x="70" y="20" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
-					<path class="curve" d="M 0 100 L 0 100 C 25 75 75 25 100 0 L 100 0" stroke-width="2" stroke="#446688" fill="none" />
-				</g>
-			</svg>
-		</div>
-		<div class="mode-toggle" id="colorPicker"></div>
-		<div id="paletteButton" class="pressure-curve-button" onclick="palette.classList.toggle('hidden')">+</div>
-		<div class="mode-toggle" id="brushShape"></div>
-		<div id="brushShapeControls" class="hidden">
-			<label for="blending"><div><input id="blending" type="checkbox" /> Smudge</div></label>
-			<div id="texture">
-				<p>BRUSH SHAPE</p>
-				<div><img class="svg" src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"><circle cx="19" cy="19" r="17" fill="#000000" /></svg>'></div><div><img src="texture.png"></div><div><img src="texture2.png"></div><div><img src="texture3.png"></div>
+		<div id="ui-container">
+			<pre id="debug"></pre>
+			<div class="mode-toggle" id="brushResize"></div>
+			<div id="brushSizeCurveButton" class="pressure-curve-button" onclick="brushSizeCurve.classList.toggle('hidden')">+</div>
+			<div id="brushSizeCurve" class="pressure-curve hidden">
+				<svg id="brushSizeCurveCanvas" width="120" height="120">
+					<g transform="translate(10 10)">
+						<rect x="0" y="0" width="100" height="100" stroke="#CCCCCC" fill="none" />
+						<path class="pc1" d="M 0 0" stroke="#888888" fill="none" />
+						<path class="pc2" d="M 0 0" stroke="#888888" fill="none" />
+						<circle class="p1" cx="0" cy="100" r="5" stroke="#888888" fill="#CCCCCC" />
+						<circle class="p2" cx="100" cy="0" r="5" stroke="#888888" fill="#CCCCCC" />
+						<rect class="c1" x="20" y="70" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
+						<rect class="c2" x="70" y="20" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
+						<path class="curve" d="M 0 100 L 0 100 C 25 75 75 25 100 0 L 100 0" stroke-width="2" stroke="#446688" fill="none" />
+					</g>
+				</svg>
 			</div>
-			<div>Brush presets</div>
-			<div id="saveBrush">Save brush</div>
-		</div>
+			<div class="mode-toggle" id="opacityChange"></div>
+			<div id="opacityCurveButton" class="pressure-curve-button" onclick="opacityCurve.classList.toggle('hidden')">+</div>
+			<div id="opacityCurve" class="pressure-curve hidden">
+				<svg id="opacityCurveCanvas" width="120" height="120">
+					<g transform="translate(10 10)">
+						<rect x="0" y="0" width="100" height="100" stroke="#CCCCCC" fill="none" />
+						<path class="pc1" d="M 0 0" stroke="#888888" fill="none" />
+						<path class="pc2" d="M 0 0" stroke="#888888" fill="none" />
+						<circle class="p1" cx="0" cy="100" r="5" stroke="#888888" fill="#CCCCCC" />
+						<circle class="p2" cx="100" cy="0" r="5" stroke="#888888" fill="#CCCCCC" />
+						<rect class="c1" x="20" y="70" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
+						<rect class="c2" x="70" y="20" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
+						<path class="curve" d="M 0 100 L 0 100 C 25 75 75 25 100 0 L 100 0" stroke-width="2" stroke="#446688" fill="none" />
+					</g>
+				</svg>
+			</div>
+			<div class="mode-toggle" id="colorPicker"></div>
+			<div id="paletteButton" class="pressure-curve-button" onclick="palette.classList.toggle('hidden')">+</div>
+			<div class="mode-toggle" id="brushShape"></div>
+			<div id="brushShapeControls" class="hidden">
+				<label for="blending"><div><input id="blending" type="checkbox" /> Smudge</div></label>
+				<div id="texture">
+					<p>BRUSH SHAPE</p>
+					<div><img class="svg" src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"><circle cx="19" cy="19" r="17" fill="#000000" /></svg>'></div><div><img src="texture.png"></div><div><img src="texture2.png"></div><div><img src="texture3.png"></div>
+				</div>
+				<div>Brush presets</div>
+				<div id="saveBrush">Save brush</div>
+			</div>
 
-		<div id="palette" class="hidden">
-			<div class="palette-color" style="background: #000000;"></div>
-			<div class="palette-color" style="background: #ffffff;"></div>
-			<div class="palette-color" style="background: #4872c2;"></div>
-			<div class="palette-color" style="background: #9f3c1f;"></div>
-			<div class="palette-color" style="background: #3fc490;"></div>
-			<div class="palette-color" style="background: #22c8fc;"></div>
-			<div class="palette-color" style="background: #ce9226;"></div>
-			<div class="palette-color" style="background: #886772;"></div>
-		</div>
+			<div id="palette" class="hidden">
+				<div class="palette-color" style="background: #000000;"></div>
+				<div class="palette-color" style="background: #ffffff;"></div>
+				<div class="palette-color" style="background: #4872c2;"></div>
+				<div class="palette-color" style="background: #9f3c1f;"></div>
+				<div class="palette-color" style="background: #3fc490;"></div>
+				<div class="palette-color" style="background: #22c8fc;"></div>
+				<div class="palette-color" style="background: #ce9226;"></div>
+				<div class="palette-color" style="background: #886772;"></div>
+			</div>
 
-		<div id="menu" class="pressure-controls">
-			<div id="toggleFullScreenButton">Fullscreen</div>
-			<div id="newDrawing">New</div>
-			<div id="save">Save</div>
-			<div id="load">Load</div>
-			<div id="savePNG">Save PNG</div>
-			<label for="penMode"><div><input id="penMode" type="checkbox" /> Pen mode</div></label>
-		</div>
-		<div id="hideUI"></div>
-		<div id="showUI"></div>
-		<div id="top-bar">
-			<div id="mirror">Mirror</div> 
-			<div id="undo">Undo</div>
-			<div id="redo">Redo</div> 
+			<div id="menuButton" onclick="window.menu.classList.toggle('hidden')"></div>
+			<div id="menu" class="pressure-controls hidden">
+				<div id="toggleFullScreenButton">Fullscreen</div>
+				<div id="newDrawing">New</div>
+				<div id="save">Save</div>
+				<div id="load">Load</div>
+				<div id="savePNG">Save PNG</div>
+				<label for="penMode"><div><input id="penMode" type="checkbox" /> Pen mode</div></label>
+			</div>
+			<div id="top-bar">
+				<div id="mirror">Mirror</div> 
+				<div id="undo">Undo</div>
+				<div id="redo">Redo</div> 
+			</div>
 		</div>
 
 		<script src="js/three.js"></script>

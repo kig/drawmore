@@ -970,12 +970,6 @@
 
 		click(window.undo, this.undo.bind(this));
 		click(window.redo, this.redo.bind(this));
-		click(window.hideUI, function() {
-			document.body.classList.add('hide-ui');
-		});
-		click(window.showUI, function() {
-			document.body.classList.remove('hide-ui');
-		});
 		click(window.savePNG, function() {
 			self.save();
 			closeMenu();
@@ -1100,7 +1094,7 @@
 		});
 
 		var closeMenu = function() {
-			document.body.classList.remove('hide-ui');
+			window.menu.classList.add('hidden');
 		};
 
 		var closeBrushMenu = function() {
@@ -1690,6 +1684,7 @@
 
 		endBrushStroke: function() {
 			if (this.app.mode === App.Mode.DRAW) {
+				document.body.classList.remove('hide-ui');
 				this.app.endBrush();
 			}
 			this.resetMode();
@@ -1698,6 +1693,9 @@
 		moveBrushStroke: function(x, y, pressure) {
 			this.app.brush.pressure = pressure;
 			if (this.app.mode === App.Mode.DRAW) {
+				if (y < 100) {
+					document.body.classList.add('hide-ui');
+				}
 				this.app.brush.x = x;
 				this.app.brush.y = y;
 				this.app.drawBrush(false);

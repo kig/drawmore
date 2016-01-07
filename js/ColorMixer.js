@@ -60,6 +60,11 @@ ColorMixer.prototype = {
       if (this.down) {
         var bbox = this.getBoundingClientRect();
         var xy = {x: ev.clientX-bbox.left, y: ev.clientY-bbox.top};
+        var cx = ev.clientX-(bbox.left+bbox.width/2);
+        var cy = ev.clientY-(bbox.top+bbox.height/2);
+        if (Math.sqrt(cx*cx+cy*cy) > bbox.width/2) {
+          return;
+        }
         var h = self.hueAtMouseCoords(xy);
         self.setHue(h, true);
       }
