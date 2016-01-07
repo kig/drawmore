@@ -1679,6 +1679,9 @@
 				this.app.drawBrush(true);
 			}
 
+			if (!window.palette.isOpen) {
+				window.palette.classList.add('hidden');
+			}
 			this.app.colorMixer.widget.classList.add('hidden');
 		},
 
@@ -1962,10 +1965,14 @@
 
 			var toggleColorMixer = function() {
 				if (colorMixer.widget.classList.contains('hidden')) {
+					window.palette.classList.remove('hidden');
 					colorMixer.widget.classList.remove('hidden');
 					var c = app.brush.colorArray;
 					colorMixer.setColor([c[0]/255, c[1]/255, c[2]/255]);
 				} else {
+					if (!window.palette.isOpen) {
+						window.palette.classList.add('hidden');
+					}
 					colorMixer.widget.classList.add('hidden');
 				}
 			};
@@ -1998,6 +2005,9 @@
 			this.startX = ev.clientX;
 			this.startY = ev.clientY;
 
+			if (!window.palette.isOpen) {
+				window.palette.classList.add('hidden');
+			}
 			wasVisible = !app.colorMixer.widget.classList.contains('hidden');
 			app.colorMixer.widget.classList.add('hidden');
 			brushShapeWasVisible = !window.brushShapeControls.classList.contains('hidden');

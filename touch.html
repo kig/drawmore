@@ -450,7 +450,7 @@
 				</svg>
 			</div>
 			<div class="mode-toggle" id="colorPicker"></div>
-			<div id="paletteButton" class="pressure-curve-button" onclick="palette.classList.toggle('hidden')">+</div>
+			<div id="paletteButton" class="pressure-curve-button" onclick="palette.classList.toggle('hidden');palette.isOpen=!palette.classList.contains('hidden')">+</div>
 			<div class="mode-toggle" id="brushShape"></div>
 			<div id="brushShapeControls" class="hidden">
 				<label for="blending"><div><input id="blending" type="checkbox" /> Smudge</div></label>
