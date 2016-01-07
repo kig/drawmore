@@ -236,7 +236,7 @@
 
 		var populateNames = function(dataBase, cb) {
 			var callback = function(names) {
-				names.forEach(function(n){ self.putNameToDB(n); });
+				names.forEach(function(n){ self.putToDB('imageNames', n, true); });
 				cb();
 			};
 
