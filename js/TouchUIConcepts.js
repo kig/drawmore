@@ -192,7 +192,7 @@
 		// IndexedDB
 		window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB,
 			IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
-			dbVersion = 2;
+			dbVersion = 3;
 
 		/* 
 			Note: The recommended way to do this is assigning it to window.indexedDB,
@@ -268,6 +268,9 @@
 			try {
 				dataBase.createObjectStore("imageNames");
 			} catch(e) {}
+			try {
+				dataBase.createObjectStore("brushes");
+			} catch(e) {}
 		};
 
 		request.onsuccess = function (event) {
@@ -303,17 +306,17 @@
 	};
 
 	App.prototype.saveImageToDB = function(name) {
-		this.putToDB(name, this.serializeImage());
-		this.putNameToDB(name);
+		this.putToDB('images', name, this.serializeImage());
+		this.putToDB('imageNames', name, true);
 	};
 
 	App.prototype.loadImageFromDB = function(name) {
-		this.getFromDB(name, this.loadSerializedImage.bind(this));
+		this.getFromDB('images', name, this.loadSerializedImage.bind(this));
 	};
 
 	App.prototype.deleteImageFromDB = function(name) {
-		this.deleteFromDB(name);
-		this.deleteNameFromDB(name);
+		this.deleteFromDB('images', name);
+		this.deleteFromDB('imageNames', name);
 	};
 
 	App.prototype.loadSerializedImage = function(buf) {
@@ -431,65 +434,78 @@
 		return buf;
 	};
 
-	App.prototype.putToDB = function(key, value) {
+	App.prototype.putToDB = function(objectStore, key, value) {
 		// Open a transaction to the database
-		var transaction = this.indexedDB.transaction(["images"], 'readwrite');
+		var transaction = this.indexedDB.transaction([objectStore], 'readwrite');
 
 		// Put the value into the database
-		var put = transaction.objectStore("images").put(value, key);
+		var put = transaction.objectStore(objectStore).put(value, key);
 	};
 
-	App.prototype.putNameToDB = function(key) {
+	App.prototype.deleteFromDB = function(objectStore, key) {
 		// Open a transaction to the database
-		var transaction = this.indexedDB.transaction(["imageNames"], 'readwrite');
+		var transaction = this.indexedDB.transaction([objectStore], 'readwrite');
 
 		// Put the value into the database
-		var put = transaction.objectStore("imageNames").put(true, key);
+		var put = transaction.objectStore(objectStore).delete(key);
 	};
 
-	App.prototype.deleteFromDB = function(key) {
+	App.prototype.getFromDB = function(objectStore, key, callback) {
 		// Open a transaction to the database
-		var transaction = this.indexedDB.transaction(["images"], 'readwrite');
-
-		// Put the value into the database
-		var put = transaction.objectStore("images").delete(key);
-	};
-
-	App.prototype.deleteNameFromDB = function(key) {
-		// Open a transaction to the database
-		var transaction = this.indexedDB.transaction(["imageNames"], 'readwrite');
-
-		// Put the value into the database
-		var put = transaction.objectStore("imageNames").delete(key);
-	};
-
-	App.prototype.getFromDB = function(key, callback) {
-		// Open a transaction to the database
-		var transaction = this.indexedDB.transaction(["images"], 'readonly');
+		var transaction = this.indexedDB.transaction([objectStore], 'readonly');
 
 		// Retrieve the file that was just stored
-		transaction.objectStore("images").get(key).onsuccess = function (event) {
+		transaction.objectStore(objectStore).get(key).onsuccess = function (event) {
 			callback(event.target.result);
 		};
 	};
 
-	App.prototype.getSavedImageNames = function(callback) {
+	App.prototype.getKeyValuesFromDB = function(objectStore, callback) {
 		// Open a transaction to the database
-		var transaction = this.indexedDB.transaction(["imageNames"], 'readonly');
+		var transaction = this.indexedDB.transaction([objectStore], 'readonly');
 
 		var names = [];
 
 		// Retrieve the keys
-		var request = transaction.objectStore("imageNames").openCursor();
+		var request = transaction.objectStore(objectStore).openCursor();
 		request.onsuccess = function (event) {
 			var cursor = event.target.result;
 			if (cursor) {
-				names.push(cursor.key);
+				names.push({key: cursor.key, value: cursor.value});
 				cursor.continue();
 			} else {
 				callback(names);
 			}
 		};
+	};
+
+	App.prototype.getKeysFromDB = function(objectStore, callback) {
+		this.getKeyValuesFromDB(objectStore, function(kvs) {
+			callback(kvs.map(function(kv) { return kv.key; }));
+		});
+	};
+
+	App.prototype.getValuesFromDB = function(objectStore, callback) {
+		this.getKeyValuesFromDB(objectStore, function(kvs) {
+			callback(kvs.map(function(kv) { return kv.value; }));
+		});
+	};
+
+	App.prototype.getSavedImageNames = function(callback) {
+		this.getKeysFromDB('imageNames', callback);
+	};
+
+	App.prototype.getBrushNamesFromDB = function(callback) {
+		this.getKeysFromDB('brushes', callback);
+	};
+
+	App.prototype.getBrushesFromDB = function(callback) {
+		this.getKeyValuesFromDB('brushes', function(kvs) {
+			callback(kvs.map(function(kv) {
+				kv.value.name = kv.key;
+				return kv.value;
+			}));
+		});
 	};
 
 	App.prototype.init = function() {
@@ -524,10 +540,10 @@
 		App.modeToggle(this, window.brushShape, App.Mode.BRUSH_SHAPE);
 
 		this.setupCanvas();
-		this.addEventListeners();
 
 		var self = this;
 		this.initIndexedDB(function() {
+			self.addEventListeners();
 			self.loadImageFromDB('drawingInProgress');
 		});
 	};
@@ -778,7 +794,7 @@
 		this.brushCamera = new THREE.Camera();
 		this.brushCamera.matrixAutoUpdate = false;
 
-		this.brushTextureLoaded = 0;
+		this.brushTextureLoaded = -1;
 
 		this.maskTexture = new THREE.DataTexture();
 
@@ -963,6 +979,7 @@
 		});
 		click(window.mirror, this.mirror.bind(this));
 
+		this.brushTextureLoaded = 0;
 		var brushShapes = document.querySelectorAll('#texture > div > img');
 		for (var i=0; i<brushShapes.length; i++) {
 			var el = brushShapes[i];
@@ -984,7 +1001,27 @@
 			}
 		}
 
-		for (var name in BrushPresets) {
+		click(window.saveBrush, function(){
+			self.getBrushNamesFromDB(function(names) {
+				var name = prompt("Name: (" + names.join(", ") + ")");
+				if (name) {
+					if (!BrushPresets[name]) {
+						createBrush(name);
+					}
+					BrushPresets[name] = {
+						radius: self.brush.radius,
+						texture: self.brush.texture,
+						curve: {
+							radius: self.brush.curve.radius.slice(),
+							opacity: self.brush.curve.opacity.slice()
+						}
+					};
+					self.putToDB('brushes', name, BrushPresets[name]);
+				}
+			});
+		});
+
+		var createBrush = function(name) {
 			var div = document.createElement('div');
 			div.appendChild(document.createTextNode(name));
 			div.dataset.name = name;
@@ -997,7 +1034,28 @@
 				closeBrushMenu();
 			});
 			window.brushShapeControls.appendChild(div);
+		};
+
+		for (var name in BrushPresets) {
+			createBrush(name);
 		}
+
+		this.getBrushesFromDB(function(brushes){
+			var names = {};
+			brushes.forEach(function(brush) {
+				names[brush.name] = true;
+				var exists = BrushPresets[brush.name];
+				BrushPresets[brush.name] = brush;
+				if (!exists) {
+					createBrush(brush.name);
+				}
+			});
+			for (var i in BrushPresets) {
+				if (!names[i]) {
+					self.putToDB('brushes', i, BrushPresets[i]);
+				}
+			}
+		});
 
 		window.penMode.onchange = function(ev) {
 			self.penMode = this.checked;
@@ -2044,4 +2102,6 @@
 
 	var app = new App();
 	app.tick();
+
+	window.app = app;
 })();

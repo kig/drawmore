@@ -48,7 +48,7 @@ BrushPresets = {
 		texture: 3
 	},
 
-	"DigiBrush": {
+	"Brush": {
 		curve: CurvePresets.brush,
 		texture: 0
 	},
@@ -57,7 +57,7 @@ BrushPresets = {
 		curve: CurvePresets.liner
 	},
 	
-	"Brushy": {
+	"Inkish": {
 		curve: CurvePresets.watery,
 		texture: 3
 	}
