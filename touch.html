@@ -218,6 +218,10 @@
 				pointer-events: none;
 			}
 
+			#paletteButton {
+				left: 60px;
+			}
+
 			#brushSizeCurveButton {
 				left: 100px;
 			}
@@ -225,6 +229,8 @@
 			#opacityCurveButton {
 				left: 140px;
 			}
+
+
 /*			#mirror { background: url(img/mirror.svg) 50% 50% / 100% 100% no-repeat; }
 			#undo { background: url(img/undo.svg) 50% 50% / 100% 100% no-repeat; }
 			#redo { background: url(img/redo.svg) 50% 50% / 100% 100% no-repeat; }
@@ -381,6 +387,52 @@
 				background: #4444ff;
 				opacity: 0.4;
 			}
+
+
+			#palette {
+				position: absolute;
+				left: 60px;
+				top: 65px;
+				border: 1px solid silver;
+				width: 40px;
+				padding: 10px;
+				z-index: 2;
+				opacity: 1;
+
+				box-sizing: border-box;
+				text-align: center;
+
+				background: white;
+
+				transition: 0.3s cubic-bezier(0.22, 0.8, 0.57, 1);
+			}
+
+			#palette > * {
+				display: inline-block;
+				border: 1px solid silver;
+				cursor: pointer;
+				width: 16px;
+				height: 16px;
+			}
+
+			#palette:after {
+				content: "";
+				width: 8px;
+				height: 8px;
+				transform: rotate(45deg);
+				position: absolute;
+				right: 14px;
+				top: -5px;
+				border-left: 1px solid silver;
+				border-top: 1px solid silver;
+				background: white;
+			}
+
+			#palette.hidden {
+				opacity: 0;
+				transform: translateY(-10px);
+				pointer-events: none;
+			}			
 		</style>
 	</head>
 	<body>
@@ -418,6 +470,7 @@
 			</svg>
 		</div>
 		<div class="mode-toggle" id="colorPicker"></div>
+		<div id="paletteButton" class="pressure-curve-button" onclick="palette.classList.toggle('hidden')">+</div>
 		<div class="mode-toggle" id="brushShape"></div>
 		<div id="brushShapeControls" class="hidden">
 			<label for="blending"><div><input id="blending" type="checkbox" /> Smudge</div></label>
@@ -430,16 +483,14 @@
 		</div>
 
 		<div id="palette" class="hidden">
-			<div class="palette-color"></div>
-			<div class="palette-color"></div>
-			<div class="palette-color"></div>
-			<div class="palette-color"></div>
-			<div class="palette-color"></div>
-			<div class="palette-color"></div>
-			<div class="palette-color"></div>
-			<div class="palette-color"></div>
-			<button>Save palette</button>
-			<button>Load palette</button>
+			<div class="palette-color" style="background: #000000;"></div>
+			<div class="palette-color" style="background: #ffffff;"></div>
+			<div class="palette-color" style="background: #4872c2;"></div>
+			<div class="palette-color" style="background: #9f3c1f;"></div>
+			<div class="palette-color" style="background: #3fc490;"></div>
+			<div class="palette-color" style="background: #22c8fc;"></div>
+			<div class="palette-color" style="background: #ce9226;"></div>
+			<div class="palette-color" style="background: #886772;"></div>
 		</div>
 
 		<div id="menu" class="pressure-controls">

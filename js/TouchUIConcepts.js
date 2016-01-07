@@ -192,7 +192,7 @@
 		// IndexedDB
 		window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB,
 			IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
-			dbVersion = 3;
+			dbVersion = 4;
 
 		/* 
 			Note: The recommended way to do this is assigning it to window.indexedDB,
@@ -270,6 +270,9 @@
 			} catch(e) {}
 			try {
 				dataBase.createObjectStore("brushes");
+			} catch(e) {}
+			try {
+				dataBase.createObjectStore("palettes");
 			} catch(e) {}
 		};
 
