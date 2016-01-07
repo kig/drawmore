@@ -982,6 +982,29 @@
 		});
 		click(window.mirror, this.mirror.bind(this));
 
+
+		var paletteColors = document.querySelectorAll('.palette-color');
+		var colors = localStorage.DrawMorePalette
+		if (colors) {
+			try { colors = JSON.parse(colors); }
+			catch(e) { colors = null;}
+		}
+		if (!colors) {
+			colors = DefaultPalette;
+		}
+
+		for (var i=0; i<paletteColors.length; i++) {
+			var pc = paletteColors[i];
+			pc.color = colors[i] || [255,255,255];
+			pc.style.backgroundColor = 'rgb(' + pc.color.join(",") + ')';
+			click(pc, function() {
+				self.brush.colorArray = this.color;
+				self.brush.color = this.style.backgroundColor;
+				window.colorPicker.update();
+			});
+		}
+
+
 		this.brushTextureLoaded = 0;
 		var brushShapes = document.querySelectorAll('#texture > div > img');
 		for (var i=0; i<brushShapes.length; i++) {
