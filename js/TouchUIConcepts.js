@@ -1693,7 +1693,7 @@
 		moveBrushStroke: function(x, y, pressure) {
 			this.app.brush.pressure = pressure;
 			if (this.app.mode === App.Mode.DRAW) {
-				if (y < 100) {
+				if (y < 60) {
 					document.body.classList.add('hide-ui');
 				}
 				this.app.brush.x = x;
