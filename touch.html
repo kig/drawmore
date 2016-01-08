@@ -412,6 +412,38 @@
 				pointer-events: none;
 				opacity: 0;
 			}
+			.range {
+				height: 20px;
+				width: 100%;
+				position: relative;
+				margin-bottom: 10px;
+			}
+			.range:before {
+				width: 100%;
+				position: absolute;
+				left: 0;
+				top: 50%;
+				margin-top: -1px;
+				height: 2px;
+				background: #CCC;
+				content: "";
+			}
+			.range:after {
+				position: absolute;
+				text-align: center;
+				bottom: -12px;
+				left: 0;
+				width: 100%;
+				content: attr(value);
+			}
+			.range .knob {
+				position: absolute;
+				left: 50%;
+				margin-left: 0px;
+				width: 1px;
+				height: 100%;
+				background: #888;
+			}
 		</style>
 	</head>
 	<body>
@@ -453,10 +485,10 @@
 			<div id="paletteButton" class="pressure-curve-button" onclick="palette.classList.toggle('hidden');palette.isOpen=!palette.classList.contains('hidden')">+</div>
 			<div class="mode-toggle" id="brushShape"></div>
 			<div id="brushShapeControls" class="hidden">
-				<label for="blending"><div><input id="blending" type="checkbox" /> Smudge</div></label>
 				<label for="rotateWithStroke"><div><input id="rotateWithStroke" type="checkbox" /> Rotate stroke</div></label>
-				<div>Brush scale<br><input type="number" min="0.1" max="1" step="0.1" id="xScale" value="1" /></div>
-				<div>Brush rotation<br><input type="number" min="-3.14159" max="3.14159" step="0.01" id="brushRotation" value="0" /></div>
+				<div>Smudge<br><div class="range" min="0.0" max="1" step="0.1" id="blending" value="1"></div></div>
+				<div>Brush scale<br><div class="range" min="0.1" max="1" step="0.1" id="xScale" value="1"></div></div>
+				<div>Brush rotation<br><div class="range" min="-3.14159" max="3.14159" step="0.01" id="brushRotation" value="0"></div></div>
 				<div id="texture">
 					<p>Brush shape</p>
 					<div><img class="svg" src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"><circle cx="19" cy="19" r="17" fill="#000000" /></svg>'></div><div><img src="texture.png"></div><div><img src="texture2.png"></div><div><img src="texture3.png"></div>
@@ -491,6 +523,74 @@
 				<div id="redo">Redo</div> 
 			</div>
 		</div>
+
+		<script>
+			(function() {
+				var ERange = {};
+				ERange.init = function(range) {
+					var knob = document.createElement('div');
+					knob.className = 'knob';
+					range.appendChild(knob);
+					range.value = parseFloat(range.getAttribute('value'));
+					range.min = parseFloat(range.getAttribute('min'));
+					range.max = parseFloat(range.getAttribute('max'));
+
+					range.updateKnob = function() {
+						knob.style.left = 100 * (this.value - this.min) / (this.max-this.min) + '%';
+						this.setAttribute('value', Math.round(this.value * 100)/100);
+					};
+
+					range.moveKnobBy = function(dx) {
+						var vPerPx = (this.max-this.min) / this.getBoundingClientRect().width;
+						this.value = Math.clamp(this.value + dx * vPerPx, this.min, this.max);
+					};
+
+					var down = false;
+					var downX = 0;
+					range.onmousedown = function(ev) {
+						if (ev.preventDefault()) { ev.preventDefault(); }
+						down = true;
+						downX = ev.clientX;
+					};
+					var move = function(ev) {
+						if (down) {
+							if (ev.preventDefault()) { ev.preventDefault(); }
+							var dx = ev.clientX - downX;
+							downX = ev.clientX;
+							range.moveKnobBy(dx);
+							range.updateKnob();
+							if (range.oninput) {
+								range.oninput();
+							}
+						}
+					};
+					var up = function(ev) {
+						if (down) {
+							if (ev.preventDefault()) { ev.preventDefault(); }
+							down = false;
+							if (range.onchange) {
+								range.onchange();
+							}
+						}
+					};
+					window.addEventListener('mousemove', move, false);
+					window.addEventListener('mouseup', up, false);
+
+
+					range.addEventListener('touchstart', function(ev) { ev.preventDefault(); range.onmousedown(ev.touches[0]); }, false);
+					range.addEventListener('touchmove', function(ev) { ev.preventDefault(); move(ev.touches[0]); }, false);
+					range.addEventListener('touchend', up, false);
+					range.addEventListener('touchcancel', up, false);
+
+					range.updateKnob();
+				};
+
+				var ranges = document.querySelectorAll('.range');
+				for (var i=0; i<ranges.length; i++) {
+					ERange.init(ranges[i]);
+				}
+			})();
+		</script>
 
 		<script src="js/three.js"></script>
 		<script src="js/ColorUtils.js"></script>

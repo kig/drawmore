@@ -530,7 +530,7 @@
 			xScale: 1,
 			rotateWithStroke: 0,
 			curve: CurvePresets.liner,
-			texture: 'texture.png',
+			texture: 0,
 			color: '#000000',
 			colorArray: new Uint8Array([0,0,0,255])
 		};
@@ -950,6 +950,18 @@
 		this.endBrush();
 	};
 
+	App.prototype.updateBrushControls = function() {
+		window.colorPicker.update();
+		window.opacityChange.update();
+		window.brushResize.update();
+		window.brushShape.update();
+		window.brushRotation.value = this.brush.rotation;
+		window.xScale.value = this.brush.xScale;
+		window.blending.value = this.brush.blend;
+		window.rotateWithStroke.checked = !!this.brush.rotateWithStroke;
+	};
+
+
 	App.prototype.addEventListeners = function() {
 		var self = this;
 
@@ -960,10 +972,7 @@
 				for (var i in brush) {
 					this.brush[i] = brush[i];
 				}
-				window.colorPicker.update();
-				window.opacityChange.update();
-				window.brushResize.update();
-				window.brushShape.update();
+				this.updateBrushControls();
 			} catch(e) {}
 		}
 
@@ -1021,6 +1030,7 @@
 				}
 				this.parentElement.classList.add('selected');
 				self.brush.texture = this.brushId;
+				window.brushShape.update();
 			});
 			if (el.className === 'svg') {
 			} else {
@@ -1031,17 +1041,21 @@
 			}
 		}
 
-		window.blending.onchange = function() {
-			self.brush.blend = this.checked ? 0 : 1;
+		window.blending.oninput = function() {
+			self.brush.blend = parseFloat(this.value);
+			window.brushShape.update();
 		};
 		window.rotateWithStroke.onchange = function() {
 			self.brush.rotateWithStroke = this.checked ? 1 : 0;
+			window.brushShape.update();
 		};
-		window.brushRotation.onchange = function() {
+		window.brushRotation.oninput = function() {
 			self.brush.rotation = parseFloat(this.value);
+			window.brushShape.update();
 		};
-		window.xScale.onchange = function() {
+		window.xScale.oninput = function() {
 			self.brush.xScale = parseFloat(this.value);
+			window.brushShape.update();
 		};
 
 		click(window.saveBrush, function(){
@@ -1070,10 +1084,7 @@
 			div.dataset.name = name;
 			click(div, function() {
 				self.setBrushPreset(BrushPresets[this.dataset.name]);
-				window.colorPicker.update();
-				window.opacityChange.update();
-				window.brushResize.update();
-				window.brushShape.update();
+				self.updateBrushControls();
 				closeBrushMenu();
 			});
 			window.brushShapeControls.appendChild(div);
@@ -1873,20 +1884,30 @@
 
 			} else if (targetMode === App.Mode.BRUSH_SHAPE) {
 
-				var tex = app.brush.texture;
-				if (tex && false) {
+				var texId = app.brush.texture;
+				var tex = app.brushTextures[texId];
+				if (tex) {
 					if (!tex.canvas) {
 						var c = tex.canvas = document.createElement('canvas');
 						c.width = tex.width;
 						c.height = tex.height;
 						var ctx = c.getContext('2d');
 						var id = ctx.getImageData(0, 0, c.width, c.height);
-						for (var i=0; i<id.data.length; i++) {
-							id.data[i] = tex.data[i];
+						for (var i=0; i<id.data.length; i+=4) {
+							id.data[i+3] = 255-tex.data[i];
 						}
 						ctx.putImageData(id, 0, 0);
 					}
-					toggleCtx.drawImage(tex.canvas, 0, 0, w, h);
+					toggleCtx.fillStyle = '#AAA';
+					toggleCtx.fillRect(0, 0, w, h);
+
+					toggleCtx.save();
+					toggleCtx.translate(w/2, h/2);
+					toggleCtx.rotate(app.brush.rotation);
+					toggleCtx.scale(app.brush.xScale, 1);
+					var sw = w*0.8, sh = h*0.8;
+					toggleCtx.drawImage(tex.canvas, -sw/2, -sh/2, sw, sh);
+					toggleCtx.restore();
 				} else {
 					var r = app.brush.hardness;
 
@@ -1898,10 +1919,17 @@
 					gradient.addColorStop(r, 'rgba(0,0,0,1)');
 					gradient.addColorStop(1, 'rgba(0,0,0,0)');
 
+					toggleCtx.save();
+					toggleCtx.translate(w/2, h/2-5);
+					toggleCtx.rotate(app.brush.rotation);
+					toggleCtx.scale(app.brush.xScale, 1);
+
 					toggleCtx.beginPath();
-					toggleCtx.arc(w/2, h/2-5, h/2-8, 0, Math.PI*2, true);
+					toggleCtx.arc(0, 0, h/2-8, 0, Math.PI*2, true);
 					toggleCtx.fillStyle = gradient;
 					toggleCtx.fill();
+
+					toggleCtx.restore();
 
 					toggleCtx.fillStyle = 'black';
 
