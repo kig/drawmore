@@ -413,7 +413,7 @@
 				opacity: 0;
 			}
 			.range {
-				height: 20px;
+				height: 10px;
 				width: 100%;
 				position: relative;
 				margin-bottom: 10px;
@@ -443,6 +443,10 @@
 				width: 1px;
 				height: 100%;
 				background: #888;
+			}
+
+			#importBrushes {
+				display: none;
 			}
 		</style>
 	</head>
@@ -494,8 +498,9 @@
 					<div><img class="svg" src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"><circle cx="19" cy="19" r="17" fill="#000000" /></svg>'></div><div><img src="texture.png"></div><div><img src="texture2.png"></div><div><img src="texture3.png"></div>
 				</div>
 				<div id="saveBrush">Save brush</div>
-				<div id="exportBrushes">Export brushes</div>
-				<input type="file" id="importBrushes">Import brushes</div>
+				<div>
+					<span id="exportBrushes">Export</span> &nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp; <span onclick="importBrushes.click()">Import <input type="file" id="importBrushes"></span>
+				</div>
 			</div>
 
 			<div id="palette" class="hidden">
@@ -532,9 +537,16 @@
 					var knob = document.createElement('div');
 					knob.className = 'knob';
 					range.appendChild(knob);
-					range.value = parseFloat(range.getAttribute('value'));
-					range.min = parseFloat(range.getAttribute('min'));
-					range.max = parseFloat(range.getAttribute('max'));
+					Object.defineProperty(range, 'value', {
+						get: function() {
+							return this.__value;
+						},
+
+						set: function(v) {
+							this.__value = v;
+							this.updateKnob();
+						}
+					})
 
 					range.updateKnob = function() {
 						knob.style.left = 100 * (this.value - this.min) / (this.max-this.min) + '%';
@@ -546,20 +558,23 @@
 						this.value = Math.clamp(this.value + dx * vPerPx, this.min, this.max);
 					};
 
+					range.value = parseFloat(range.getAttribute('value'));
+					range.min = parseFloat(range.getAttribute('min'));
+					range.max = parseFloat(range.getAttribute('max'));
+
 					var down = false;
 					var downX = 0;
 					range.onmousedown = function(ev) {
-						if (ev.preventDefault()) { ev.preventDefault(); }
+						if (ev.preventDefault) { ev.preventDefault(); }
 						down = true;
 						downX = ev.clientX;
 					};
 					var move = function(ev) {
 						if (down) {
-							if (ev.preventDefault()) { ev.preventDefault(); }
+							if (ev.preventDefault) { ev.preventDefault(); }
 							var dx = ev.clientX - downX;
 							downX = ev.clientX;
 							range.moveKnobBy(dx);
-							range.updateKnob();
 							if (range.oninput) {
 								range.oninput();
 							}
@@ -567,7 +582,7 @@
 					};
 					var up = function(ev) {
 						if (down) {
-							if (ev.preventDefault()) { ev.preventDefault(); }
+							if (ev.preventDefault) { ev.preventDefault(); }
 							down = false;
 							if (range.onchange) {
 								range.onchange();
