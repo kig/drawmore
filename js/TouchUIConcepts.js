@@ -524,11 +524,11 @@
 			y: 0,
 			r: 3,
 			opacity: 1,
-			blend: 0.0,
+			blend: 1,
 			hardness: 1,
 			rotation: 0,
-			xScale: 0.5,
-			rotateWithStroke: 1,
+			xScale: 1,
+			rotateWithStroke: 0,
 			curve: CurvePresets.liner,
 			texture: 'texture.png',
 			color: '#000000',
@@ -1031,6 +1031,19 @@
 			}
 		}
 
+		window.blending.onchange = function() {
+			self.brush.blend = this.checked ? 0 : 1;
+		};
+		window.rotateWithStroke.onchange = function() {
+			self.brush.rotateWithStroke = this.checked ? 1 : 0;
+		};
+		window.brushRotation.onchange = function() {
+			self.brush.rotation = parseFloat(this.value);
+		};
+		window.xScale.onchange = function() {
+			self.brush.xScale = parseFloat(this.value);
+		};
+
 		click(window.saveBrush, function(){
 			self.getBrushNamesFromDB(function(names) {
 				var name = prompt("Name: (" + names.join(", ") + ")");
@@ -1344,7 +1357,7 @@
 
 		var brush = this.brush;
 		var curve = brush.curve;
-		var blend = window.blending.checked ? 0 : 1;
+		var blend = brush.blend;
 		var texture = brush.texture;
 		var radiusCurve = curve.radius;
 		var opacityCurve = curve.opacity;
