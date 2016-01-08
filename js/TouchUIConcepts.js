@@ -647,6 +647,11 @@
 		this.copyQuadTexture.image.height = texture.height;
 		this.copyQuadTexture.image.data = texture.data;
 		this.copyQuadTexture.needsUpdate = true;
+		this.copyQuad.scale.set(texture.width, -texture.height, 1);
+		this.copyQuad.position.set((texture.x || 0) + texture.width/2, (texture.y || 0) + texture.height/2, 0);
+		this.copyCamera.right = renderTarget.width;
+		this.copyCamera.bottom = renderTarget.height;
+		this.copyCamera.updateProjectionMatrix();
 		this.renderer.render(this.copyScene, this.copyCamera, renderTarget);
 	};
 
@@ -666,7 +671,7 @@
 		this.renderer.render(this.strokeScene, this.strokeCamera, this.copyRenderTarget);
 		this.strokeQuad.scale.y = 1;
 
-		var image = { width: this.width, height: this.height, data: new Uint8Array(this.width*this.height*4) };
+		var image = { x: 0, y: 0, width: this.width, height: this.height, data: new Uint8Array(this.width*this.height*4) };
 		gl.readPixels(
 			0, 0, image.width, image.height,
 			gl.RGBA, gl.UNSIGNED_BYTE, image.data
@@ -756,11 +761,12 @@
 
 
 		this.copyScene = new THREE.Scene();
-		this.copyCamera = new THREE.Camera();
+		this.copyCamera = new THREE.OrthographicCamera(0, this.width, 0, this.height, near, far);
+		this.copyCamera.position.z = 90;
 		this.copyScene.add(this.copyCamera);
 		this.copyQuadTexture = new THREE.DataTexture(null, this.width, this.height);
 		this.copyQuad = new THREE.Mesh(
-			new THREE.PlaneBufferGeometry(2, 2),
+			new THREE.PlaneBufferGeometry(1, 1),
 			new THREE.MeshBasicMaterial({
 				map: this.copyQuadTexture,
 				transparent: true,
@@ -891,25 +897,7 @@
 			self.camera.bottom = window.innerHeight;
 			self.camera.updateProjectionMatrix();
 
-			var t = self.copyQuadTexture;
-			var w = t.image.width;
-			var h = t.image.height;
-			var d = t.image.data;
-			t.image.width = self.width;
-			t.image.height = self.height;
-			if (d) {
-				t.image.data = new Uint8Array(self.width * self.height * 4);
-				for (var y=0, hi = Math.min(h, self.height); y<hi; y++) {
-					for (var x=0, wi = Math.min(w, self.width); x<wi; x++) {
-						var off = (y*w + x) * 4;
-						var doff = (y*self.width + x) * 4;
-						t.image.data[doff++] = d[off++];
-						t.image.data[doff++] = d[off++];
-						t.image.data[doff++] = d[off++];
-						t.image.data[doff++] = d[off++];
-					}
-				}
-			}
+			self.timeTravel(self.drawEndIndex);
 		};
 
 		this.endDrawBrush();
@@ -1058,25 +1046,50 @@
 			window.brushShape.update();
 		};
 
+		click(window.exportBrushes, function() {
+			var a = document.createElement('a');
+			a.href = 'data:text/json,'+JSON.stringify(BrushPresets);
+			a.download = 'Drawmore Brushes.json';
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+		});
+
+		window.importBrushes.onchange = function() {
+			var reader = new FileReader();
+			reader.onload = function() {
+				var brushes = JSON.parse(reader.result);
+				for (var i in brushes) {
+					updateBrush(i, brushes[i]);
+				}
+			};
+			reader.readAsText(this.files[0]);
+		};
+
 		click(window.saveBrush, function(){
 			self.getBrushNamesFromDB(function(names) {
 				var name = prompt("Name: (" + names.join(", ") + ")");
-				if (name) {
-					if (!BrushPresets[name]) {
-						createBrush(name);
+				var brush = {
+					radius: self.brush.radius,
+					texture: self.brush.texture,
+					curve: {
+						radius: self.brush.curve.radius.slice(),
+						opacity: self.brush.curve.opacity.slice()
 					}
-					BrushPresets[name] = {
-						radius: self.brush.radius,
-						texture: self.brush.texture,
-						curve: {
-							radius: self.brush.curve.radius.slice(),
-							opacity: self.brush.curve.opacity.slice()
-						}
-					};
-					self.putToDB('brushes', name, BrushPresets[name]);
+				};
+				if (name) {
+					updateBrush(name, brush);
 				}
 			});
 		});
+
+		var updateBrush = function(name, brush) {
+			if (!BrushPresets[name]) {
+				createBrush(name);
+			}
+			BrushPresets[name] = brush;
+			self.putToDB('brushes', name, BrushPresets[name]);
+		};
 
 		var createBrush = function(name) {
 			var div = document.createElement('div');

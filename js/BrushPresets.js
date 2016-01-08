@@ -50,26 +50,34 @@ BrushPresets = {
 	"Felt Pen": {
 		curve: CurvePresets.liner,
 		r: 3,
+		blend: 1,
+		rotateWithStroke: 0,
 		texture: 1
 	},
 
 	"Pencil": {
 		curve: CurvePresets.pencil,
 		r: 2,
+		blend: 1,
+		rotateWithStroke: 0,
 		texture: 3
 	},
 
 	"Brush": {
 		curve: CurvePresets.brush,
+		blend: 1,
+		rotateWithStroke: 1,
 		texture: 0
 	},
 
 	"Liner": {
-		curve: CurvePresets.liner
+		curve: CurvePresets.liner,
+		blend: 0.8
 	},
 	
 	"Inkish": {
 		curve: CurvePresets.watery,
+		blend: 0.5,
 		texture: 3
 	}
 };
