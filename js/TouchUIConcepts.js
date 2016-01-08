@@ -526,6 +526,9 @@
 			opacity: 1,
 			blend: 0.0,
 			hardness: 1,
+			rotation: 0,
+			xScale: 0.5,
+			rotateWithStroke: 1,
 			curve: CurvePresets.liner,
 			texture: 'texture.png',
 			color: '#000000',
@@ -828,11 +831,16 @@
 					"uniform float radius;",
 					"uniform float pixelRatio;",
 					"uniform float hardness;",
+					"uniform float rotation;",
+					"uniform float xScale;",
 
 					"void main(void) {",
-					"	vec4 paintContent = texture2D(paint, vUv);",
-					"	vec2 unitUv = (vUv - 0.5) * 2.0;",
-					"	float maskV = 1.0-texture2D(mask, vUv).r;",
+					"	vec2 uv = vUv;",
+					"   uv = (uv - 0.5) * mat2(cos(rotation), -sin(rotation), sin(rotation), cos(rotation)) + 0.5;",
+					"	uv.x = (uv.x - 0.5) / xScale + 0.5;",
+					"	vec4 paintContent = texture2D(paint, uv);",
+					"	vec2 unitUv = (uv - 0.5) * 2.0;",
+					"	float maskV = 1.0-texture2D(mask, uv).r;",
 					"	float brushOpacity = max(squareBrush, mix(smoothstep(1.0, hardness * max(0.1, 1.0 - (2.0 / (pixelRatio*radius))), length(unitUv)), maskV, textured));",
 					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend) * opacity * brushOpacity;",
 					"	gl_FragColor.a = opacity * brushOpacity;",
@@ -850,7 +858,9 @@
 					pixelRatio: { type: 'f', value: window.devicePixelRatio || 1 },
 					blend: { type: 'f', value: 1 },
 					squareBrush: { type: 'f', value: 0 },
-					textured: { type: 'f', value: 0 }
+					textured: { type: 'f', value: 0 },
+					rotation: { type: 'f', value: 0 },
+					xScale: { type: 'f', value: 1 }
 				},
 
 				transparent: true,
@@ -1369,13 +1379,18 @@
 
 			// The following are constant over a stroke, only defined for isStart == 1.
 
-			// 10 bytes
+			// 12 bytes
 
 			color: brush.colorArray, // 24 bits
 
 			r: brush.r, // 16 bits
 			opacity: brush.opacity, // 8 bits
 			hardness: brush.hardness, // 8 bits
+
+			rotation: brush.rotation, // 8 bits
+			xScale: brush.xScale, // 8 bits
+
+			rotateWithStroke: brush.rotateWithStroke, // 1 bit
 
 			radiusCurve: radiusCurve, // 8 bits -- index to curve array
 			opacityCurve: opacityCurve, // 8 bits
@@ -1465,7 +1480,9 @@
 						a.isStart,
 						a.blend,
 						a.texture,
-						a.hardness
+						a.hardness,
+						a.rotation,
+						a.xScale
 					);
 
 				} else {
@@ -1490,7 +1507,9 @@
 							isStart,
 							a.blend,
 							a.texture,
-							a.hardness
+							a.hardness,
+							a.rotation + (a.rotateWithStroke ? Math.atan2(dy, dx) : 0),
+							a.xScale
 						);
 
 						d += Math.clamp(0.25 * this.curvePoint(p, a.radiusCurve) * a.r, 0.125, 1);
@@ -1519,7 +1538,7 @@
 		}
 	};
 
-	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, texture, hardness) {
+	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, texture, hardness, rotation, xScale) {
 		if (isStart && blend < 1) {
 
 		} else {
@@ -1530,6 +1549,8 @@
 			m.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
 			m.uniforms.blend.value = blend;
 			m.uniforms.hardness.value = hardness;
+			m.uniforms.rotation.value = rotation || 0;
+			m.uniforms.xScale.value = xScale || 1;
 			if (texture) {
 				this.setBrushTexture(texture);
 			}
