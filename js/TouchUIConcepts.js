@@ -1698,7 +1698,7 @@
 
 		parsePressure: function(touch) {
 			var force = touch.force;
-			if (!force && touch.radiusX !== 0) {
+			if (force === undefined) {
 				force = 1;
 			}
 			if (touch.pointerType != undefined && force === 0.5 && touch.pointerType !== 'pen') {
@@ -1711,7 +1711,8 @@
 		getPenTouch: function(ev) {
 			var touches = ev.changedTouches;
 			for (var i=0; i<touches.length; i++) {
-				if (touches[i].radiusX === 0 && touches[i].radiusY === 0) {
+				var t = touches[i];
+				if (t.radiusX*t.radiusX + t.radiusY*t.radiusY < 20*20) {
 					return touches[i];
 				}
 			}
