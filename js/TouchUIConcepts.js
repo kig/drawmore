@@ -1712,8 +1712,8 @@
 			var touches = ev.changedTouches;
 			for (var i=0; i<touches.length; i++) {
 				var t = touches[i];
-				if (t.radiusX*t.radiusX + t.radiusY*t.radiusY < 20*20) {
-					return touches[i];
+				if (t.radiusX < 5 || t.radiusY < 5) {
+					return t;
 				}
 			}
 			if (this.app.penMode) {
