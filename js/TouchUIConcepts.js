@@ -1924,14 +1924,12 @@
 					toggleCtx.drawImage(tex.canvas, -sw/2, -sh/2, sw, sh);
 					toggleCtx.restore();
 				} else {
-					var r = app.brush.hardness;
-
 					toggleCtx.fillStyle = '#AAA';
 					toggleCtx.fillRect(0, 0, w, h);
 
-					var gradient = toggleCtx.createRadialGradient(w/2, h/2-5, 0, w/2, h/2-5, h/2-8);
+					var gradient = toggleCtx.createRadialGradient(0, 0, 0, 0, 0, h/2-8);
 					gradient.addColorStop(0, 'rgba(0,0,0,1)');
-					gradient.addColorStop(r, 'rgba(0,0,0,1)');
+					gradient.addColorStop(app.brush.hardness, 'rgba(0,0,0,1)');
 					gradient.addColorStop(1, 'rgba(0,0,0,0)');
 
 					toggleCtx.save();
