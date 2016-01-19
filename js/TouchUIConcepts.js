@@ -1712,7 +1712,7 @@
 			var touches = ev.changedTouches;
 			for (var i=0; i<touches.length; i++) {
 				var t = touches[i];
-				if (t.radiusX < 0.25 || t.radiusY < 0.25) {
+				if (t.radiusX == 0 || t.radiusY == 0) {
 					//this.app.log(t.radiusX + " \n" + t.radiusY);
 					return t;
 				}
