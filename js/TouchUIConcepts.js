@@ -1,4 +1,13 @@
 (function() {
+	if ('serviceWorker' in navigator) {
+	  navigator.serviceWorker.register('./ServiceWorker.js').then(function(registration) {
+	    // Registration was successful
+	    console.log('ServiceWorker registration successful with scope: ',    registration.scope);
+	  }).catch(function(err) {
+	    // registration failed :(
+	    console.log('ServiceWorker registration failed: ', err);
+	  });
+	}
 
 	var App = function() {
 		this.init();
@@ -548,10 +557,9 @@
 		this.setupCanvas();
 
 		var self = this;
-		// this.initIndexedDB(function() {
+		this.initIndexedDB(function() {
 			self.addEventListeners();
-		// self.loadImageFromDB('drawingInProgress');
-		// });
+		});
 	};
 
 	// Use ShaderToy shaders as brush shaders / filters.
@@ -953,7 +961,7 @@
 	App.prototype.addEventListeners = function() {
 		var self = this;
 
-		/*
+		
 		var brush = localStorage.DrawMoreBrush;
 		if (brush) {
 			try {
@@ -964,7 +972,7 @@
 				this.updateBrushControls();
 			} catch(e) {}
 		}
-		*/
+		
 
 		this.eventHandler = new App.EventHandler(this, this.renderer.domElement);
 		var f = function(ev){ ev.preventDefault(); };
@@ -1070,8 +1078,8 @@
 		};
 
 		click(window.saveBrush, function(){
-			// self.getBrushNamesFromDB(function(names) {
-				var name = prompt("Name:"); // (" + names.join(", ") + ")");
+			self.getBrushNamesFromDB(function(names) {
+				var name = prompt("Name:" + names.join(", ") + ")");
 				var brush = {
 					radius: self.brush.radius,
 					texture: self.brush.texture,
@@ -1083,7 +1091,7 @@
 				if (name) {
 					updateBrush(name, brush);
 				}
-			//});
+			});
 		});
 
 		var updateBrush = function(name, brush) {
@@ -1091,7 +1099,7 @@
 				createBrush(name);
 			}
 			BrushPresets[name] = brush;
-			// self.putToDB('brushes', name, BrushPresets[name]);
+			self.putToDB('brushes', name, BrushPresets[name]);
 		};
 
 		var createBrush = function(name) {
@@ -1110,7 +1118,7 @@
 			createBrush(name);
 		}
 
-/*
+
 		this.getBrushesFromDB(function(brushes){
 			var names = {};
 			brushes.forEach(function(brush) {
@@ -1127,7 +1135,7 @@
 				}
 			}
 		});
-*/
+
 		window.penMode.onchange = function(ev) {
 			self.penMode = this.checked;
 			localStorage.DrawMorePenMode = this.checked;
@@ -1151,7 +1159,7 @@
 		var closeBrushMenu = function() {
 			window.brushShapeControls.classList.add('hidden');
 		};
-/*
+
 		click(window.save, function() {
 			self.getSavedImageNames(function(names) {
 				var name = prompt("Name: " + names.join(", "));
@@ -1168,7 +1176,7 @@
 				closeMenu();
 			});
 		});
-*/
+
 		click(window.newDrawing, function() { 
 			if (confirm("Erase current drawing?")) {
 				self.timeTravel(0);
@@ -1206,14 +1214,16 @@
 		click(window.toggleFullScreenButton, toggleFullScreen);
 
 		window.onbeforeunload = function(ev) {
+			localStorage.DrawMoreBrush = JSON.stringify(self.brush);
+
 			return "Leaving this page will erase your drawing.";
+
 			if (self.saved) {
 				ev.preventDefault();
 				return;
 			}
-			localStorage.DrawMoreBrush = JSON.stringify(self.brush);
 			try {
-				self.saveImageToDB('drawingInProgress');
+				// self.saveImageToDB('drawingInProgress');
 				return;
 			} catch(e) {
 				return "Leaving this page will erase your drawing.";
