@@ -41,14 +41,58 @@
 
 
 	App.prototype.getImageThumbnailURL = function(name, callback) {
-		callback( '/texture.png' );
+		var self = this;
+
+		this.getFromDB('thumbnails', name, function(thumbnail) {
+			if (!thumbnail) {
+				self.loadImageFromDB(name, function(image) {
+					var url;
+					var lastSnap = image.snapshots[image.snapshots.length-1];
+					if (lastSnap && lastSnap.state.texture) {
+						var tex = lastSnap.state.texture;
+						var c = document.createElement('canvas');
+						c.width = tex.width;
+						c.height = tex.height;
+						var ctx = c.getContext('2d');
+						var id = ctx.getImageData(0, 0, tex.width, tex.height);
+						for (var i=0; i<tex.data.length;) {
+							id.data[i] = tex.data[i]; i++;
+							id.data[i] = tex.data[i]; i++;
+							id.data[i] = tex.data[i]; i++;
+							id.data[i] = tex.data[i]; i++;
+						}
+						ctx.putImageData(id, 0, 0);
+						
+						var imgC = document.createElement('canvas');
+						var maxDim = 512;
+						var f = 512 / Math.max(tex.width, tex.height);
+						imgC.width = Math.ceil(tex.width * f);
+						imgC.height = Math.ceil(tex.height * f);
+						var imgCtx = imgC.getContext('2d');
+						imgCtx.drawImage(c, 0, 0, imgC.width, imgC.height);
+						url = imgC.toDataURL();
+					} else {
+						var c = document.createElement('canvas');
+						c.width = c.height = 32;
+						url = c.toDataURL();
+					}
+					self.putToDB('thumbnails', name, url);
+					callback(url);
+				}, function(error) {
+					callback( '/texture.png' );
+				});
+			} else {
+				callback(thumbnail);
+			}
+		});
+
 	};
 
 	App.prototype.initIndexedDB = function(callback) {
 		// IndexedDB
 		window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB,
 			IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
-			dbVersion = 4;
+			dbVersion = 5;
 
 		/* 
 			Note: The recommended way to do this is assigning it to window.indexedDB,
@@ -130,6 +174,9 @@
 			try {
 				dataBase.createObjectStore("palettes");
 			} catch(e) {}
+			try {
+				dataBase.createObjectStore("thumbnails");
+			} catch(e) {}
 		};
 
 		request.onsuccess = function (event) {
@@ -169,8 +216,15 @@
 		this.putToDB('imageNames', name, true);
 	};
 
-	App.prototype.loadImageFromDB = function(name) {
-		this.getFromDB('images', name, this.loadSerializedImage.bind(this));
+	App.prototype.loadImageFromDB = function(name, onSuccess, onError) {
+		var self = this;
+		this.getFromDB('images', name, function(buf) {
+			try {
+				onSuccess(self.loadSerializedImage(buf));
+			} catch(e) {
+				onError(e);
+			}
+		}, onError);
 	};
 
 	App.prototype.deleteImageFromDB = function(name) {
@@ -241,19 +295,20 @@
 		if (!newSnapshots[0] || newSnapshots[0].index !== 0) {
 			throw("Corrupt snapshot when loading image");
 		}
-		this.drawArray = drawArray;
-		this.snapshots = newSnapshots;
-		this.timeTravel(drawEndIndex);
-		this.needUpdate = true;
+
+		return {
+			drawArray: drawArray,
+			snapshots: newSnapshots,
+			drawEndIndex: drawEndIndex
+		};
 	};
 
-	App.prototype.serializeImage = function() {
+	App.prototype.serializeImage = function(drawArray, snapshots, drawEndIndex) {
 		var headerLength = 12;
 
-		var dataString = JSON.stringify(this.drawArray);
+		var dataString = JSON.stringify(drawArray);
 		var dataStringByteLength = Math.ceil(dataString.length / 4) * 4;
 
-		var snapshots = this.snapshots;
 		var snapshotByteLength = 0;
 		for (var i=0; i<snapshots.length; i++) {
 			snapshotByteLength += 8;
@@ -268,7 +323,7 @@
 		var u8 = new Uint8Array(buf);
 		u32[0] = 3; // version
 		u32[1] = dataString.length;
-		u32[2] = this.drawEndIndex;
+		u32[2] = drawEndIndex;
 		for (var i=0; i<dataString.length; i++) {
 			u8[i + headerLength] = dataString.charCodeAt(i);
 		}
