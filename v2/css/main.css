@@ -17,7 +17,10 @@ body
 	overflow: auto;
 	box-sizing: border-box;
 	padding: 8px;
-	text-align: left;
+	padding-top: 16px;
+	text-align: center;
+
+	cursor: pointer;
 
 	transition: 0.5s 0.1s;
 }

@@ -75,11 +75,15 @@ AppDBMixin.processThumbnailQueue = function() {
 			self.loadImageFromDB(name, function(image) {
 				var url;
 				var lastSnap = image.snapshots[image.snapshots.length-1];
+				console.log(image);
 				if (lastSnap && lastSnap.state.texture) {
 					var tex = lastSnap.state.texture;
 					var c = document.createElement('canvas');
 					c.width = tex.width;
 					c.height = tex.height;
+					
+					console.log(tex.width, tex.height);
+
 					var ctx = c.getContext('2d');
 					var id = ctx.getImageData(0, 0, tex.width, tex.height);
 					for (var y=0; y<tex.height; y++) {
@@ -203,6 +207,7 @@ AppDBMixin.saveImageToDB = function(name, folder, callback) {
 	var serialized = this.serializeImage(this.drawArray, this.snapshots, this.drawEndIndex);
 	var self = this;
 	this.putToDB('images', name, serialized, function() {
+		console.log("Created a serialized image", serialized.byteLength);
 		self.moveImageToFolder(name, folder, function() {
 			self.getImageThumbnailURL(name, function() {
 				if (callback) {
@@ -216,11 +221,8 @@ AppDBMixin.saveImageToDB = function(name, folder, callback) {
 AppDBMixin.loadImageFromDB = function(name, onSuccess, onError) {
 	var self = this;
 	this.getFromDB('images', name, function(buf) {
-		try {
-			onSuccess(self.loadSerializedImage(buf));
-		} catch(e) {
-			onError(e);
-		}
+		console.log("Read in a serialized image", buf.byteLength);
+		self.loadSerializedImage(buf).then(onSuccess).catch(onError);
 	}, onError);
 };
 
@@ -254,6 +256,7 @@ AppDBMixin.recoverImageFromTrash = function(name, onSuccess, onError) {
 };
 
 AppDBMixin.deleteImageFromDB = function(name, onSuccess, onError) {
+	var self = this;
 	this.deleteFromDB('imageNames', name, function() {
 		self.deleteFromDB('images', name, onSuccess, onError);
 	}, onError);
@@ -295,6 +298,8 @@ AppDBMixin.loadSerializedImage = function(buf) {
 
 	var newSnapshots = [];
 
+	var promises = [];
+
 	var offset = 0;
 	while (offset < snapshots.length) {
 		var u32Offset = (snapshotsByteIndex + offset) / 4;
@@ -305,10 +310,20 @@ AppDBMixin.loadSerializedImage = function(buf) {
 		if (snapshotLength > 0) {
 			var w = u32[u32Offset++];
 			var h = u32[u32Offset++];
+			var data;
 			if (w*h*4 !== snapshotLength-8) {
-				throw("Corrupt snapshot when loading image");
+				// Assume compressed image
+				var pngData = new Uint8Array(buf, u32Offset*4, snapshotLength-8);
+				data = this.getImageDataForPNG(pngData).then(function(id) { 
+					console.log('Hello there PNG', id.data.length);
+					var u8 = new Uint8Array(id.data.length);
+					u8.set(id.data);
+					return u8;
+				});
+			} else {
+				data = new Uint8Array(buf, u32Offset*4, w*h*4);
 			}
-			var data = new Uint8Array(buf, u32Offset*4, w*h*4);
+			promises.push(data);
 			snapshot.state.texture = {
 				width: w,
 				height: h,
@@ -323,11 +338,21 @@ AppDBMixin.loadSerializedImage = function(buf) {
 		throw("Corrupt snapshot when loading image");
 	}
 
-	return {
-		drawArray: drawArray,
-		snapshots: newSnapshots,
-		drawEndIndex: drawEndIndex
-	};
+	return Promise.all(promises).then(function(resolved){
+		console.log('Resolved snapshot data', resolved.length);
+		for (var i=0, j=0; i<newSnapshots.length; i++) {
+			var ss = newSnapshots[i];
+			if (ss.state.texture) {
+				console.log('Setting snapshot state texture data', resolved[j].byteLength);
+				ss.state.texture.data = resolved[j++];
+			}
+		}
+		return {
+			drawArray: drawArray,
+			snapshots: newSnapshots,
+			drawEndIndex: drawEndIndex
+		};
+	});
 };
 
 AppDBMixin.serializeImage = function(drawArray, snapshots, drawEndIndex) {
@@ -355,24 +380,73 @@ AppDBMixin.serializeImage = function(drawArray, snapshots, drawEndIndex) {
 		u8[i + headerLength] = dataString.charCodeAt(i);
 	}
 	var snapshotOffset = headerLength + dataStringByteLength;
+	var compressTextures = true;
 	for (var i=0; i<snapshots.length; i++) {
 		var snapshotU32Offset = snapshotOffset / 4;
 		var s = snapshots[i];
 		u32[snapshotU32Offset++] = s.index;
-		u32[snapshotU32Offset++] = s.state.texture ? 8 + s.state.texture.data.byteLength : 0;
+		
+		var textureData;
+		if (s.state.texture) {
+			if (compressTextures) {
+				textureData = this.getPNGForImageData(s.state.texture);
+			} else {
+				textureData = s.state.texture.data;
+			}
+		}
+		var textureSize = textureData ? textureData.byteLength : 0;
+
+		u32[snapshotU32Offset++] = s.state.texture ? 8 + textureSize : 0;
 		snapshotOffset = snapshotU32Offset * 4;
 		if (s.state.texture) {
 			u32[snapshotU32Offset++] = s.state.texture.width;
 			u32[snapshotU32Offset++] = s.state.texture.height;
 			snapshotOffset = snapshotU32Offset * 4;
-			var d = s.state.texture.data;
-			for (var j=0; j<d.byteLength; j++) {
-				u8[snapshotOffset++] = d[j];
+			for (var j=0; j<textureData.byteLength; j++) {
+				u8[snapshotOffset++] = textureData[j];
 			}
 			snapshotOffset = Math.ceil(snapshotOffset / 4) * 4;
 		}
 	}
-	return buf;
+	return buf.slice(0, snapshotOffset);
+};
+
+AppDBMixin.getImageDataForPNG = function(pngData) {
+	return new Promise(function(resolve, reject) {
+		var img = new Image;
+		img.onload = function() {
+			window.URL.revokeObjectURL(this.src);
+			var canvas = document.createElement('canvas');
+			canvas.width = this.width;
+			canvas.height = this.height;
+			var ctx = canvas.getContext('2d');
+			ctx.globalCompositeOperation = 'copy';
+			ctx.drawImage(this, 0, 0);
+			var id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+			resolve( id );
+		};
+		img.onerror = reject;
+		var blob = new Blob([pngData]);
+		img.src = window.URL.createObjectURL(blob);
+	});
+};
+
+AppDBMixin.getPNGForImageData = function(imageData) {
+	var canvas = document.createElement('canvas');
+	canvas.width = imageData.width;
+	canvas.height = imageData.height;
+	var ctx = canvas.getContext('2d');
+	var id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	id.data.set(imageData.data);
+	ctx.putImageData(id, 0, 0);
+
+	var data = canvas.toDataURL();
+	var binary = atob(data.slice(data.indexOf(',') + 1));
+	var arr = new Uint8Array(binary.length);
+	for (var i=0; i<binary.length; i++) {
+		arr[i] = binary.charCodeAt(i) & 0xFF;
+	}
+	return arr;
 };
 
 AppDBMixin.putToDB = function(objectStore, key, value, onSuccess, onError) {
@@ -385,7 +459,7 @@ AppDBMixin.putToDB = function(objectStore, key, value, onSuccess, onError) {
 	put.onerror = onError;
 };
 
-AppDBMixin.deleteFromDB = function(objectStore, key) {
+AppDBMixin.deleteFromDB = function(objectStore, key, onSuccess, onError) {
 	// Open a transaction to the database
 	var transaction = this.indexedDB.transaction([objectStore], 'readwrite');
 

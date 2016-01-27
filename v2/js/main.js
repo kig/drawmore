@@ -26,4 +26,4 @@ for (var i in AppDBMixin) {
 	App.prototype[i] = AppDBMixin[i];
 }
 
-new App();
+var app = new App();

@@ -877,8 +877,8 @@
 		});
 		click(window.load, function() {
 			closeMenu();
-			window.filePicker.innerHTML = '';
 			clearTimeout(window.filePicker.clearTimeout);
+			window.filePicker.innerHTML = 'Cancel<br><br>';
 			window.filePicker.onclick = function(ev) {
 				ev.preventDefault();
 				this.classList.add('hidden');
