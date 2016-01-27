@@ -77,7 +77,7 @@
 		var name = currentTask.name;
 
 		this.getFromDB('thumbnails', name, function(thumbnail) {
-			if (!thumbnail) {
+			if (true || !thumbnail) {
 				self.loadImageFromDB(name, function(image) {
 					var url;
 					var lastSnap = image.snapshots[image.snapshots.length-1];
@@ -88,11 +88,15 @@
 						c.height = tex.height;
 						var ctx = c.getContext('2d');
 						var id = ctx.getImageData(0, 0, tex.width, tex.height);
-						for (var i=0; i<tex.data.length;) {
-							id.data[i] = tex.data[i]; i++;
-							id.data[i] = tex.data[i]; i++;
-							id.data[i] = tex.data[i]; i++;
-							id.data[i] = tex.data[i]; i++;
+						for (var y=0; y<tex.height; y++) {
+							for (var x=0; x<tex.width; x++) {
+								var j = (tex.width * (tex.height - 1 - y) + x) * 4;
+								var i = (tex.width * y + x) * 4;
+								id.data[j++] = tex.data[i++];
+								id.data[j++] = tex.data[i++];
+								id.data[j++] = tex.data[i++];
+								id.data[j++] = tex.data[i++];
+							}
 						}
 						ctx.putImageData(id, 0, 0);
 						
