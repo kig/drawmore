@@ -106,62 +106,64 @@
 		var request = indexedDB.open("drawmoreFiles", dbVersion);
 		var self = this;
 
+		console.log('Requested opening drawmoreFiles IndexedDB');
+
 		var cb = callback;
 
-		callback = function() {
-			var callback = function(names) {
-				if (names.length === 0 || (names.length === 1 && names[0] === 'drawingInProgress')) {
-					populateNames(self.indexedDB, cb);
-				} else {
-					cb();
-				}
-			}
-			// Open a transaction to the database
-			var transaction = self.indexedDB.transaction(["imageNames"], 'readwrite');
+		// callback = function() {
+		// 	var callback = function(names) {
+		// 		if (names.length === 0 || (names.length === 1 && names[0] === 'drawingInProgress')) {
+		// 			populateNames(self.indexedDB, cb);
+		// 		} else {
+		// 			cb();
+		// 		}
+		// 	}
+		// 	// Open a transaction to the database
+		// 	var transaction = self.indexedDB.transaction(["imageNames"], 'readwrite');
 
-			var names = [];
+		// 	var names = [];
 
-			// Retrieve the keys
-			var request = transaction.objectStore("imageNames").openCursor();
-			request.onsuccess = function (event) {
-				var cursor = event.target.result;
-				if (cursor) {
-					names.push(cursor.key);
-					cursor.continue();
-				} else {
-					callback(names);
-				}
-			};
-		};
+		// 	// Retrieve the keys
+		// 	var request = transaction.objectStore("imageNames").openCursor();
+		// 	request.onsuccess = function (event) {
+		// 		var cursor = event.target.result;
+		// 		if (cursor) {
+		// 			names.push(cursor.key);
+		// 			cursor.continue();
+		// 		} else {
+		// 			callback(names);
+		// 		}
+		// 	};
+		// };
 
-		var populateNames = function(dataBase, cb) {
-			var callback = function(names) {
-				names.forEach(function(n){ self.putToDB('imageNames', n, true); });
-				cb();
-			};
+		// var populateNames = function(dataBase, cb) {
+		// 	var callback = function(names) {
+		// 		names.forEach(function(n){ self.putToDB('imageNames', n, true); });
+		// 		cb();
+		// 	};
 
-			// Open a transaction to the database
-			var transaction = dataBase.transaction(["images"], 'readwrite');
+		// 	// Open a transaction to the database
+		// 	var transaction = dataBase.transaction(["images"], 'readwrite');
 
-			var names = [];
+		// 	var names = [];
 
-			// Retrieve the keys
-			var request = transaction.objectStore("images").openCursor();
-			request.onsuccess = function (event) {
-				var cursor = event.target.result;
-				if (cursor) {
-					names.push(cursor.key);
-					cursor.continue();
-				} else {
-					callback(names);
-				}
-			};
+		// 	// Retrieve the keys
+		// 	var request = transaction.objectStore("images").openCursor();
+		// 	request.onsuccess = function (event) {
+		// 		var cursor = event.target.result;
+		// 		if (cursor) {
+		// 			names.push(cursor.key);
+		// 			cursor.continue();
+		// 		} else {
+		// 			callback(names);
+		// 		}
+		// 	};
 
-		};
+		// };
 
 		var createObjectStore = function (dataBase) {
-			// Create an objectStore
-			console.log("Creating objectStore");
+			// Create objectStores
+			console.log("Creating objectStores");
 			try {
 				dataBase.createObjectStore("images");
 			} catch(e) {}
@@ -179,34 +181,44 @@
 			} catch(e) {}
 		};
 
+		request.onerror = function(error) {
+			console.log("Error creating/accessing IndexedDB", error);
+		};
+
 		request.onsuccess = function (event) {
 			console.log("Success creating/accessing IndexedDB database");
 			var db = self.indexedDB = request.result;
 
 			db.onerror = function (event) {
-				console.log("Error creating/accessing IndexedDB database");
+				console.log("Error creating/accessing IndexedDB database", event);
 			};
 			
 			// Interim solution for Google Chrome to create an objectStore. Will be deprecated
 			if (db.setVersion) {
 				if (db.version != dbVersion) {
+					console.log('Version differs, upgrading');
 					var setVersion = db.setVersion(dbVersion);
 					setVersion.onsuccess = function () {
+						console.log('setVersion.onsuccess')
 						createObjectStore(db);
 						setTimeout(callback, 100);
 					};
 				}
 				else {
+					console.log('Version up-to-date')
 					callback();
 				}
 			}
 			else {
+				console.log('No versioning capability');
+				createObjectStore(db);
 				callback();
 			}
 		}
 
 		// For future use. Currently only in latest Firefox versions
 		request.onupgradeneeded = function (event) {
+			console.log('onupgradeneeded');
 			createObjectStore(event.target.result);
 		};
 	};
