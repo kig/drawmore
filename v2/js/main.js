@@ -13,6 +13,8 @@
 
 		this.container = document.body;
 
+		this.thumbnailQueue = [];
+
 		var self = this;
 		this.initIndexedDB(function() {
 
@@ -41,7 +43,38 @@
 
 
 	App.prototype.getImageThumbnailURL = function(name, callback) {
+
+		this.thumbnailQueue.push({name: name, callback: callback});
+
+		if (this.thumbnailQueue.length > 1) {
+			return;
+		}
+
+		this.processThumbnailQueue();
+
+	};
+
+	App.prototype.applyThumbnailQueue = function(name, url) {
+		for (var i=0; i<this.thumbnailQueue.length; i++) {
+			var task = this.thumbnailQueue[i];
+			if (task.name === name) {
+				task.callback(url);
+				this.thumbnailQueue.splice(i, 1);
+				i--;
+			}
+		}
+		this.processThumbnailQueue();
+	};
+
+	App.prototype.processThumbnailQueue = function() {
+		if (this.thumbnailQueue.length === 0) {
+			return;
+		}
+
 		var self = this;
+
+		var currentTask = this.thumbnailQueue[0];
+		var name = currentTask.name;
 
 		this.getFromDB('thumbnails', name, function(thumbnail) {
 			if (!thumbnail) {
@@ -77,12 +110,15 @@
 						url = c.toDataURL();
 					}
 					self.putToDB('thumbnails', name, url);
-					callback(url);
+					self.applyThumbnailQueue(name, url);
+
 				}, function(error) {
-					callback( '/texture.png' );
+
+					self.applyThumbnailQueue(name, '/texture.png');
+
 				});
 			} else {
-				callback(thumbnail);
+				self.applyThumbnailQueue(name, thumbnail);
 			}
 		});
 
