@@ -1,0 +1,17 @@
+{
+  "name": "Drawmore",
+  "short_name": "Drawmore",
+  "scope": "./",
+  "icons": [{
+    "src": "img/drawmore.png",
+    "sizes": "144x144",
+    "type": "image/png"
+  },
+  {
+    "src": "img/drawmore-192.png",
+    "sizes": "192x192",
+    "type": "image/png"
+  }],
+  "display": "standalone",
+  "start_url": "./"
+}
