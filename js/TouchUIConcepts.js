@@ -859,7 +859,7 @@
 
 			set: function(v) {
 				this._imageName = v;
-				window.saveCopy.style.display = 'block';
+				window.saveCopy.style.display = v ? 'block' : 'none';
 			}
 		})
 
@@ -896,6 +896,7 @@
 				self.timeTravel(0);
 				self.drawArray = [];
 				self.addBrush(1, self.brushTextures[1]);
+				self.imageName = null;
 				closeMenu();
 			}
 		});
