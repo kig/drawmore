@@ -77,7 +77,7 @@
 		var name = currentTask.name;
 
 		this.getFromDB('thumbnails', name, function(thumbnail) {
-			if (true || !thumbnail) {
+			if (!thumbnail) {
 				self.loadImageFromDB(name, function(image) {
 					var url;
 					var lastSnap = image.snapshots[image.snapshots.length-1];
