@@ -448,7 +448,13 @@
 			#importBrushes {
 				display: none;
 			}
+
+			#saveCopy {
+				display: none;
+			}
+
 		</style>
+		<link rel="stylesheet" href="v2/css/main.css">
 	</head>
 	<body>
 		<div id="ui-container">
@@ -519,6 +525,7 @@
 				<div id="toggleFullScreenButton">Fullscreen</div>
 				<div id="newDrawing">New</div>
 				<div id="save">Save</div>
+				<div id="saveCopy">Save Copy</div>
 				<div id="load">Load</div>
 				<div id="savePNG">Save PNG</div>
 				<label for="penMode"><div><input id="penMode" type="checkbox" /> Pen mode</div></label>
@@ -528,6 +535,9 @@
 				<div id="undo">Undo</div>
 				<div id="redo">Redo</div> 
 			</div>
+		</div>
+
+		<div id="filePicker" class="hidden">
 		</div>
 
 		<script>
@@ -612,6 +622,7 @@
 		<script src="js/ColorUtils.js"></script>
 		<script src="js/ColorMixer.js"></script>
 		<script src="js/BrushPresets.js"></script>
+		<script src="v2/js/lib/AppDBMixin.js"></script>
 		<script src="js/TouchUIConcepts.js"></script>
 	</body>
 </html>

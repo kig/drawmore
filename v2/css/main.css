@@ -6,6 +6,26 @@ body
 	background: white;
 }
 
+#filePicker {
+	position: absolute;
+	left: 0;
+	top: 0;
+	z-index: 10;
+	width: 100%;
+	height: 100%;
+	background: white;
+	overflow: auto;
+	box-sizing: border-box;
+	padding: 8px;
+	text-align: left;
+
+	transition: 0.5s 0.1s;
+}
+
+#filePicker.hidden {
+	transition: 0.5s;
+}
+
 .item {
 	display: inline-block;
 	width: 90px;
