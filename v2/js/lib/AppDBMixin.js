@@ -11,10 +11,24 @@ AppDBMixin.buildFilePicker = function(container) {
 	this.getSavedImageNames(function(names) {
 		names.forEach(function(name) {
 
+			var pad = function(v) {
+				if (v < 10) v = "0" + v.toString();
+				return v;
+			};
+
+			var nameString = name;
+			if (/^\d+$/.test(name) && Math.abs(Date.now() - name) < 30*360*86400*1000 ) { // Timestamp?
+				var d = new Date(parseInt(name));
+				nameString = ( ""
+					+ [d.getFullYear(), pad(d.getMonth()+1), pad(d.getDate())].join("-")
+					+ " + " + pad(d.getHours()) + ":" + pad(d.getMinutes())
+				);
+			}
+
 			var d = document.createElement('div');
 			d.className = 'item';
 			var nameSpan = document.createElement('span');
-			nameSpan.appendChild(document.createTextNode(name));
+			nameSpan.appendChild(document.createTextNode(nameString));
 			d.appendChild(nameSpan);
 
 			d.onclick = function() {
