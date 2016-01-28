@@ -687,7 +687,7 @@
 
 
 		var paletteColors = document.querySelectorAll('.palette-color');
-		var colors = null; //localStorage.DrawMorePalette
+		var colors = localStorage.DrawMorePalette
 		if (colors) {
 			try { colors = JSON.parse(colors); }
 			catch(e) { colors = null;}
@@ -1749,6 +1749,8 @@
 			app.brush.opacity = this.startOpacity;
 			app.brush.color = this.startColor;
 			app.brush.colorArray = this.startColorArray;
+			var c = app.brush.colorArray;
+			app.colorMixer.setColor([c[0]/255, c[1]/255, c[2]/255]);
 			app.brush.hardness = this.startHardness;
 			this.update();
 		};
@@ -1907,6 +1909,7 @@
 						gl.readPixels(x, app.height-y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 						app.brush.color = App.toColor(pixels);
 						app.brush.colorArray = pixels;
+						app.colorMixer.setColor([pixels[0]/255, pixels[1]/255, pixels[2]/255, 1]);
 					}
 					break;
 				}
