@@ -215,10 +215,13 @@ AppDBMixin.initIndexedDB = function(callback) {
 	};
 };
 
+AppDBMixin.getSaveImageBuffer = function() {
+	this.recordSaveSnapshot();
+	return this.serializeImage(this.drawArray, this.snapshots, this.drawEndIndex);
+};
 
 AppDBMixin.saveImageToDB = function(name, folder, callback) {
-	this.recordSaveSnapshot();
-	var serialized = this.serializeImage(this.drawArray, this.snapshots, this.drawEndIndex);
+	var serialized = this.getSaveImageBuffer();
 	var self = this;
 	this.putToDB('images', name, serialized, function() {
 		console.log("Created a serialized image", serialized.byteLength);

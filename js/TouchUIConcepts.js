@@ -680,7 +680,7 @@
 		click(window.undo, this.undo.bind(this));
 		click(window.redo, this.redo.bind(this));
 		click(window.savePNG, function() {
-			self.save();
+			self.exportPNG();
 			closeMenu();
 		});
 		click(window.mirror, this.mirror.bind(this));
@@ -875,11 +875,33 @@
 			self.saveImageToDB(name);
 			closeMenu();
 		});
+		click(window.export, function() {
+			self.save();
+			closeMenu();
+		});
 		click(window.load, function() {
 			closeMenu();
 			clearTimeout(window.filePicker.clearTimeout);
-			window.filePicker.innerHTML = 'Cancel<br><br>';
+			window.filePicker.innerHTML = 'Cancel <input id="loadFile" type="file"><br><br>';
+			window.loadFile.onchange = function(ev) {
+				var file = ev.target.files[0];
+				var fr = new FileReader();
+
+				fr.onload = function(ev) {
+					self.loadSerializedImage(ev.target.result).then(function(image) {
+						self.drawArray = image.drawArray;
+						self.snapshots = image.snapshots;
+						self.timeTravel(image.drawEndIndex);
+						self.imageName = (new Date()).toString();
+					});
+				};
+				fr.readAsArrayBuffer(file);
+				window.filePicker.onclick({preventDefault: function(){}});
+			};
 			window.filePicker.onclick = function(ev) {
+				if (ev.target === window.loadFile) {
+					return;
+				}
 				ev.preventDefault();
 				this.classList.add('hidden');
 				var self = this;
@@ -962,7 +984,7 @@
 		self.plotCurve(window.brushSizeCurveCanvas, curve.radius);
 	};
 
-	App.prototype.save = function() {
+	App.prototype.exportPNG = function() {
 		var snap = this.createSnapshot(true);
 		var imageData = snap.state.texture;
 		var canvas = document.createElement('canvas');
@@ -992,6 +1014,14 @@
 			blob = new Blob([arr]);
 		}
 
+		this.saveBlob(blob, filename);
+	};
+
+	App.prototype.save = function() {
+		var filename = 'DrawmoreImage '+(new Date().toString().replace(/:/g, '.'))+ '.drawmore';
+
+		var buffer = this.getSaveImageBuffer();
+		var blob = new Blob([buffer]);
 		this.saveBlob(blob, filename);
 	};
 
