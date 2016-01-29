@@ -8,13 +8,27 @@ AppDBMixin.initFilePicker = function() {
 
 AppDBMixin.buildFilePicker = function(container) {
 	var self = this;
-	this.getSavedImageNames(function(names) {
-		names.forEach(function(name) {
 
-			var pad = function(v) {
-				if (v < 10) v = "0" + v.toString();
-				return v;
-			};
+	var pad = function(v) {
+		if (v < 10) v = "0" + v.toString();
+		return v;
+	};
+	var folders = {};
+
+	this.getSavedImageNames(function(names) {
+		names.forEach(function(kv) {
+			var name = kv.key;
+			var metadata = typeof kv.value === 'object' ? kv.value : {folder: 'Drawings'};
+			var folderDiv = folders[metadata.folder];
+			if (!folderDiv) {
+				folderDiv = folders[metadata.folder] = document.createElement('div');
+				folderDiv.className = 'folder';
+				folderDiv.classList.add(metadata.folder.replace(/\s/g, '-'));
+				var header = document.createElement('h3');
+				header.appendChild(document.createTextNode(metadata.folder));
+				folderDiv.appendChild(header);
+				container.appendChild(folderDiv);
+			}
 
 			var nameString = name;
 			if (/^\d+$/.test(name) && Math.abs(Date.now() - name) < 30*360*86400*1000 ) { // Timestamp?
@@ -42,7 +56,7 @@ AppDBMixin.buildFilePicker = function(container) {
 				});
 			};
 
-			container.appendChild(d);
+			folderDiv.appendChild(d);
 			self.getImageThumbnailURL(name, function(thumbURL) {
 				d.style.backgroundImage = 'url(' + thumbURL + ')';
 			});
@@ -284,9 +298,18 @@ AppDBMixin.loadSerializedImage = function(buf) {
 		return;
 	}
 
+	if (new Uint32Array(buf, 0, 1)[0] === 1196314761) { // PNG compressed image
+		return new Promise(function(resolve, reject) {
+			pngDecompress(buf, function(buffer) {
+				resolve(buffer);
+			}, reject);
+		}).then(this.loadSerializedImage.bind(this));
+	}
+
 	var u32 = new Uint32Array(buf);
 	var version = u32[0];
-	if (version !== 3) {
+
+	if (version !== 3 && version !== 4) {
 		throw("Unknown image version");
 	}
 	var dataLength = u32[1];
@@ -303,6 +326,9 @@ AppDBMixin.loadSerializedImage = function(buf) {
 	}
 	dataString = dataString.join("");
 	var drawArray = JSON.parse(dataString);
+	if (version >= 4) {
+		drawArray = deltaUnpack(drawArray);
+	}
 	if (!drawArray) {
 		throw("No drawArray found in loaded image");
 	} else if (drawArray.indexOf(null) !== -1) {
@@ -375,8 +401,12 @@ AppDBMixin.loadSerializedImage = function(buf) {
 AppDBMixin.serializeImage = function(drawArray, snapshots, drawEndIndex) {
 	var headerLength = 12;
 
-	var dataString = JSON.stringify(drawArray);
+	var dataString = JSON.stringify(deltaPack(drawArray));
 	var dataStringByteLength = Math.ceil(dataString.length / 4) * 4;
+
+	if (snapshots.length > 2) {
+		snapshots = [snapshots[0], snapshots[snapshots.length-1]];
+	}
 
 	var snapshotByteLength = 0;
 	for (var i=0; i<snapshots.length; i++) {
@@ -390,14 +420,17 @@ AppDBMixin.serializeImage = function(drawArray, snapshots, drawEndIndex) {
 	var buf = new ArrayBuffer(headerLength + dataStringByteLength + snapshotByteLength);
 	var u32 = new Uint32Array(buf);
 	var u8 = new Uint8Array(buf);
-	u32[0] = 3; // version
+	u32[0] = 4; // version
 	u32[1] = dataString.length;
 	u32[2] = drawEndIndex;
 	for (var i=0; i<dataString.length; i++) {
 		u8[i + headerLength] = dataString.charCodeAt(i);
 	}
 	var snapshotOffset = headerLength + dataStringByteLength;
-	var compressTextures = true;
+	
+	// Use PNG compression to make snapshots smaller?
+	var compressTextures = false;
+
 	for (var i=0; i<snapshots.length; i++) {
 		var snapshotU32Offset = snapshotOffset / 4;
 		var s = snapshots[i];
@@ -425,7 +458,7 @@ AppDBMixin.serializeImage = function(drawArray, snapshots, drawEndIndex) {
 			snapshotOffset = Math.ceil(snapshotOffset / 4) * 4;
 		}
 	}
-	return buf.slice(0, snapshotOffset);
+	return pngCompress(buf.slice(0, snapshotOffset));
 };
 
 AppDBMixin.getImageDataForPNG = function(pngData) {
@@ -531,7 +564,7 @@ AppDBMixin.getValuesFromDB = function(objectStore, onSuccess, onError) {
 };
 
 AppDBMixin.getSavedImageNames = function(onSuccess, onError) {
-	this.getKeysFromDB('imageNames', onSuccess, onError);
+	this.getKeyValuesFromDB('imageNames', onSuccess, onError);
 };
 
 AppDBMixin.getBrushNamesFromDB = function(onSuccess, onError) {

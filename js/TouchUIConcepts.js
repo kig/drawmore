@@ -617,6 +617,14 @@
 		image.src = src;
 	};
 
+	App.prototype.clearDrawRenderTarget = function() {
+		this.renderer.setClearColor(0xffffff, 0.0);
+		this.renderer.clearTarget(this.strokeRenderTarget);
+
+		this.renderer.setClearColor(0xffffff, 1.0);
+		this.renderer.clearTarget(this.drawRenderTarget);
+	};
+
 	App.prototype.mirrorDrawRenderTarget = function() {
 		this.renderer.setClearColor(0xffffff, 0.0);
 		this.renderer.clearTarget(this.strokeRenderTarget);
@@ -631,6 +639,11 @@
 
 		this.renderer.clearTarget(this.strokeRenderTarget);
 		this.strokeQuad.scale.x = 1;
+	};
+
+	App.prototype.clear = function() {
+		this.drawArrayPush({type: 'clear', isStart: true});
+		this.endBrush();
 	};
 
 	App.prototype.mirror = function() {
@@ -684,6 +697,7 @@
 			closeMenu();
 		});
 		click(window.mirror, this.mirror.bind(this));
+		click(window.clear, this.clear.bind(this));
 
 
 		var paletteColors = document.querySelectorAll('.palette-color');
@@ -1257,6 +1271,8 @@
 				this.endDrawBrush();
 			} else if (a.type === 'mirror') {
 				this.mirrorDrawRenderTarget();
+			} else if (a.type === 'clear') {
+				this.clearDrawRenderTarget();
 			} else if (a.type === 'addBrush') {
 				this.brushTextures[a.name] = a.texture;
 			} else {
