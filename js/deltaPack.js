@@ -88,8 +88,9 @@ var stringToBuffer = function(string) {
 var bufferToString = function(buffer) {
 	var u8 = new Uint8Array(buffer);
 	var string = [];
-	for (var i=0; i<u8.length; i += 200) {
-		string.push(String.fromCharCode.apply(null, u8.slice(i, i+200)));
+	for (var i=0; i<u8.length; i += 4096) {
+		var len = Math.min(4096, u8.length-i)
+		string.push(String.fromCharCode.apply(null, new Uint8Array(buffer, i, len)));
 	}
 	return string.join("");
 };

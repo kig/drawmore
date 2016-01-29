@@ -328,7 +328,8 @@ AppDBMixin.loadSerializedImage = function(buf) {
 	var snapshots = new Uint8Array(buf, snapshotsByteIndex);
 	var dataString = [];
 	for (var i=0; i<data.length; i+=4096) {
-		dataString.push( String.fromCharCode.apply(null, data.slice(i, i+4096)) );
+		var len = Math.min(4096, data.length-i);
+		dataString.push( String.fromCharCode.apply(null, new Uint8Array(buf, headerLength+i, len)) );
 	}
 	dataString = dataString.join("");
 	var drawArray = JSON.parse(dataString);
