@@ -294,6 +294,12 @@
 		this.needUpdate = true;
 	};
 
+	App.prototype.replay = function() {
+		this.replayEndIndex = this.drawEndIndex;
+		this.timeTravel(0);
+		this.replayInProgress = true;
+	};
+
 	App.prototype.recordSnapshotIfNeeded = function() {
 		if (this.snapshots[this.snapshots.length-1].index < this.drawEndIndex-this.snapshotSeparation && this.drawEndIndex === this.drawArray.length) {
 			this.snapshots.push( this.createSnapshot() );
@@ -693,11 +699,15 @@
 		click(window.undo, this.undo.bind(this));
 		click(window.redo, this.redo.bind(this));
 		click(window.savePNG, function() {
-			self.exportPNG();
 			closeMenu();
+			self.exportPNG();
 		});
 		click(window.mirror, this.mirror.bind(this));
 		click(window.clear, this.clear.bind(this));
+		click(window.replay, function() {
+			closeMenu();
+			self.replay();
+		});
 
 
 		var paletteColors = document.querySelectorAll('.palette-color');
@@ -878,20 +888,20 @@
 		})
 
 		click(window.save, function() {
+			closeMenu();
 			var name = self.imageName || Date.now().toString();
 			self.imageName = name;
 			self.saveImageToDB(name);
-			closeMenu();
 		});
 		click(window.saveCopy, function() {
+			closeMenu();
 			var name = Date.now().toString();
 			self.imageName = name;
 			self.saveImageToDB(name);
-			closeMenu();
 		});
 		click(window.export, function() {
-			self.save();
 			closeMenu();
+			self.save();
 		});
 		click(window.load, function() {
 			closeMenu();
@@ -928,12 +938,12 @@
 		});
 
 		click(window.newDrawing, function() { 
+			closeMenu();
 			if (confirm("Erase current drawing?")) {
 				self.timeTravel(0);
 				self.drawArray = [];
 				self.addBrush(1, self.brushTextures[1]);
 				self.imageName = null;
-				closeMenu();
 			}
 		});
 
@@ -1396,10 +1406,30 @@
 		}					
 	};
 
+	App.prototype.nextEndIndex = function() {
+		for (var i=this.drawStartIndex+1; i<this.drawArray.length; i++) {
+			var a = this.drawArray[i];
+			if (a.type === 'end') {
+				return i;
+			}
+		}
+		return this.drawArray.length-1;
+	};
+
 	App.prototype.tick = function() {
 		var brush = this.brush;
 		var mode = this.mode;
 		var pixelRatio = this.pixelRatio;
+
+		if (this.replayInProgress) {
+			if (this.drawStartIndex >= this.replayEndIndex) {
+				this.replayInProgress = false;
+			} else {
+				this.needUpdate = true;
+				this.drawEndIndex = this.nextEndIndex() + 1;
+				console.log(this.drawStartIndex, this.drawEndIndex);
+			}
+		}
 
 		if (this.needUpdate && this.brushTextureLoaded === 0) {
 
