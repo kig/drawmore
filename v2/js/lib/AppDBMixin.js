@@ -16,6 +16,12 @@ AppDBMixin.buildFilePicker = function(container) {
 	var folders = {};
 
 	this.getSavedImageNames(function(names) {
+		names.sort(function(a,b) {
+			if (/^\d+$/.test(a.key) && /^\d+$/.test(b.key)) {
+				return b.key - a.key;
+			}
+			return a.key.localeCompare(b.key);
+		});
 		names.forEach(function(kv) {
 			var name = kv.key;
 			var metadata = typeof kv.value === 'object' ? kv.value : {folder: 'Drawings'};
