@@ -160,15 +160,25 @@ AppDBMixin.processThumbnailQueue = function() {
 
 };
 
-AppDBMixin.initIndexedDB = function(callback) {
+AppDBMixin.initIndexedDB = function(callback, onerror) {
 	// IndexedDB
 	window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB;
 	window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction;
 
 	var dbVersion = 5;
 
+	if (!window.indexedDB) {
+		onerror('No IndexedDB support.');
+		return;
+	}
+
 	// Create/open database
 	var request = indexedDB.open("drawmoreFiles", dbVersion);
+	if (!request) {
+		window.indexedDB = null;
+		onerror('IndexedDB is broken.');
+		return;
+	}
 	var self = this;
 
 	console.log('Requested opening drawmoreFiles IndexedDB');
@@ -195,6 +205,7 @@ AppDBMixin.initIndexedDB = function(callback) {
 
 	request.onerror = function(error) {
 		console.log("Error creating/accessing IndexedDB", error);
+		onerror(error);
 	};
 
 	request.onsuccess = function (event) {

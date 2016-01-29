@@ -241,6 +241,12 @@
 		this.initIndexedDB(function() {
 			self.initFilePicker();
 			self.addEventListeners();
+		}, function(error) {
+			self.addEventListeners();
+			window.load.style.display = 'none';
+			window.save.style.display = 'none';
+			window.saveCopy.style.display = 'none';
+			window.saveBrush.style.display = 'none';
 		});
 	};
 
@@ -815,7 +821,9 @@
 				createBrush(name);
 			}
 			BrushPresets[name] = brush;
-			self.putToDB('brushes', name, BrushPresets[name]);
+			if (window.indexedDB) {
+				self.putToDB('brushes', name, BrushPresets[name]);
+			}
 		};
 
 		var createBrush = function(name) {
@@ -835,22 +843,24 @@
 		}
 
 
-		this.getBrushesFromDB(function(brushes){
-			var names = {};
-			brushes.forEach(function(brush) {
-				names[brush.name] = true;
-				var exists = BrushPresets[brush.name];
-				BrushPresets[brush.name] = brush;
-				if (!exists) {
-					createBrush(brush.name);
+		if (window.indexedDB) {
+			this.getBrushesFromDB(function(brushes){
+				var names = {};
+				brushes.forEach(function(brush) {
+					names[brush.name] = true;
+					var exists = BrushPresets[brush.name];
+					BrushPresets[brush.name] = brush;
+					if (!exists) {
+						createBrush(brush.name);
+					}
+				});
+				for (var i in BrushPresets) {
+					if (!names[i]) {
+						self.putToDB('brushes', i, BrushPresets[i]);
+					}
 				}
 			});
-			for (var i in BrushPresets) {
-				if (!names[i]) {
-					self.putToDB('brushes', i, BrushPresets[i]);
-				}
-			}
-		});
+		}
 
 		window.penMode.onchange = function(ev) {
 			self.penMode = this.checked;
@@ -933,7 +943,9 @@
 					self.innerHTML = '';
 				}, 500);
 			}
-			self.buildFilePicker(window.filePicker);
+			if (window.indexedDB) {
+				self.buildFilePicker(window.filePicker);
+			}
 			window.filePicker.classList.remove('hidden');
 		});
 
@@ -1427,7 +1439,6 @@
 			} else {
 				this.needUpdate = true;
 				this.drawEndIndex = this.nextEndIndex() + 1;
-				console.log(this.drawStartIndex, this.drawEndIndex);
 			}
 		}
 
