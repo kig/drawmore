@@ -1,3 +1,55 @@
+
+var concatBuffers = function() {
+	var len = 0;
+	for (var i=0; i<arguments.length; i++) {
+		len += arguments[i].byteLength;
+	}
+	var buf = new ArrayBuffer(len);
+	var off = 0;
+	for (var i=0; i<arguments.length; i++) {
+		new Uint8Array(buf, off, arguments[i].byteLength).set(new Uint8Array(arguments[i]));
+		off += arguments[i].byteLength;
+	}
+	return buf;
+};
+
+var crc32 = (function()
+{
+    var table = new Uint32Array(256);
+
+    // Pre-generate crc32 polynomial lookup table
+    // http://wiki.osdev.org/CRC32#Building_the_Lookup_Table
+    // ... Actually use Alex's because it generates the correct bit order
+    //     so no need for the reversal function
+    for(var i=256; i--;)
+    {
+        var tmp = i;
+
+        for(var k=8; k--;)
+        {
+            tmp = tmp & 1 ? 3988292384 ^ tmp >>> 1 : tmp >>> 1;
+        }
+
+        table[i] = tmp;
+    }
+
+    // crc32b
+    // Example input        : [97, 98, 99, 100, 101] (Uint8Array)
+    // Example output       : 2240272485 (Uint32)
+    return function( data )
+    {
+        var crc = -1; // Begin with all bits set ( 0xffffffff )
+
+        for(var i=0, l=data.length; i<l; i++)
+        {
+            crc = crc >>> 8 ^ table[ crc & 255 ^ data[i] ];
+        }
+
+        return (crc ^ -1) >>> 0; // Apply binary NOT
+    };
+
+})();
+
 var pngCompress = function(buffer) {
 	var canvas = document.createElement('canvas');
 	canvas.width = Math.min(Math.ceil((buffer.byteLength+6) / 3), 16384);

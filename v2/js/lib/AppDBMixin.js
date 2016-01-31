@@ -416,6 +416,162 @@ AppDBMixin.loadSerializedImage = function(buf) {
 	});
 };
 
+AppDBMixin.loadSerializedImagePNG = function(compressed) {
+	var pngData = new Uint8Array(compressed);
+	return this.getImageDataForPNG(pngData, true).then(function(id) { 
+		console.log('Hello there PNG', id.data.length);
+		var u8 = new Uint8Array(id.data.length);
+		u8.set(id.data);
+		var imageDataSegment = -1;
+		var dv = new DataView(compressed);
+		var endIndex = compressed.byteLength;
+		var len = 0;
+		for (var i=8; i<compressed.byteLength;) {
+			len = dv.getUint32(i, false);
+			i += 4;
+			var chunkType = [ dv.getUint8(i++), dv.getUint8(i++), dv.getUint8(i++), dv.getUint8(i++) ];
+			i += len;
+			var crc = dv.getUint32(i, false);
+			i += 4;
+			if (String.fromCharCode.apply(null, chunkType) === 'zTXt') {
+				imageDataSegment = i - 4 - len;
+				break;
+			}
+		}
+		var defaultImage = {
+			drawArray: [],
+			snapshots: [{index: 0, state: {texture: {width: id.width, height: id.height, data: u8} }}],
+			drawEndIndex: 0
+		};
+		if (imageDataSegment === -1) {
+			return defaultImage;
+		}
+		var deflated = new Uint8Array(compressed, imageDataSegment+10, len-10);
+		var body = pako.inflate(deflated);
+		var str = bufferToString(body.buffer);
+		var image = JSON.parse(str);
+		image.drawArray = deltaUnpack(image.drawArray);
+		image.snapshots[image.snapshots.length-1].state.texture = defaultImage.snapshots[0].state.texture;
+		return image;
+	});
+};
+
+AppDBMixin.serializeImagePNG = function(drawArray, snapshots, drawEndIndex) {
+	if (snapshots.length > 2) {
+		snapshots = [snapshots[0], snapshots[snapshots.length-1]];
+	}
+
+	if (!snapshots[1].state.texture) {
+		return this.serializeImage(drawArray, snapshots, drawEndIndex);
+	}
+
+	var dataString = JSON.stringify({
+		version: 6,
+		drawArray: deltaPack(drawArray),
+		drawEndIndex: drawEndIndex,
+		snapshots: snapshots.map(function(ss) {
+			var state = {};
+			for (var i in ss.state) {
+				if (i === 'texture') {
+					state[i] = {
+						width: ss.state.texture.width,
+						height: ss.state.texture.height,
+						data: 0
+					};
+				} else {
+					state[i] = ss.state[i];
+				}
+			}
+			return {
+				index: ss.index,
+				state: state
+			}
+		})
+	});
+	var dataBuffer = stringToBuffer(dataString);
+
+	var tex = snapshots[1].state.texture;
+
+	var canvas = document.createElement('canvas');
+	canvas.width = tex.width;
+
+	canvas.height = tex.height;
+	var ctx = canvas.getContext('2d');
+	var id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	var dst = id.data;
+	var src = tex.data;
+	for (var y=tex.height-1; y>=0; y--) {
+		for (var x=0; x<tex.width; x++) {
+			var off = (y * tex.width + x) * 4;
+			var soff = ((tex.height-1-y) * tex.width + x) * 4;
+			dst[off++] = src[soff++];
+			dst[off++] = src[soff++];
+			dst[off++] = src[soff++];
+			dst[off++] = src[soff++];
+		}
+	}
+
+	ctx.putImageData(id, 0, 0);
+	
+	var dataURL = canvas.toDataURL();
+	var data = atob(dataURL.slice(dataURL.indexOf(",")+1));
+	var compressed = stringToBuffer(data);
+	var dv = new DataView(compressed);
+	var endIndex = compressed.byteLength;
+	for (var i=8; i<compressed.byteLength;) {
+		var len = dv.getUint32(i, false);
+		i += 4;
+		var chunkType = [
+			dv.getUint8(i++),
+			dv.getUint8(i++),
+			dv.getUint8(i++),
+			dv.getUint8(i++)
+		];
+		i += len;
+		var crc = dv.getUint32(i, false);
+		i += 4;
+		if (String.fromCharCode.apply(null, chunkType) === 'IEND') {
+			endIndex = i-12-len;
+		}
+	}
+
+	var zTXtChunk = new Uint32Array(2);
+	var zTXtHeader = stringToBuffer("Drawmore\0\0");
+	var zTXtBody = pako.deflate(new Uint8Array(dataBuffer));
+	var dv = new DataView(zTXtChunk.buffer);
+	dv.setUint32(0, zTXtHeader.byteLength + zTXtBody.byteLength, false);
+	dv.setUint8(4, 0x7A);
+	dv.setUint8(5, 0x54);
+	dv.setUint8(6, 0x58);
+	dv.setUint8(7, 0x74);
+
+	console.log('serializeImagePNG', 'compressed snapshot byteLength', compressed.byteLength);
+	console.log('serializeImagePNG', 'delta packed drawArray byteLength', dst.byteLength);
+	console.log('serializeImagePNG', 'deflated drawArray byteLength', zTXtBody.byteLength);
+
+	var chunkBuf = concatBuffers(zTXtChunk.buffer, zTXtHeader, zTXtBody.buffer);
+	var chunk = new Uint8Array(chunkBuf, 4);
+
+	var zTXtCRC = new Uint32Array(1);
+	var dv = new DataView(zTXtCRC.buffer);
+	dv.setUint32(0, crc32(chunk), false);
+
+	var end = new Uint8Array(12);
+	var dv = new DataView(end.buffer);
+	end[4] = 73;
+	end[5] = 69;
+	end[6] = 78;
+	end[7] = 68;
+	var endU32 = new Uint32Array(end);
+	dv.setUint32(0, 0, false);
+	dv.setUint32(8, crc32(new Uint8Array(end.buffer, 4, 4)), false);
+
+	var png = concatBuffers(compressed.slice(0, endIndex), chunkBuf, zTXtCRC.buffer, end.buffer);
+
+	console.log('serializeImagePNG', 'compressed byteLength', png.byteLength);
+	return png;
+};
+
 AppDBMixin.serializeImage = function(drawArray, snapshots, drawEndIndex) {
 	var headerLength = 12;
 
@@ -479,7 +635,7 @@ AppDBMixin.serializeImage = function(drawArray, snapshots, drawEndIndex) {
 	return pngCompress(buf.slice(0, snapshotOffset));
 };
 
-AppDBMixin.getImageDataForPNG = function(pngData) {
+AppDBMixin.getImageDataForPNG = function(pngData, flipY) {
 	return new Promise(function(resolve, reject) {
 		var img = new Image;
 		img.onload = function() {
@@ -489,6 +645,10 @@ AppDBMixin.getImageDataForPNG = function(pngData) {
 			canvas.height = this.height;
 			var ctx = canvas.getContext('2d');
 			ctx.globalCompositeOperation = 'copy';
+			if (flipY) {
+				ctx.translate(0, canvas.height);
+				ctx.scale(1, -1);
+			}
 			ctx.drawImage(this, 0, 0);
 			var id = ctx.getImageData(0, 0, canvas.width, canvas.height);
 			resolve( id );

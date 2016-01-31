@@ -674,6 +674,11 @@
 		window.rotateWithStroke.checked = !!this.brush.rotateWithStroke;
 	};
 
+	App.prototype.newDrawing = function() {
+		this.timeTravel(0);
+		this.drawArray = [];
+		this.imageName = null;
+	};
 
 	App.prototype.addEventListeners = function() {
 		var self = this;
@@ -922,7 +927,8 @@
 				var fr = new FileReader();
 
 				fr.onload = function(ev) {
-					self.loadSerializedImage(ev.target.result).then(function(image) {
+					var m = (/\.png$/i).test(file.name) ? 'loadSerializedImagePNG' : 'loadSerializedImage';
+					self[m](ev.target.result).then(function(image) {
 						self.drawArray = image.drawArray;
 						self.snapshots = image.snapshots;
 						self.timeTravel(image.drawEndIndex);
@@ -952,10 +958,7 @@
 		click(window.newDrawing, function() { 
 			closeMenu();
 			if (confirm("Erase current drawing?")) {
-				self.timeTravel(0);
-				self.drawArray = [];
-				self.addBrush(1, self.brushTextures[1]);
-				self.imageName = null;
+				self.newDrawing();
 			}
 		});
 
