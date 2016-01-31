@@ -12,10 +12,15 @@
 	var App = function() {
 		this.init();
 	};
+	
+	App.extend = function(mixin) {
+		for (var i in mixin) {
+			this.prototype[i] = mixin[i];
+		}
+	};
 
-	for (var i in AppDBMixin) {
-		App.prototype[i] = AppDBMixin[i];
-	}
+	App.extend(AppDBMixin);
+	App.extend(FilePickerMixin);
 
 	App.Mode = {
 		DRAW: 0,

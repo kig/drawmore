@@ -485,6 +485,26 @@
 				}
 			}
 
+			.folder .recover {
+				display: none;
+				cursor: pointer;
+				background: black;
+			}
+
+			.folder .trash {
+				display: block;
+				cursor: pointer;
+				background: black;
+			}
+
+			.folder.Trash .recover {
+				display: block;
+			}
+
+			.folder.Trash .trash {
+				display: none;
+			}
+
 		</style>
 		<link rel="stylesheet" href="v2/css/main.css">
 	</head>
@@ -662,6 +682,7 @@
 		<script src="js/ColorMixer.js"></script>
 		<script src="js/BrushPresets.js"></script>
 		<script src="v2/js/lib/AppDBMixin.js"></script>
+		<script src="v2/js/lib/FilePickerMixin.js"></script>
 		<script src="js/TouchUIConcepts.js"></script>
 	</body>
 </html>

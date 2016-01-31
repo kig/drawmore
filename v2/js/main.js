@@ -26,4 +26,8 @@ for (var i in AppDBMixin) {
 	App.prototype[i] = AppDBMixin[i];
 }
 
+for (var i in FilePickerMixin) {
+	App.prototype[i] = FilePickerMixin[i];
+}
+
 var app = new App();

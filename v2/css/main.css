@@ -66,3 +66,23 @@ body
 	text-overflow: ellipsis;
 }
 
+
+.folder .recover {
+	display: none;
+	cursor: pointer;
+	background: black;
+}
+
+.folder .trash {
+	display: block;
+	cursor: pointer;
+	background: black;
+}
+
+.folder.Trash .recover {
+	display: block;
+}
+
+.folder.Trash .trash {
+	display: none;
+}
