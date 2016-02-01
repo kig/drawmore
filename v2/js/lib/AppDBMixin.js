@@ -4,8 +4,10 @@ var AppDBMixin = {};
 
 AppDBMixin.initIndexedDB = function(callback, onerror) {
 	// IndexedDB
-	window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB;
-	window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction;
+	try {
+		window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB;
+		window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction;
+	} catch(e) {}
 
 	var dbVersion = 5;
 
@@ -175,7 +177,7 @@ AppDBMixin.deleteImagesFromDB = function(names, onSuccess, onError) {
 			objectStore.delete(name);
 		}
 	}
-	
+
 	return transaction;
 };
 
