@@ -68,6 +68,12 @@ FilePickerMixin.buildFilePicker = function(container) {
 			if (typeof a.value === 'object' && typeof b.value === 'object') {
 				var cmp = a.value.folder.localeCompare(b.value.folder);
 				if (cmp !== 0) {
+					if (a.value.folder === 'Trash') {
+						return 1;
+					}
+					if (b.value.folder === 'Trash') {
+						return -1;
+					}
 					return cmp;
 				}
 			}
