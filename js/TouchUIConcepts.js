@@ -956,7 +956,10 @@
 				}, 500);
 			}
 			if (window.indexedDB) {
-				self.buildFilePicker(window.filePicker);
+				var container = document.createElement('div');
+				container.className = 'filePickerContainer';
+				window.filePicker.appendChild(container);
+				self.buildFilePicker(container);
 			}
 			window.filePicker.classList.remove('hidden');
 		});

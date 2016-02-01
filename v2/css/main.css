@@ -71,6 +71,12 @@ body
 	cursor: pointer;
 }
 
+.folder {
+	padding-top: 20px;
+	padding-bottom: 20px;
+	border-bottom: 1px solid silver;
+}
+
 .folder .recover {
 	display: none;
 	cursor: pointer;
