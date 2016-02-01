@@ -110,6 +110,23 @@ FilePickerMixin.buildFilePicker = function(container) {
 				});
 			};
 
+			var move = document.createElement('div');
+			move.className = 'move';
+			move.innerHTML = 'Move';
+			d.appendChild(move);
+			move.onclick = function(ev) {
+				if (ev && ev.preventDefault) {
+					ev.preventDefault();
+					ev.stopPropagation();
+				}
+				var folderName = prompt('Move image to folder');
+				if (folderName && folderName !== metadata.folder) {
+					self.moveImageToFolder(name, folderName, function() {
+						self.buildFilePicker(container);
+					});
+				}
+			};
+
 			var recover = document.createElement('div');
 			recover.className = 'recover';
 			recover.innerHTML = 'Recover';

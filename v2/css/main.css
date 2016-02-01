@@ -60,7 +60,7 @@ body
 	background: rgba(120,120,120,0.6);
 	position: absolute;
 	left: 0px;
-	bottom: 0px;
+	bottom: 15px;
 	width: 100%;
 	box-sizing: border-box;
 	height: 20px;
@@ -81,16 +81,36 @@ body
 	border-bottom: 1px solid silver;
 }
 
+.folder .move {
+	background: black;
+	width: 100%;
+	position: absolute;
+	left: 0px;
+	bottom: 0px;
+	height: 15px;
+	line-height: 15px;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	text-align: center;
+}
+
 .folder .recover {
 	display: none;
 	cursor: pointer;
 	background: black;
+	text-align: center;
+	height: 15px;
+	line-height: 15px;
 }
 
 .folder .trash {
 	display: block;
 	cursor: pointer;
 	background: black;
+	text-align: center;
+	height: 15px;
+	line-height: 15px;
 }
 
 .folder.Trash .recover {
