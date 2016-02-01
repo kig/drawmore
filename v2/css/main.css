@@ -66,6 +66,10 @@ body
 	text-overflow: ellipsis;
 }
 
+.emptyTrash {
+	font-size: smaller;
+	cursor: pointer;
+}
 
 .folder .recover {
 	display: none;

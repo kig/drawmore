@@ -39,6 +39,24 @@ FilePickerMixin.buildFilePicker = function(container) {
 				folderDiv.classList.add(metadata.folder.replace(/\s/g, '-'));
 				var header = document.createElement('h3');
 				header.appendChild(document.createTextNode(metadata.folder));
+				if (metadata.folder === 'Trash') {
+					header.appendChild(document.createTextNode(" — "));
+					var emptyTrash = document.createElement('span');
+					emptyTrash.className = 'emptyTrash';
+					emptyTrash.appendChild(document.createTextNode('Empty Trash'));
+					emptyTrash.onclick = function(ev) {
+						if (ev && ev.preventDefault) {
+							ev.preventDefault();
+							ev.stopPropagation();
+						}
+						if (confirm("Permanently delete all images in the trash can?")) {
+							self.emptyTrash(function() {
+								self.buildFilePicker(container);
+							});
+						}
+					}
+					header.appendChild(emptyTrash);
+				}
 				folderDiv.appendChild(header);
 				container.appendChild(folderDiv);
 			}

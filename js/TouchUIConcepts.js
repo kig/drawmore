@@ -21,6 +21,7 @@
 
 	App.extend(AppDBMixin);
 	App.extend(FilePickerMixin);
+	App.extend(ImageSerializationMixin);
 
 	App.Mode = {
 		DRAW: 0,
