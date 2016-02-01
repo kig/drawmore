@@ -128,11 +128,11 @@ FilePickerMixin.buildFilePicker = function(container) {
 				if (ev && ev.preventDefault) {
 					ev.preventDefault();
 				}
-				if (d.onclickDisabled) {
-					d.onclickDisabled = false;
-					ev.stopPropagation();
-					return;
-				}
+				// if (d.onclickDisabled) {
+				// 	d.onclickDisabled = false;
+				// 	ev.stopPropagation();
+				// 	return;
+				// }
 				self.loadImageFromDB(name, function(image) {
 					self.drawArray = image.drawArray;
 					self.snapshots = image.snapshots;
@@ -142,40 +142,40 @@ FilePickerMixin.buildFilePicker = function(container) {
 					console.log("Error loading image:", err);
 				});
 			};
-			d.onmousedown = d.ontouchstart = function(ev) {
-				ev.preventDefault();
-				clearTimeout(d.touchTimeout);
-				d.touchTimeout = setTimeout(function() {
-					d.onclickDisabled = true;
-					var folderName = prompt('Move image to folder');
-					if (folderName && folderName !== metadata.folder) {
-						self.moveImageToFolder(name, folderName, function() {
-							self.buildFilePicker(container);
-						});
-					}
-				}, 1000);
-				d.down = true;
-				d.startPoint = {x: ev.clientX || ev.touches[0].clientX, y: ev.clientY || ev.touches[0].clientY};
-			};
-			d.onmousemove = d.ontouchmove = function(ev) {
-				if (d.down) {
-					ev.preventDefault();
-					var dx = (ev.clientX || ev.touches[0].clientX) - d.startPoint.x;
-					var dy = (ev.clientY || ev.touches[0].clientY) - d.startPoint.y;
-					if (Math.sqrt(dx*dx + dy*dy) > 8) {
-						clearTimeout(d.touchTimeout);
-					}
-				}
-			};
-			d.onmouseup = d.ontouchend = function(ev) {
-				d.down = false;
-				clearTimeout(d.touchTimeout);
-			};
-			d.ontouchcancel = function(ev) {
-				ev.preventDefault();
-				d.down = false;
-				clearTimeout(d.touchTimeout);
-			};
+			// d.onmousedown = d.ontouchstart = function(ev) {
+			// 	ev.preventDefault();
+			// 	clearTimeout(d.touchTimeout);
+			// 	d.touchTimeout = setTimeout(function() {
+			// 		d.onclickDisabled = true;
+			// 		var folderName = prompt('Move image to folder');
+			// 		if (folderName && folderName !== metadata.folder) {
+			// 			self.moveImageToFolder(name, folderName, function() {
+			// 				self.buildFilePicker(container);
+			// 			});
+			// 		}
+			// 	}, 1000);
+			// 	d.down = true;
+			// 	d.startPoint = {x: ev.clientX || ev.touches[0].clientX, y: ev.clientY || ev.touches[0].clientY};
+			// };
+			// d.onmousemove = d.ontouchmove = function(ev) {
+			// 	if (d.down) {
+			// 		ev.preventDefault();
+			// 		var dx = (ev.clientX || ev.touches[0].clientX) - d.startPoint.x;
+			// 		var dy = (ev.clientY || ev.touches[0].clientY) - d.startPoint.y;
+			// 		if (Math.sqrt(dx*dx + dy*dy) > 8) {
+			// 			clearTimeout(d.touchTimeout);
+			// 		}
+			// 	}
+			// };
+			// d.onmouseup = d.ontouchend = function(ev) {
+			// 	d.down = false;
+			// 	clearTimeout(d.touchTimeout);
+			// };
+			// d.ontouchcancel = function(ev) {
+			// 	ev.preventDefault();
+			// 	d.down = false;
+			// 	clearTimeout(d.touchTimeout);
+			// };
 
 			folderDiv.appendChild(d);
 			self.getImageThumbnailURL(name, function(thumbURL) {
