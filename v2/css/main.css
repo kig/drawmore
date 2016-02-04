@@ -83,6 +83,7 @@ body
 
 .folder .move {
 	background: black;
+	cursor: pointer;
 	width: 100%;
 	position: absolute;
 	left: 0px;

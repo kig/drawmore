@@ -557,16 +557,17 @@
 					"uniform float hardness;",
 					"uniform float rotation;",
 					"uniform float xScale;",
+					"uniform float smudge;",
 
 					"void main(void) {",
 					"	vec2 uv = vUv;",
 					"   uv = (uv - 0.5) * mat2(cos(rotation), -sin(rotation), sin(rotation), cos(rotation)) + 0.5;",
 					"	uv.x = (uv.x - 0.5) / xScale + 0.5;",
-					"	vec4 paintContent = texture2D(paint, uv);",
+					"	vec4 paintContent = texture2D(paint, vec2(0.5, 0.5));",
 					"	vec2 unitUv = (uv - 0.5) * 2.0;",
 					"	float maskV = 1.0-texture2D(mask, uv).r;",
 					"	float brushOpacity = max(squareBrush, mix(smoothstep(1.0, hardness * max(0.1, 1.0 - (2.0 / (pixelRatio*radius))), length(unitUv)), maskV, textured));",
-					"	gl_FragColor.rgb = mix(paintContent.rgb, color, blend) * opacity * brushOpacity;",
+					"	gl_FragColor.rgb = mix(paintContent.rgb, color, smudge) * opacity * brushOpacity;",
 					"	gl_FragColor.a = opacity * brushOpacity;",
 					"}"
 				].join("\n"),
@@ -584,7 +585,8 @@
 					squareBrush: { type: 'f', value: 0 },
 					textured: { type: 'f', value: 0 },
 					rotation: { type: 'f', value: 0 },
-					xScale: { type: 'f', value: 1 }
+					xScale: { type: 'f', value: 1 },
+					smudge: { type: 'f', value: 1 }
 				},
 
 				transparent: true,
@@ -1387,9 +1389,9 @@
 	};
 
 	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, texture, hardness, rotation, xScale) {
-		if (isStart && blend < 1) {
-
-		} else {
+//		if (isStart && blend < 1) {
+//
+//		} else {
 			this.brushQuad.position.set(x, y, 0);
 			this.brushQuad.scale.set(r,r,r);
 			var m = this.brushQuad.material;
@@ -1413,6 +1415,17 @@
 				m.blendEquationAlpha = THREE.MaxEquation;
 				m.blendSrcAlpha = THREE.OneFactor;
 				m.blendDstAlpha = THREE.OneFactor;
+
+				var pixels = new Uint8Array(4);
+				var gl = this.renderer.context;
+				this.renderer.setRenderTarget(this.drawRenderTarget);
+				gl.readPixels(x, this.height-y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+				var da = pixels[3] / 255;
+				var r = pixels[0] * (1-blend) + this.brush.colorArray[0] * blend;
+				var g = pixels[1] * (1-blend) + this.brush.colorArray[1] * blend;
+				var b = pixels[2] * (1-blend) + this.brush.colorArray[2] * blend;
+				this.brush.colorArray = [r, g, b];
+				this.brush.color = App.toColor(this.brush.colorArray);
 			} else {
 				m.blending = THREE.CustomBlending;
 				m.blendEquation = THREE.AddEquation;
@@ -1423,11 +1436,11 @@
 				m.blendDstAlpha = THREE.OneFactor;
 			}
 			this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
-		}
+//		}
 
-		if (blend < 1) {
-			this.copyDrawingToBrush(x, y, r);
-		}					
+//		if (blend < 1) {
+//			this.copyDrawingToBrush(x, y, r);
+//		}
 	};
 
 	App.prototype.nextEndIndex = function() {
