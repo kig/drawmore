@@ -1389,6 +1389,9 @@
 	};
 
 	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, texture, hardness, rotation, xScale) {
+		if (isStart) {
+			this.colorArray = colorArray.slice(0);
+		}
 //		if (isStart && blend < 1) {
 //
 //		} else {
@@ -1396,7 +1399,6 @@
 			this.brushQuad.scale.set(r,r,r);
 			var m = this.brushQuad.material;
 			m.uniforms.opacity.value = opacity;
-			m.uniforms.color.value.set(colorArray[0]/255, colorArray[1]/255, colorArray[2]/255);
 			m.uniforms.blend.value = blend;
 			m.uniforms.hardness.value = hardness;
 			m.uniforms.rotation.value = rotation || 0;
@@ -1421,11 +1423,12 @@
 				this.renderer.setRenderTarget(this.drawRenderTarget);
 				gl.readPixels(x, this.height-y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 				var da = pixels[3] / 255;
-				var r = pixels[0] * (1-blend) + this.brush.colorArray[0] * blend;
-				var g = pixels[1] * (1-blend) + this.brush.colorArray[1] * blend;
-				var b = pixels[2] * (1-blend) + this.brush.colorArray[2] * blend;
-				this.brush.colorArray = [r, g, b];
-				this.brush.color = App.toColor(this.brush.colorArray);
+				var r = pixels[0] * (1-blend) + this.colorArray[0] * blend;
+				var g = pixels[1] * (1-blend) + this.colorArray[1] * blend;
+				var b = pixels[2] * (1-blend) + this.colorArray[2] * blend;
+				this.colorArray[0] = r;
+				this.colorArray[1] = g;
+				this.colorArray[2] = b;
 			} else {
 				m.blending = THREE.CustomBlending;
 				m.blendEquation = THREE.AddEquation;
@@ -1435,6 +1438,7 @@
 				m.blendSrcAlpha = THREE.OneFactor;
 				m.blendDstAlpha = THREE.OneFactor;
 			}
+			m.uniforms.color.value.set(this.colorArray[0]/255, this.colorArray[1]/255, this.colorArray[2]/255);
 			this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
 //		}
 
