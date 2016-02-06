@@ -225,6 +225,7 @@
 			rotation: 0,
 			xScale: 1,
 			rotateWithStroke: 0,
+			smudge: 0,
 			curve: CurvePresets.liner,
 			texture: 0,
 			color: '#000000',
@@ -680,6 +681,7 @@
 		window.xScale.value = this.brush.xScale;
 		window.blending.value = this.brush.blend;
 		window.rotateWithStroke.checked = !!this.brush.rotateWithStroke;
+		window.smudge.checked = !!this.brush.smudge;
 	};
 
 	App.prototype.newDrawing = function() {
@@ -783,6 +785,10 @@
 			self.brush.rotateWithStroke = this.checked ? 1 : 0;
 			window.brushShape.update();
 		};
+		window.smudge.onchange = function() {
+			self.brush.smudge = this.checked ? 1 : 0;
+			window.brushShape.update();
+		};
 		window.brushRotation.oninput = function() {
 			self.brush.rotation = parseFloat(this.value);
 			window.brushShape.update();
@@ -820,7 +826,8 @@
 					texture: self.brush.texture,
 					curve: {
 						radius: self.brush.curve.radius.slice(),
-						opacity: self.brush.curve.opacity.slice()
+						opacity: self.brush.curve.opacity.slice(),
+						blend: self.brush.curve.blend.slice()
 					}
 				};
 				if (name) {
@@ -856,7 +863,7 @@
 		}
 
 
-		if (window.indexedDB) {
+		if (window.indexedDB || false) {
 			this.getBrushesFromDB(function(brushes){
 				var names = {};
 				brushes.forEach(function(brush) {
@@ -884,11 +891,18 @@
 
 		this.draggableCurve(window.opacityCurveCanvas, function() {
 			var curve = self.brush.curve;
+			curve.opacity = curve.opacity.slice();
 			return curve.opacity;
 		});
 		this.draggableCurve(window.brushSizeCurveCanvas, function() {
 			var curve = self.brush.curve;
+			curve.radius = curve.radius.slice();
 			return curve.radius;
+		});
+		this.draggableCurve(window.blendCurveCanvas, function() {
+			var curve = self.brush.curve;
+			curve.blend = (curve.blend || Curves.zero).slice();
+			return curve.blend;
 		});
 
 		var closeMenu = function() {
@@ -1166,6 +1180,8 @@
 		};
 
 		return function(x, points) {
+			points = points || Curves.zero;
+
 			var x0 = points[0];
 			var y0 = points[1];
 			var x1 = points[2];
@@ -1196,6 +1212,7 @@
 		var texture = brush.texture;
 		var radiusCurve = curve.radius;
 		var opacityCurve = curve.opacity;
+		var blendCurve = curve.blend || Curves.zero;
 
 		this.byteCount += isStart ? 15 : 2;
 		if (!isStart) {
@@ -1239,9 +1256,11 @@
 			xScale: brush.xScale, // 8 bits
 
 			rotateWithStroke: brush.rotateWithStroke, // 1 bit
+			smudge: brush.smudge, // 1 bit
 
 			radiusCurve: radiusCurve, // 8 bits -- index to curve array
 			opacityCurve: opacityCurve, // 8 bits
+			blendCurve: blendCurve, // 8 bits
 
 			blend: blend, // 8 bits
 			texture: texture // 8 bits -- index to brush array
@@ -1328,7 +1347,8 @@
 						a.color,
 						this.curvePoint(a.pressure, a.opacityCurve) * a.opacity,
 						a.isStart,
-						a.blend,
+						this.curvePoint(a.pressure, a.blendCurve) * a.blend,
+						a.smudge,
 						a.texture,
 						a.hardness,
 						a.rotation,
@@ -1355,7 +1375,8 @@
 							a.color,
 							this.curvePoint(p, a.opacityCurve) * a.opacity,
 							isStart,
-							a.blend,
+							this.curvePoint(a.pressure, a.blendCurve) * a.blend,
+							a.smudge,
 							a.texture,
 							a.hardness,
 							a.rotation + (a.rotateWithStroke ? Math.atan2(dy, dx) : 0),
@@ -1388,7 +1409,7 @@
 		}
 	};
 
-	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, texture, hardness, rotation, xScale) {
+	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, smudge, texture, hardness, rotation, xScale) {
 		if (isStart) {
 			this.colorArray = colorArray.slice(0);
 		}
@@ -1400,6 +1421,7 @@
 			var m = this.brushQuad.material;
 			m.uniforms.opacity.value = opacity;
 			m.uniforms.blend.value = blend;
+			m.uniforms.smudge.value = 1-smudge;
 			m.uniforms.hardness.value = hardness;
 			m.uniforms.rotation.value = rotation || 0;
 			m.uniforms.xScale.value = xScale || 1;
@@ -1417,6 +1439,8 @@
 				m.blendEquationAlpha = THREE.MaxEquation;
 				m.blendSrcAlpha = THREE.OneFactor;
 				m.blendDstAlpha = THREE.OneFactor;
+
+				blend = 0.9 + 0.1 * (1.0 - blend);
 
 				var pixels = new Uint8Array(4);
 				var gl = this.renderer.context;

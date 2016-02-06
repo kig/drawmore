@@ -150,12 +150,16 @@
 			}
 
 			#brushSizeCurve {
-				left: 10px;
+				left: -30px;
 				/*-60px;*/
 			}
 			#opacityCurve {
-				left: 150px;
+				left: 110px;
 				/*-100px;*/
+			}
+			#blendCurve {
+				left: -30px;
+				top: 200px;
 			}
 			#brushSizeCurveCanvas path,
 			#opacityCurveCanvas path
@@ -202,6 +206,10 @@
 
 			#opacityCurveButton {
 				left: 60px;
+			}
+
+			#blendCurveButton {
+				left: 90px;
 			}
 
 			#menuButton {
@@ -527,9 +535,25 @@
 				<div class="mode-toggle" id="colorPicker"></div>
 				<div id="paletteButton" class="pressure-curve-button" onclick="palette.classList.toggle('hidden');palette.isOpen=!palette.classList.contains('hidden')">+</div>
 				<div class="mode-toggle" id="brushShape"></div>
+				<div id="blendCurveButton" class="pressure-curve-button" onclick="blendCurve.classList.toggle('hidden')">+</div>
+				<div id="blendCurve" class="pressure-curve hidden">
+					<svg id="blendCurveCanvas" width="120" height="120">
+						<g transform="translate(10 10)">
+							<rect x="0" y="0" width="100" height="100" stroke="#CCCCCC" fill="none" />
+							<path class="pc1" d="M 0 0" stroke="#888888" fill="none" />
+							<path class="pc2" d="M 0 0" stroke="#888888" fill="none" />
+							<circle class="p1" cx="0" cy="100" r="5" stroke="#888888" fill="#CCCCCC" />
+							<circle class="p2" cx="100" cy="0" r="5" stroke="#888888" fill="#CCCCCC" />
+							<rect class="c1" x="20" y="70" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
+							<rect class="c2" x="70" y="20" width="11" height="11" stroke="#888888" fill="#CCCCCC" />
+							<path class="curve" d="M 0 100 L 0 100 C 25 75 75 25 100 0 L 100 0" stroke-width="2" stroke="#446688" fill="none" />
+						</g>
+					</svg>
+				</div>
 				<div id="brushShapeControls" class="hidden">
 					<label for="rotateWithStroke"><div><input id="rotateWithStroke" type="checkbox" /> Rotate stroke</div></label>
-					<div>Smudge<br><div class="range" min="0.0" max="1" step="0.1" id="blending" value="1"></div></div>
+					<label for="smudge"><div><input id="smudge" type="checkbox" /> Smudge</div></label>
+					<div>Blend<br><div class="range" min="0.0" max="1" step="0.1" id="blending" value="1"></div></div>
 					<div>Brush scale<br><div class="range" min="0.1" max="1" step="0.1" id="xScale" value="1"></div></div>
 					<div>Brush rotation<br><div class="range" min="-3.14159" max="3.14159" step="0.01" id="brushRotation" value="0"></div></div>
 					<div id="texture">
