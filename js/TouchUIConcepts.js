@@ -1413,9 +1413,9 @@
 		if (isStart) {
 			this.colorArray = colorArray.slice(0);
 		}
-//		if (isStart && blend < 1) {
-//
-//		} else {
+		if (isStart && smudge > 0) {
+
+		} else {
 			this.brushQuad.position.set(x, y, 0);
 			this.brushQuad.scale.set(r,r,r);
 			var m = this.brushQuad.material;
@@ -1431,15 +1431,17 @@
 			m.uniforms.textured.value = texture ? 1 : 0;
 			m.uniforms.squareBrush.value = 0;
 			m.uniforms.radius.value = r;
-			if (blend < 1) {
-				m.blending = THREE.CustomBlending;
-				m.blendEquation = THREE.AddEquation;
-				m.blendSrc = THREE.OneFactor;
-				m.blendDst = THREE.OneMinusSrcAlphaFactor;
-				m.blendEquationAlpha = THREE.MaxEquation;
-				m.blendSrcAlpha = THREE.OneFactor;
-				m.blendDstAlpha = THREE.OneFactor;
 
+			m.blending = THREE.CustomBlending;
+			m.blendEquation = THREE.AddEquation;
+			m.blendSrc = THREE.OneFactor;
+			m.blendDst = THREE.OneMinusSrcAlphaFactor;
+			m.blendEquationAlpha = THREE.MaxEquation;
+			m.blendSrcAlpha = THREE.OneFactor;
+			m.blendDstAlpha = THREE.OneFactor;
+
+			if (blend > 0) {
+				/*
 				blend = 0.9 + 0.1 * (1.0 - blend);
 
 				var pixels = new Uint8Array(4);
@@ -1453,22 +1455,15 @@
 				this.colorArray[0] = r;
 				this.colorArray[1] = g;
 				this.colorArray[2] = b;
-			} else {
-				m.blending = THREE.CustomBlending;
-				m.blendEquation = THREE.AddEquation;
-				m.blendSrc = THREE.OneFactor;
-				m.blendDst = THREE.OneMinusSrcAlphaFactor;
-				m.blendEquationAlpha = THREE.MaxEquation;
-				m.blendSrcAlpha = THREE.OneFactor;
-				m.blendDstAlpha = THREE.OneFactor;
+				*/
 			}
 			m.uniforms.color.value.set(this.colorArray[0]/255, this.colorArray[1]/255, this.colorArray[2]/255);
 			this.renderer.render(this.scene, this.camera, this.strokeRenderTarget);
-//		}
+		}
 
-//		if (blend < 1) {
-//			this.copyDrawingToBrush(x, y, r);
-//		}
+		if (smudge > 0) {
+			this.copyDrawingToBrush(x, y, r);
+		}
 	};
 
 	App.prototype.nextEndIndex = function() {
