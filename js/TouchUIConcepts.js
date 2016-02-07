@@ -564,7 +564,7 @@
 					"	vec2 uv = vUv;",
 					"   uv = (uv - 0.5) * mat2(cos(rotation), -sin(rotation), sin(rotation), cos(rotation)) + 0.5;",
 					"	uv.x = (uv.x - 0.5) / xScale + 0.5;",
-					"	vec4 paintContent = texture2D(paint, vec2(0.5, 0.5));",
+					"	vec4 paintContent = texture2D(paint, vUv);",
 					"	vec2 unitUv = (uv - 0.5) * 2.0;",
 					"	float maskV = 1.0-texture2D(mask, uv).r;",
 					"	float brushOpacity = max(squareBrush, mix(smoothstep(1.0, hardness * max(0.1, 1.0 - (2.0 / (pixelRatio*radius))), length(unitUv)), maskV, textured));",
