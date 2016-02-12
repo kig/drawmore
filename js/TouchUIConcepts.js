@@ -701,6 +701,12 @@
 				for (var i in brush) {
 					this.brush[i] = brush[i];
 				}
+				if (this.brush.blend === undefined) {
+					this.brush.blend = 1;
+				}
+				if (this.brush.curve.blend === undefined) {
+					this.brush.curve.blend = Curves.zero.slice();
+				}
 				this.brush.smudge = 0;
 				this.updateBrushControls();
 			} catch(e) {}
