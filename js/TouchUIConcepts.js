@@ -1407,6 +1407,7 @@
 				}
 			}
 		}
+		this.log(JSON.stringify(this.brush, null, 2));
 		// this.brushQuad.position.set(50, 50, 0);
 		// this.brushQuad.scale.set(32, 32, 32);
 		// this.brushQuad.material.uniforms.opacity.value = 1;
