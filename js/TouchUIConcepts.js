@@ -707,6 +707,8 @@
 				if (this.brush.curve.blend === undefined) {
 					this.brush.curve.blend = Curves.zero.slice();
 				}
+				var c = this.brush.colorArray;
+				this.brush.colorArray = [c[0], c[1], c[2]];
 				this.brush.smudge = 0;
 				this.updateBrushControls();
 			} catch(e) {}
@@ -1913,11 +1915,10 @@
 		var brushCircle;
 		if (targetMode === App.Mode.COLOR_PICKER) {
 			colorMixer = new ColorMixer(document.body, 100, 100, function(c) {
-				app.brush.colorArray = new Uint8Array(4);
+				app.brush.colorArray = [];
 				app.brush.colorArray[0] = c[0]*255;
 				app.brush.colorArray[1] = c[1]*255;
 				app.brush.colorArray[2] = c[2]*255;
-				app.brush.colorArray[3] = 255;
 				app.brush.color = App.toColor(app.brush.colorArray);
 				update();
 			});
@@ -2062,7 +2063,7 @@
 						app.renderer.setRenderTarget(app.drawRenderTarget);
 						gl.readPixels(x, app.height-y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 						app.brush.color = App.toColor(pixels);
-						app.brush.colorArray = pixels;
+						app.brush.colorArray = [pixels[0], pixels[1], pixels[2]];
 						app.colorMixer.setColor([pixels[0]/255, pixels[1]/255, pixels[2]/255, 1]);
 					}
 					break;
