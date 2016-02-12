@@ -1409,7 +1409,7 @@
 				}
 			}
 		}
-		this.log(JSON.stringify(this.brush, null, 2));
+		//this.log(JSON.stringify(this.brush, null, 2));
 		// this.brushQuad.position.set(50, 50, 0);
 		// this.brushQuad.scale.set(32, 32, 32);
 		// this.brushQuad.material.uniforms.opacity.value = 1;
@@ -1432,7 +1432,7 @@
 
 	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, smudge, texture, hardness, rotation, xScale) {
 		if (isStart) {
-			this.colorArray = colorArray.slice(0);
+			this.colorArray = [colorArray[0], colorArray[1], colorArray[2]];
 		}
 		if (isStart && smudge > 0) {
 
