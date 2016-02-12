@@ -881,7 +881,7 @@
 						brush.curve.blend = Curves.zero.slice();
 					}
 					if (brush.smudge === undefined) {
-						brush.smudge = 1;
+						brush.smudge = 0;
 					}
 					names[brush.name] = true;
 					var exists = BrushPresets[brush.name];
