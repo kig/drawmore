@@ -681,7 +681,7 @@
 		window.xScale.value = this.brush.xScale;
 		window.blending.value = this.brush.blend;
 		window.rotateWithStroke.checked = !!this.brush.rotateWithStroke;
-		window.smudge.checked = !!this.brush.smudge;
+		window.smudge.checked = this.brush.smudge > 0;
 	};
 
 	App.prototype.newDrawing = function() {
@@ -701,10 +701,11 @@
 				for (var i in brush) {
 					this.brush[i] = brush[i];
 				}
+				this.brush.smudge = 0;
 				this.updateBrushControls();
 			} catch(e) {}
 		}
-		
+		this.brush.smudge = 0;		
 
 		this.eventHandler = new App.EventHandler(this, this.renderer.domElement);
 		var f = function(ev){ ev.preventDefault(); };
@@ -867,6 +868,15 @@
 			this.getBrushesFromDB(function(brushes){
 				var names = {};
 				brushes.forEach(function(brush) {
+					if (brush.blend === undefined) {
+						brush.blend = 1;
+					}
+					if (brush.curve.blend === undefined) {
+						brush.curve.blend = Curves.zero.slice();
+					}
+					if (brush.smudge === undefined) {
+						brush.smudge = 1;
+					}
 					names[brush.name] = true;
 					var exists = BrushPresets[brush.name];
 					BrushPresets[brush.name] = brush;
@@ -1035,6 +1045,8 @@
 		var curve = self.brush.curve;
 		self.plotCurve(window.opacityCurveCanvas, curve.opacity);
 		self.plotCurve(window.brushSizeCurveCanvas, curve.radius);
+		self.plotCurve(window.blendCurveCanvas, curve.blend);
+		window.brushShape.update();
 	};
 
 	App.prototype.setBrushPreset = function(preset) {
