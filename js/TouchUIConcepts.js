@@ -785,10 +785,10 @@
 		for (var i=0; i<paletteColors.length; i++) {
 			var pc = paletteColors[i];
 			pc.color = colors[i] || [255,255,255];
-			pc.style.backgroundColor = 'rgb(' + pc.color[0] + ',' + pc.color[1] + ',' + pc.color[2] + ')';
+			pc.style.backgroundColor = App.toColor(pc.color);
 			click(pc, function() {
 				self.brush.colorArray = [this.color[0], this.color[1], this.color[2]];
-				self.brush.color = this.style.backgroundColor;
+				self.brush.color = App.toColor(self.brush.colorArray);
 				window.colorPicker.update();
 				self.colorMixer.setColor([this.color[0]/255, this.color[1]/255, this.color[2]/255]);
 			});
@@ -1784,7 +1784,7 @@
 	//
 
 	App.toColor = function(c) {
-		return 'rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';
+		return 'rgb('+(Math.round(c[0]|0))+','+(Math.round(c[1]|0))+','+(Math.round(c[2]|0))+')';
 	};
 
 	App.blend = function(a, b, f) {
@@ -2034,7 +2034,7 @@
 						if (touchInsideElement(paletteColors[i], ev)) {
 							var c = this.startColorArray;
 							DefaultPalette[i] = paletteColors[i].color = [c[0], c[1], c[2]];
-							paletteColors[i].style.background = 'rgb('+ paletteColors[i].color.join(",") +')';
+							paletteColors[i].style.background = App.toColor(paletteColors[i].color);
 
 							this.revertBrush();
 
