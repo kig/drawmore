@@ -237,6 +237,37 @@
 		this.drawStartIndex = 0;
 		this.drawEndIndex = 0;
 
+		// this.ds = deepstream( 'localhost:6020' ).login();
+
+		// var self = this;
+		// this.receivedEvent = false;
+		// this.sendingEvent = false;
+		// this.ds.event.subscribe('drawEvent', function(ev) {
+		// 	console.log('drawEvent', ev);
+		// 	if (this.sendingEvent) {
+		// 		return;
+		// 	}
+		// 	self.receivedEvent = true;
+		// 	self.drawArrayPush(ev);
+		// 	self.receivedEvent = false;
+		// 	self.needUpdate = true;
+		// });
+
+		// this.record = this.ds.record.getRecord( 'DrawMoreTest' );
+
+		// var self = this;
+		// this.record.subscribe( 'drawArray', function( value ){
+		// 	console.log('updated drawArray');
+		// 	self.drawArray = value;
+		// 	self.needUpdate = true;
+		// });
+		// this.record.subscribe( 'drawEndIndex', function( value ){
+		// 	console.log('updated drawEndIndex');
+		// 	self.drawEndIndex = value;
+		// 	self.needUpdate = true;
+		// });
+
+
 		App.modeToggle(this, window.brushResize, App.Mode.BRUSH_RESIZE);
 		App.modeToggle(this, window.opacityChange, App.Mode.OPACITY_CHANGE);
 		App.modeToggle(this, window.colorPicker, App.Mode.COLOR_PICKER);
@@ -303,6 +334,7 @@
 		}
 		this.drawStartIndex = snapshot.index;
 		this.drawEndIndex = drawArrayIndex;
+		// this.record.set('drawEndIndex', this.drawEndIndex);
 		this.applySnapshot(snapshot);
 		this.needUpdate = true;
 	};
@@ -753,12 +785,12 @@
 		for (var i=0; i<paletteColors.length; i++) {
 			var pc = paletteColors[i];
 			pc.color = colors[i] || [255,255,255];
-			pc.style.backgroundColor = 'rgb(' + pc.color.join(",") + ')';
+			pc.style.backgroundColor = 'rgb(' + pc.color[0] + ',' + pc.color[1] + ',' + pc.color[2] + ')';
 			click(pc, function() {
-				self.brush.colorArray = this.color;
+				self.brush.colorArray = [this.color[0], this.color[1], this.color[2]];
 				self.brush.color = this.style.backgroundColor;
 				window.colorPicker.update();
-				self.colorMixer.setColor([this.color[0]/255, this.color[1]/255, this.color[2]/255, 1]);
+				self.colorMixer.setColor([this.color[0]/255, this.color[1]/255, this.color[2]/255]);
 			});
 		}
 
@@ -1055,6 +1087,7 @@
 		self.plotCurve(window.brushSizeCurveCanvas, curve.radius);
 		self.plotCurve(window.blendCurveCanvas, curve.blend);
 		window.brushShape.update();
+
 	};
 
 	App.prototype.setBrushPreset = function(preset) {
@@ -1151,6 +1184,12 @@
 			console.log('deleted obsolete snapshot');
 		}
 		this.drawArray[this.drawEndIndex++] = state;
+		if (!this.receivedEvent) {
+			this.sendingEvent = true;
+			// this.ds.event.emit('drawEvent', state);
+			this.sendingEvent = false;
+		}
+		// this.record.set('drawArray', this.drawArray);
 	};
 
 	App.prototype.curvePoint = (function() {
@@ -2064,7 +2103,7 @@
 						gl.readPixels(x, app.height-y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 						app.brush.color = App.toColor(pixels);
 						app.brush.colorArray = [pixels[0], pixels[1], pixels[2]];
-						app.colorMixer.setColor([pixels[0]/255, pixels[1]/255, pixels[2]/255, 1]);
+						app.colorMixer.setColor([pixels[0]/255, pixels[1]/255, pixels[2]/255]);
 					}
 					break;
 				}
