@@ -25,14 +25,21 @@
 		<pre id="debug" style="pointer-events:none;user-select:none;"></pre>
 
 		<script>
+			if (/AppleWebKit/.test(navigator.userAgent) && devicePixelRatio > 1) {
+				var scale = 1/devicePixelRatio;
+				var viewport = document.querySelector("meta[name=viewport]");
+				viewport.setAttribute('content', `width=device-width, height=device-height, initial-scale=${scale}, minimum-scale=${scale}, maximum-scale=${scale}, user-scalable=0`);
+				// document.body.style.zoom = devicePixelRatio;
+			}
+
 			var touches = [];
 			document.body.addEventListener("touchstart", ev => {
 				ev.preventDefault();
-				touches = Array.from(ev.touches).map(t => [t.force, t.radiusX, t.radiusY, t.rotationAngle]);
+				touches = Array.from(ev.touches).map(t => [t.force, t.clientX, t.clientY, t.radiusX, t.radiusY, t.rotationAngle]);
 			});
 			document.body.addEventListener("touchmove", ev => {
 				ev.preventDefault();
-				touches = Array.from(ev.touches).map(t => [t.force, t.radiusX, t.radiusY, t.rotationAngle]);
+				touches = Array.from(ev.touches).map(t => [t.force, t.clientX, t.clientY, t.radiusX, t.radiusY, t.rotationAngle]);
 			});
 			document.body.addEventListener("touchend", ev => ev.preventDefault());
 			document.body.addEventListener("touchcancel", ev => ev.preventDefault());
@@ -48,11 +55,6 @@
 				document.body.addEventListener(eventType, function(ev) {
 					ev.preventDefault();
 					let pressure = ev.pressure;
-					if (pressure > 1) { // Buggy pressure on Huawei.
-						pressure = ((ev.pressure / (ev.width*ev.height) * 400)-0.4)/0.6;
-						if (pressure > 1) pressure = 1;
-						if (pressure < 0) pressure = 0;
-					}
 					window.debug.innerHTML = (
 						"eventType: " + ev.type + 
 						"\npressure: " + pressure + 

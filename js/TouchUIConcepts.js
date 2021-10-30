@@ -210,6 +210,23 @@
 	App.prototype.init = function() {
 		this.pixelRatio = window.devicePixelRatio;
 		this.mode = App.Mode.DRAW;
+		this.overrideWidth = 0;
+		this.overrideHeight = 0;
+		this.overrideScale = 1;
+
+		if (/AppleWebKit/.test(navigator.userAgent) && devicePixelRatio > 1) {
+			var scale = 1/devicePixelRatio;
+			var viewport = document.querySelector("meta[name=viewport]");
+			viewport.setAttribute('content', `width=device-width, height=device-height, initial-scale=${scale}, minimum-scale=${scale}, maximum-scale=${scale}, user-scalable=0`);
+			// document.body.style.transform = `scale(${devicePixelRatio})`;
+			// document.body.style.transformOrigin = '0 0';
+			document.body.style.zoom = devicePixelRatio;
+			document.body.style.fontSize = devicePixelRatio * 100 + '%';
+			this.pixelRatio = 1;
+			this.overrideWidth = window.innerWidth * devicePixelRatio;
+			this.overrideHeight = window.innerHeight * devicePixelRatio;
+			this.overrideScale = scale;
+		}
 
 		this.brushTextures = {};
 
@@ -456,8 +473,8 @@
 
 	App.prototype.setupCanvas = function() {
 
-		var width = window.innerWidth;
-		var height = window.innerHeight;
+		var width = this.overrideWidth || window.innerWidth;
+		var height = this.overrideHeight || window.innerHeight;
 		var near = 0.1;
 		var far = 100;
 
@@ -466,6 +483,10 @@
 		renderer.setPixelRatio( this.pixelRatio );
 		renderer.setSize(width, height);
 		renderer.domElement.id = 'draw-canvas';
+		if (this.overrideHeight) {
+			renderer.domElement.style.width = width / window.devicePixelRatio + 'px';
+			renderer.domElement.style.height = height / window.devicePixelRatio + 'px';
+		}
 		document.body.appendChild(renderer.domElement);
 
 		this.width = renderer.domElement.width;
@@ -613,7 +634,7 @@
 					mask: { type: 't', value: this.maskTexture },
 					radius: { type: 'f', value: 3 },
 					hardness: { type: 'f', value: 1 },
-					pixelRatio: { type: 'f', value: window.devicePixelRatio || 1 },
+					pixelRatio: { type: 'f', value: this.pixelRatio },
 					blend: { type: 'f', value: 1 },
 					squareBrush: { type: 'f', value: 0 },
 					textured: { type: 'f', value: 0 },
@@ -639,15 +660,28 @@
 
 		var self = this;
 		window.onresize = function() {
-			self.renderer.setSize(window.innerWidth, window.innerHeight);
+			var width = window.innerWidth;
+			var height = window.innerHeight;
+			if (self.overrideHeight) {
+				width *= devicePixelRatio;
+				height *= devicePixelRatio;
+				self.overrideWidth = width;
+				self.overrideHeight = height;
+			}
+
+			self.renderer.setSize(width, height);
 			self.width = self.renderer.domElement.width;
 			self.height = self.renderer.domElement.height;
+			if (self.overrideHeight) {
+				self.renderer.domElement.style.width = width / window.devicePixelRatio + 'px';
+				self.renderer.domElement.style.height = height / window.devicePixelRatio + 'px';
+			}
 			self.resizeThese.forEach(function(rt) {
 				rt.setSize(self.width, self.height);
 			});
 
-			self.camera.right = window.innerWidth;
-			self.camera.bottom = window.innerHeight;
+			self.camera.right = width;
+			self.camera.bottom = height;
 			self.camera.updateProjectionMatrix();
 
 			self.timeTravel(self.drawEndIndex);
@@ -1470,6 +1504,7 @@
 	};
 
 	App.prototype.renderBrush = function(x, y, r, colorArray, opacity, isStart, blend, smudge, texture, hardness, rotation, xScale) {
+		r /= this.overrideScale;
 		if (isStart) {
 			this.colorArray = [colorArray[0], colorArray[1], colorArray[2]];
 		}
@@ -1594,6 +1629,8 @@
 		this.down = false;
 		this.pointerDown = false;
 
+		this.touchPressureEnabled = /AppleWebKit/.test(navigator.userAgent);
+
 		el.addEventListener("touchstart", this, false);
 		el.addEventListener("touchend", this, false);
 		el.addEventListener("touchcancel", this, false);
@@ -1607,6 +1644,23 @@
 		window.addEventListener("pointermove", this, false);
 		window.addEventListener("pointerup", this, false);
 	};
+
+	/* 
+		Note on event support across devices (2021-10-30)
+
+		S Pen on Samsung + Chrome: pressure 0..1, tiltX, tiltY in degrees, no twist, pointerType 'pen', isPrimary true, no tangentialPressure, w & h 1
+		Touch on Samsung Note 20 Chrome: pressure 1, no rotationAngle, radiusX/radiusY/w/h in centimeters, isPrimary true for first finger
+		Touch on Huawei Mate 20 (broken front & back glass): pressure is touch capacitance, ranges 5-30, radiusX/Y/w/h in CSS px, rotationAngle in deg
+		Touch on Huawei P20: pressure is touch capacitance, ranges 0.2-0.6, fixed radiusX/Y/w/h to 0.28 & 0.14, no rotationAngle
+		Touch on Nokia 8: pressure 1, no rotationAngle, radiusX/Y/w/h all 0
+
+		Apple Pencil on iPad: pressure 0..1, tiltX, tiltY in degrees, w&h 0.5, radiusX/Y 0, pointerType 'pen', isPrimary true, no twist & tangentialPressure, weird jitter in coords
+		Touch on iPad: pressure 0, tiltX 90, pointerType 'touch', fixed touch radii in CSS px, dynamic w/h in CSS px (~20px steps from 40 up), both w/h are the same
+		Touch on iPhone 7: pressure 0..1, tiltX 90, pointerType 'touch', fixed touch radii in CSS px, dynamic w/h in CSS px (~20px steps from 40 up), both w/h are the same
+		Touch on iPhone X: 
+		Touch on iPhone 6: iOS 12 something doesn't work at all (no PointerEvents?)
+
+	*/
 
 	App.EventHandler.prototype = {
 		handleEvent: function(ev) {
@@ -1648,7 +1702,7 @@
 			this.startY = y;
 			this.app.brush.x = x;
 			this.app.brush.y = y;
-			if (pressure > 1 || pointerType !== 'pen') pressure = 1;
+			if (pressure > 1 || ((pressure === 0 || !this.touchPressureEnabled) && pointerType === 'touch')) pressure = 1;
 			if (pressure < 0) pressure = 0;
 			this.app.brush.pressure = pressure;
 
@@ -1678,7 +1732,7 @@
 		},
 
 		moveBrushStroke: function(x, y, pressure, width, height, tiltX, tiltY, twist, tangentialPressure, pointerId, isPrimary, pointerType) {
-			if (pressure > 1 || pointerType !== 'pen') pressure = 1;
+			if (pressure > 1 || ((pressure === 0 || !this.touchPressureEnabled) && pointerType === 'touch')) pressure = 1;
 			if (pressure < 0) pressure = 0;
 			this.app.brush.pressure = pressure;
 			if (this.app.mode === App.Mode.DRAW) {
@@ -1814,15 +1868,15 @@
 		var bbox = toggle.getBoundingClientRect(); 
 		var w = bbox.width;
 		var h = bbox.height;
-		toggleCanvas.width = w * app.pixelRatio;
-		toggleCanvas.height = h * app.pixelRatio;
+		toggleCanvas.width = w * app.pixelRatio / app.overrideScale;
+		toggleCanvas.height = h * app.pixelRatio / app.overrideScale;
 		toggleCanvas.style.width = w + 'px';
 		toggleCanvas.style.height = h + 'px';
 
 		toggle.appendChild(toggleCanvas);
 
 		var toggleCtx = toggleCanvas.getContext('2d');
-		toggleCtx.scale(app.pixelRatio, app.pixelRatio);
+		toggleCtx.scale(app.pixelRatio / app.overrideScale, app.pixelRatio / app.overrideScale);
 
 		var update = function() {
 			toggleCtx.clearRect(0, 0, w, h);
@@ -1944,6 +1998,8 @@
 			var bbox = el.getBoundingClientRect();
 			var cx = ev.clientX;
 			var cy = ev.clientY;
+			cx *= app.overrideScale;
+			cy *= app.overrideScale;
 			return (cx < bbox.right && cx > bbox.left && cy < bbox.bottom && cy > bbox.top);
 		};
 

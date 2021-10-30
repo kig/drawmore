@@ -58,10 +58,11 @@ ColorMixer.prototype = {
 
     this.hueCanvas.update = function(ev) {
       if (this.down) {
+        var f = 1/devicePixelRatio;
         var bbox = this.getBoundingClientRect();
-        var xy = {x: ev.clientX-bbox.left, y: ev.clientY-bbox.top};
-        var cx = ev.clientX-(bbox.left+bbox.width/2);
-        var cy = ev.clientY-(bbox.top+bbox.height/2);
+        var xy = {x: ev.offsetX*f, y: ev.offsetY*f};
+        var cx = xy.x-(bbox.width/2);
+        var cy = xy.y-(bbox.height/2);
         if (Math.sqrt(cx*cx+cy*cy) > bbox.width/2) {
           return;
         }
@@ -72,8 +73,9 @@ ColorMixer.prototype = {
 
     this.canvas.update = function(ev) {
       if (this.down) {
+        var f = 1/devicePixelRatio;
         var bbox = this.getBoundingClientRect();
-        var xy = {x: ev.clientX-bbox.left, y: ev.clientY-bbox.top};
+        var xy = {x: ev.offsetX*f, y: ev.offsetY*f};
         var x = Math.clamp(xy.x, 0, width-9);
         var y = Math.clamp(xy.y, 0, height-9);
         self.saturation = x/(width-9);
@@ -85,22 +87,18 @@ ColorMixer.prototype = {
     };
 
     var addEventListeners = function(el) {
-      el.addEventListener('touchstart', function(ev) {
-        this.down = true;
-        ev.preventDefault();
-        this.update(ev.touches[0]);
-      }, false);
-      el.addEventListener('touchmove', function(ev) { el.update(ev.touches[0]); ev.preventDefault(); }, false);
-      el.addEventListener('touchend', function(ev) { this.down = false; }, false);
-      el.addEventListener('touchcancel', function(ev) { this.down = false; }, false);
+      el.addEventListener('touchstart', function(ev) { ev.preventDefault(); }, false);
+      el.addEventListener('touchmove', function(ev) { ev.preventDefault(); }, false);
+      el.addEventListener('touchend', function(ev) { ev.preventDefault(); }, false);
+      el.addEventListener('touchcancel', function(ev) { ev.preventDefault(); }, false);
 
-      el.addEventListener('mousedown', function(ev) {
+      el.addEventListener('pointerdown', function(ev) {
         this.down = true;
         ev.preventDefault();
         this.update(ev);
       }, false);
-      window.addEventListener('mousemove', function(ev) { el.update(ev); if (el.down) { ev.preventDefault(); } }, false);
-      window.addEventListener('mouseup', function(ev) { el.down = false; }, false);
+      window.addEventListener('pointermove', function(ev) { el.update(ev); if (el.down) { ev.preventDefault(); } }, false);
+      window.addEventListener('pointerup', function(ev) { el.down = false; }, false);
     };
 
     addEventListeners(this.canvas);
