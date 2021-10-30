@@ -935,6 +935,7 @@
 		window.penMode.onchange = function(ev) {
 			self.penMode = this.checked;
 			localStorage.DrawMorePenMode = this.checked;
+			alert("Setting penMode to " + self.penMode);
 		};
 
 		window.penMode.checked = this.penMode = (localStorage.DrawMorePenMode === 'true');
@@ -1635,14 +1636,6 @@
 		},
 
 		getPenTouch: function(ev) {
-			var touches = ev.changedTouches;
-			for (var i=0; i<touches.length; i++) {
-				var t = touches[i];
-				if (t.radiusX == 0 || t.radiusY == 0) {
-					//this.app.log(t.radiusX + " \n" + t.radiusY);
-					return t;
-				}
-			}
 			if (this.app.penMode) {
 				return null;
 			}
@@ -1719,6 +1712,9 @@
 
 
 		pointerdown: function(ev) {
+			if (ev.pointerType !== 'pen') {
+				return null;
+			}
 			if (!this.down) {
 				this.mousedown(ev);
 			}
@@ -1744,7 +1740,7 @@
 
 
 		touchstart: function(ev) {
-			var touch = this.getPenTouch(ev, this.app.penMode);
+			var touch = this.getPenTouch(ev);
 			if (!touch) {
 				return;
 			}

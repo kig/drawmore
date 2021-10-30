@@ -15,7 +15,19 @@
 			for (var i=0; i<events.length; i++) {
 				var eventType = events[i];
 				window.addEventListener(eventType, function(ev) {
-					window.debug.innerHTML = "pressure: " + ev.pressure + "\ntiltX: " + ev.tiltX + "\ntiltY: " + ev.tiltY;
+					window.debug.innerHTML = (
+						"pressure: " + ev.pressure + 
+						"\ntiltX: " + ev.tiltX + 
+						"\ntiltY: " + ev.tiltY + 
+						"\nradiusX: " + ev.radiusX +
+						"\nradiusY: " + ev.radiusY +
+						"\ntwist: " + ev.twist +
+						"\npointerType: " + ev.pointerType +
+						"\nisPrimary: " + ev.isPrimary +
+						"\nwidth: " + ev.width +
+						"\nheight: " + ev.height +
+						"\ntangentialPressure: " + ev.tangentialPressure 
+					);
 					console.log(ev.type, ev.pressure, ev.tiltX, ev.tiltY, ev);
 				}, false);
 			}
