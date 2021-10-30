@@ -4,19 +4,60 @@
 	<head>
 		<title>Pointer events test</title>
 	    <meta name="viewport" content="initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, user-scalable=no" />
+		<style>
+			html,body {
+				width: 100%;
+				height: 100vh;
+				background: white;
+				color: black;
+				overflow: hidden;
+			}
+			body {
+				position: fixed;
+				user-select: none;
+				touch-action: none;
+				-webkit-touch-callout: none;
+			}
+		</style>
 	</head>
 
 	<body>
-		<pre id="debug"></pre>
+		<pre id="debug" style="pointer-events:none;user-select:none;"></pre>
 
 		<script>
-			var events = "pointerdown pointerup pointermove pointerover pointerout pointerenter pointerleave".split(" ");
+			var touches = [];
+			document.body.addEventListener("touchstart", ev => {
+				ev.preventDefault();
+				touches = Array.from(ev.touches).map(t => [t.force, t.radiusX, t.radiusY, t.rotationAngle]);
+			});
+			document.body.addEventListener("touchmove", ev => {
+				ev.preventDefault();
+				touches = Array.from(ev.touches).map(t => [t.force, t.radiusX, t.radiusY, t.rotationAngle]);
+			});
+			document.body.addEventListener("touchend", ev => ev.preventDefault());
+			document.body.addEventListener("touchcancel", ev => ev.preventDefault());
+			document.body.addEventListener("click", ev => ev.preventDefault());
+			document.body.addEventListener("dblclick", ev => ev.preventDefault());
+			document.body.addEventListener("contextmenu", ev => ev.preventDefault());
 
+			var events = "pointerdown pointerup pointermove pointerover pointerout pointerenter pointercancel pointerleave".split(" ");
+
+			// if (false)
 			for (var i=0; i<events.length; i++) {
 				var eventType = events[i];
-				window.addEventListener(eventType, function(ev) {
+				document.body.addEventListener(eventType, function(ev) {
+					ev.preventDefault();
+					let pressure = ev.pressure;
+					if (pressure > 1) { // Buggy pressure on Huawei.
+						pressure = ((ev.pressure / (ev.width*ev.height) * 400)-0.4)/0.6;
+						if (pressure > 1) pressure = 1;
+						if (pressure < 0) pressure = 0;
+					}
 					window.debug.innerHTML = (
-						"pressure: " + ev.pressure + 
+						"eventType: " + ev.type + 
+						"\npressure: " + pressure + 
+						"\ncX: " + ev.clientX + 
+						"\ncY: " + ev.clientY + 
 						"\ntiltX: " + ev.tiltX + 
 						"\ntiltY: " + ev.tiltY + 
 						"\nradiusX: " + ev.radiusX +
@@ -26,9 +67,9 @@
 						"\nisPrimary: " + ev.isPrimary +
 						"\nwidth: " + ev.width +
 						"\nheight: " + ev.height +
-						"\ntangentialPressure: " + ev.tangentialPressure 
+						"\ntangentialPressure: " + ev.tangentialPressure +
+						"\n\n" + touches.map(t => t.join("\n")).join("\n\n")
 					);
-					console.log(ev.type, ev.pressure, ev.tiltX, ev.tiltY, ev);
 				}, false);
 			}
 		</script>
