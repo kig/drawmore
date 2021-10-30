@@ -214,7 +214,8 @@
 		this.overrideHeight = 0;
 		this.overrideScale = 1;
 
-		if (/AppleWebKit/.test(navigator.userAgent) && devicePixelRatio > 1) {
+		if (/iPad/.test(navigator.userAgent) || (!/Android|Linux|Windows|Chrome|Firefox|iPhone;|iPod;/.test(navigator.userAgent)) && devicePixelRatio > 1) {
+			// Hack the iPad event coords for higher resolution
 			var scale = 1/devicePixelRatio;
 			var viewport = document.querySelector("meta[name=viewport]");
 			viewport.setAttribute('content', `width=device-width, height=device-height, initial-scale=${scale}, minimum-scale=${scale}, maximum-scale=${scale}, user-scalable=0`);
@@ -1629,7 +1630,7 @@
 		this.down = false;
 		this.pointerDown = false;
 
-		this.touchPressureEnabled = /AppleWebKit/.test(navigator.userAgent);
+		this.touchPressureEnabled = !/Android|Chrome|Linux|Windows/.test(navigator.userAgent);
 
 		el.addEventListener("touchstart", this, false);
 		el.addEventListener("touchend", this, false);
