@@ -935,7 +935,6 @@
 		window.penMode.onchange = function(ev) {
 			self.penMode = this.checked;
 			localStorage.DrawMorePenMode = this.checked;
-			alert("Setting penMode to " + self.penMode);
 		};
 
 		window.penMode.checked = this.penMode = (localStorage.DrawMorePenMode === 'true');
@@ -1628,6 +1627,8 @@
 			if (force === undefined) {
 				force = 1;
 			}
+			if (force > 1) force = 1;
+			if (force < 0) force = 0;
 			if (touch.pointerType != undefined && force === 0.5 && touch.pointerType !== 'pen') {
 				// Set touch & mouse force to 1 on IE (why is 0.5 the "not applicable" value?)
 				force = 1;
@@ -1642,11 +1643,13 @@
 			return ev.touches[0];
 		},
 
-		startBrushStroke: function(x, y, pressure) {
+		startBrushStroke: function(x, y, pressure, width, height, tiltX, tiltY, twist, tangentialPressure, pointerId, isPrimary, pointerType) {
 			this.startX = x;
 			this.startY = y;
 			this.app.brush.x = x;
 			this.app.brush.y = y;
+			if (pressure > 1 || pointerType !== 'pen') pressure = 1;
+			if (pressure < 0) pressure = 0;
 			this.app.brush.pressure = pressure;
 
 			if (this.app.mode === App.Mode.DRAW) {
@@ -1674,7 +1677,9 @@
 			this.resetMode();
 		},
 
-		moveBrushStroke: function(x, y, pressure) {
+		moveBrushStroke: function(x, y, pressure, width, height, tiltX, tiltY, twist, tangentialPressure, pointerId, isPrimary, pointerType) {
+			if (pressure > 1 || pointerType !== 'pen') pressure = 1;
+			if (pressure < 0) pressure = 0;
 			this.app.brush.pressure = pressure;
 			if (this.app.mode === App.Mode.DRAW) {
 				if (y < 60) {
@@ -1693,7 +1698,7 @@
 		mousedown: function(ev) {
 			if (!this.pointerDown) {
 				this.down = true;
-				this.startBrushStroke(ev.clientX, ev.clientY, ev.pressure === undefined ? 1 : ev.pressure);
+				this.startBrushStroke(ev.clientX, ev.clientY, ev.pressure === undefined ? 1 : ev.pressure, ev.radiusX || ev.width, ev.radiusY || ev.height, ev.rotationAngle || ev.tiltX, ev.tiltY, ev.twist, ev.tangentialPressure, ev.pointerId, ev.isPrimary, ev.pointerType);
 			}
 		},
 
@@ -1706,13 +1711,13 @@
 
 		mousemove: function(ev) {
 			if (this.down) {
-				this.moveBrushStroke(ev.clientX, ev.clientY, ev.pressure === undefined ? 1 : ev.pressure);
+				this.moveBrushStroke(ev.clientX, ev.clientY, ev.pressure === undefined ? 1 : ev.pressure, ev.radiusX || ev.width, ev.radiusY || ev.height, ev.rotationAngle || ev.tiltX, ev.tiltY, ev.twist, ev.tangentialPressure, ev.pointerId, ev.isPrimary, ev.pointerType);
 			}
 		},
 
 
 		pointerdown: function(ev) {
-			if (ev.pointerType !== 'pen') {
+			if (this.app.penMode && ev.pointerType !== 'pen') {
 				return null;
 			}
 			if (!this.down) {
@@ -1740,6 +1745,8 @@
 
 
 		touchstart: function(ev) {
+			ev.preventDefault();
+			return;
 			var touch = this.getPenTouch(ev);
 			if (!touch) {
 				return;
@@ -1752,14 +1759,19 @@
 		},
 
 		touchend: function(ev) {
+			ev.preventDefault();
+			return;
 			this.endBrushStroke();
 		},
 
 		touchcancel: function(ev) {
+			ev.preventDefault();
 			this.touchend(ev);
 		},
 
 		touchmove: function(ev) {
+			ev.preventDefault();
+			return;
 			var touch = this.getPenTouch(ev);
 			if (!touch) {
 				return;
