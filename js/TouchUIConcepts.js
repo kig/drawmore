@@ -1620,6 +1620,7 @@
 
 	App.EventHandler = function(app, el) {
 		this.app = app;
+		this.element = el;
 
 		this.startX = 0;
 		this.startY = 0;
@@ -1642,8 +1643,8 @@
 		window.addEventListener("mouseup", this, false);
 
 		el.addEventListener("pointerdown", this, false);
-		window.addEventListener("pointermove", this, false);
-		window.addEventListener("pointerup", this, false);
+		el.addEventListener("pointermove", this, false);
+		el.addEventListener("pointerup", this, false);
 	};
 
 	/* 
@@ -1776,6 +1777,7 @@
 				return null;
 			}
 			if (!this.down) {
+				this.element.setPointerCapture && this.element.setPointerCapture(ev.pointerId);
 				this.mousedown(ev);
 			}
 			this.down = false;
@@ -1785,6 +1787,7 @@
 		pointerup: function(ev) {
 			if (this.pointerDown) {
 				this.down = true;
+				this.element.releasePointerCapture && this.element.releasePointerCapture(ev.pointerId);
 				this.mouseup(ev);
 				this.pointerDown = false;
 			}
@@ -1793,7 +1796,12 @@
 		pointermove: function(ev) {
 			if (this.pointerDown) {
 				this.down = true;
-				this.mousemove(ev);
+				if (ev.getCoalescedEvents) {
+					const evs = ev.getCoalescedEvents();
+					for (let i = 0; i < evs.length; i++) this.mousemove(evs[i]);
+				} else {
+					this.mousemove(ev);
+				}
 				this.down = false;
 			}
 		},
