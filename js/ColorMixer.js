@@ -17,6 +17,8 @@ ColorMixer.prototype = {
     var pixelRatio = window.devicePixelRatio;
     this.pixelRatio = pixelRatio;
 
+    var needAppleBugWorkarounds = document.body.style.zoom !== '';
+
     var widget = document.createElement('div');
     widget.style.position = 'relative';
     widget.style.padding = '0px';
@@ -58,7 +60,7 @@ ColorMixer.prototype = {
 
     this.hueCanvas.update = function(ev) {
       if (this.down) {
-        var f = 1/devicePixelRatio;
+        var f = needAppleBugWorkarounds ? 1/devicePixelRatio : 1;
         var bbox = this.getBoundingClientRect();
         var xy = {x: ev.offsetX*f, y: ev.offsetY*f};
         var cx = xy.x-(bbox.width/2);
@@ -73,7 +75,7 @@ ColorMixer.prototype = {
 
     this.canvas.update = function(ev) {
       if (this.down) {
-        var f = 1/devicePixelRatio;
+        var f = needAppleBugWorkarounds ? 1/devicePixelRatio : 1;
         var bbox = this.getBoundingClientRect();
         var xy = {x: ev.offsetX*f, y: ev.offsetY*f};
         var x = Math.clamp(xy.x, 0, width-9);
